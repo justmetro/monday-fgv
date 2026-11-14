@@ -1,0 +1,39 @@
+{
+  "version": "1.0.0",
+  "app": {
+    "slug": "reuniao-tatica-ppt",
+    "name": "Reunião Tática de Monitoramento",
+    "description": "Gera o PPT da Reunião Tática de Monitoramento com os dados do Levantamento de Produtos e do Quadro de Encaminhamentos.",
+    "permissions": {
+      "scopes": [
+        "boards:read",
+        "me:read",
+        "users:read"
+      ]
+    },
+    "features": [
+      {
+        "key": "gerador_ppt",
+        "type": "AppFeatureBoardView",
+        "name": "Gerar PPT da Reunião Tática",
+        "schemaVersion": "18",
+        "data": {
+          "name": "Gerar PPT da Reunião Tática",
+          "mode": "iframe",
+          "hideSidekick": false,
+          "query_parmas": true,
+          "hideBoardControls": false,
+          "isMobileSupported": false
+        }
+      }
+    ],
+    "oauth": {
+      "scopes": [
+        "boards:read",
+        "me:read",
+        "users:read"
+      ],
+      "redirectUri": []
+    }
+  }
+}

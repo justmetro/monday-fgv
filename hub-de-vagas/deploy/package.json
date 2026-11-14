@@ -1,0 +1,8 @@
+{
+  "name": "gestao-rpc-server",
+  "version": "1.0.0",
+  "private": true,
+  "main": "server.js",
+  "engines": { "node": ">=24.22" },
+  "scripts": { "start": "node server.js" }
+}

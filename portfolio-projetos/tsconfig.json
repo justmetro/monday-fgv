@@ -1,0 +1,55 @@
+{
+ "compilerOptions": {
+  "target": "ES2022",
+  "module": "ESNext",
+  "moduleResolution": "Bundler",
+  "jsx": "react-jsx",
+  "strict": true,
+  "skipLibCheck": true,
+  "noEmit": true,
+  "allowJs": true,
+  "lib": [
+   "ES2023",
+   "DOM",
+   "DOM.Iterable"
+  ],
+  "types": [
+   "node"
+  ],
+  "paths": {
+   "@tanstack/react-start": [
+    "./src/shims/server/react-start.ts"
+   ],
+   "@vibe/db/server": [
+    "./src/shims/server/db.ts"
+   ],
+   "@vibe/db": [
+    "./src/shims/server/db.ts"
+   ],
+   "@api/current-user.server": [
+    "./src/shims/server/current-user.ts"
+   ],
+   "@api/api-client.server": [
+    "./src/shims/server/api-client.ts"
+   ],
+   "@api/ai-service": [
+    "./src/shims/server/ai-service.ts"
+   ],
+   "@generated/*": [
+    "./src/generated/*"
+   ],
+   "@lib/*": [
+    "./src/lib/*"
+   ],
+   "@shims/*": [
+    "./src/shims/*"
+   ]
+  }
+ },
+ "include": [
+  "src/generated",
+  "src/shims/server",
+  "src/main.tsx",
+  "src/types"
+ ]
+}

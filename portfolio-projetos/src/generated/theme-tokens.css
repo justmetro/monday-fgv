@@ -1,0 +1,125 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+:root {
+  --radius: 0.5rem;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
+  --radius-2xl: 20px;
+
+  --font-heading: "IBM Plex Sans", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  --font-weight-light: 300;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --spacing-unit: 0.25rem;
+  /* Paleta dos gráficos novos: #04487C #5CBCD0 #8A93C6 #D0CB00 #EE6184 */
+  --pal-1: 206 94% 25%;
+  --pal-2: 190 55% 59%;
+  --pal-3: 231 34% 66%;
+  --pal-4: 59 100% 41%;
+  --pal-5: 345 81% 66%;
+
+  --background: 216 25% 97%;
+  --foreground: 218 40% 12%;
+  --card: 0 0% 100%;
+  --card-foreground: 218 40% 12%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 218 40% 12%;
+  --primary: 214 72% 28%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 214 30% 93%;
+  --secondary-foreground: 214 50% 20%;
+  --muted: 216 22% 94%;
+  --muted-foreground: 216 12% 42%;
+  --accent: 214 40% 92%;
+  --accent-foreground: 214 60% 22%;
+  --destructive: 2 70% 48%;
+  --border: 216 20% 87%;
+  --input: 216 20% 84%;
+  --ring: 214 72% 40%;
+
+  --chart-1: 214 72% 34%;
+  --chart-2: 174 55% 36%;
+  --chart-3: 36 88% 50%;
+  --chart-4: 2 66% 52%;
+  --chart-5: 262 35% 55%;
+
+  --kr: 214 72% 34%;
+  --kr-soft: 214 70% 94%;
+  --kpi: 32 85% 42%;
+  --kpi-soft: 36 90% 92%;
+  --ok: 152 52% 32%;
+  --ok-soft: 150 45% 92%;
+  --warn: 36 88% 40%;
+  --warn-soft: 40 90% 92%;
+  --bad-soft: 2 80% 95%;
+
+  --sidebar: 0 0% 100%;
+  --sidebar-foreground: 218 40% 12%;
+  --sidebar-primary: 214 72% 28%;
+  --sidebar-primary-foreground: 210 40% 98%;
+  --sidebar-accent: 214 30% 93%;
+  --sidebar-accent-foreground: 214 50% 20%;
+  --sidebar-border: 216 20% 87%;
+  --sidebar-ring: 214 72% 40%;
+}
+
+.dark {
+  --background: 218 30% 9%;
+  --foreground: 214 25% 92%;
+  --card: 218 28% 13%;
+  --card-foreground: 214 25% 92%;
+  --popover: 218 28% 13%;
+  --popover-foreground: 214 25% 92%;
+  --primary: 214 70% 62%;
+  --primary-foreground: 218 40% 10%;
+  --secondary: 218 22% 20%;
+  --secondary-foreground: 214 25% 92%;
+  --muted: 218 22% 18%;
+  --muted-foreground: 216 12% 64%;
+  --accent: 218 22% 22%;
+  --accent-foreground: 214 25% 92%;
+  --destructive: 2 70% 58%;
+  --border: 218 18% 24%;
+  --input: 218 18% 26%;
+  --ring: 214 70% 62%;
+
+  --chart-1: 214 70% 62%;
+  --chart-2: 174 50% 50%;
+  --chart-3: 36 88% 58%;
+  --chart-4: 2 70% 62%;
+  --chart-5: 262 45% 68%;
+
+  --kr: 214 70% 66%;
+  --kr-soft: 214 40% 20%;
+  --kpi: 36 88% 60%;
+  --kpi-soft: 36 40% 18%;
+  --ok: 152 50% 55%;
+  --ok-soft: 152 30% 16%;
+  --warn: 36 88% 60%;
+  --warn-soft: 36 40% 16%;
+  --bad-soft: 2 40% 18%;
+
+  --sidebar: 218 28% 13%;
+  --sidebar-foreground: 214 25% 92%;
+  --sidebar-primary: 214 70% 62%;
+  --sidebar-primary-foreground: 218 40% 10%;
+  --sidebar-accent: 218 22% 20%;
+  --sidebar-accent-foreground: 214 25% 92%;
+  --sidebar-border: 218 18% 24%;
+  --sidebar-ring: 214 70% 62%;
+}
+
+body {
+  font-family: var(--font-body);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+}

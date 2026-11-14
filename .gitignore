@@ -5,3 +5,6 @@ node_modules/
 *.token
 .mtoken
 .cs
+*/dist/
+*/test/out.cjs
+*/.tanstack/

@@ -1,0 +1,19 @@
+{
+  "version": "1.0.0",
+  "app": {
+    "name": "Calculadora de Riscos v3",
+    "slug": "fgvdgpe-projetos_calculadora_riscos",
+    "description": "Motor, revisão, tratamento e envio de riscos (substitui os Vibes Motor Riscos e Revisão e Tratamento)",
+    "color": "#1F4E8C",
+    "oauth": { "scopes": ["boards:read", "boards:write", "me:read", "users:read", "updates:write"] },
+    "features": [
+      {
+        "key": "calculadora_riscos",
+        "type": "AppFeatureBoardView",
+        "name": "Calculadora de Riscos",
+        "schemaVersion": "18",
+        "data": { "name": "Calculadora de Riscos", "mode": "iframe", "hideSidekick": false, "query_parmas": true, "hideBoardControls": false, "isMobileSupported": false }
+      }
+    ]
+  }
+}

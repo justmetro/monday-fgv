@@ -1,0 +1,257 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+@reference "../index.css";
+
+/* Slate Blue Glow — institucional, escuro em ambos os modos (o estilo é dark por definição). */
+:root {
+  --radius: 4px;
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --radius-lg: 12px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+
+  --font-heading: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "SFMono-Regular", "SF Mono", Menlo, monospace;
+
+  --font-weight-light: 300;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 600;
+
+  --spacing-unit: 0.25rem;
+
+  --background: 222 47% 11%;
+  --foreground: 210 40% 96%;
+  --card: 223 48% 9%;
+  --card-foreground: 210 40% 96%;
+  --popover: 228 60% 7%;
+  --popover-foreground: 210 40% 96%;
+  --primary: 213 94% 68%;
+  --primary-foreground: 229 84% 5%;
+  --secondary: 217 33% 17%;
+  --secondary-foreground: 210 40% 96%;
+  --muted: 220 38% 14%;
+  --muted-foreground: 215 20% 65%;
+  --accent: 218 36% 18%;
+  --accent-foreground: 210 40% 96%;
+  --destructive: 0 74% 63%;
+  --border: 218 32% 19%;
+  --input: 218 30% 23%;
+  --ring: 217 91% 60%;
+
+  --chart-1: 217 91% 60%;
+  --chart-2: 213 94% 68%;
+  --chart-3: 199 80% 58%;
+  --chart-4: 228 70% 72%;
+  --chart-5: 215 20% 52%;
+
+  --sidebar: 228 58% 7%;
+  --sidebar-foreground: 214 28% 80%;
+  --sidebar-primary: 213 94% 68%;
+  --sidebar-primary-foreground: 229 84% 5%;
+  --sidebar-accent: 220 40% 13%;
+  --sidebar-accent-foreground: 210 40% 96%;
+  --sidebar-border: 220 34% 15%;
+  --sidebar-ring: 217 91% 60%;
+
+  /* Extras do estilo */
+  --surface-deep: 229 84% 5%;
+  --cobalt: 217 91% 60%;
+  --sky: 213 94% 68%;
+  --text-dim: 215 16% 47%;
+  --warning: 40 90% 62%;
+  --success: 152 55% 52%;
+  --shadow-glass: 0 0 20px hsl(217 91% 60% / 0.08), inset 0 0 10px hsl(0 0% 0% / 0.55), 0 1px 0 hsl(0 0% 100% / 0.03);
+  --shadow-active-glow: 0 0 24px hsl(217 91% 60% / 0.28);
+}
+
+.dark {
+  --background: 222 47% 11%;
+  --foreground: 210 40% 96%;
+  --card: 223 48% 9%;
+  --card-foreground: 210 40% 96%;
+  --popover: 228 60% 7%;
+  --popover-foreground: 210 40% 96%;
+  --primary: 213 94% 68%;
+  --primary-foreground: 229 84% 5%;
+  --secondary: 217 33% 17%;
+  --secondary-foreground: 210 40% 96%;
+  --muted: 220 38% 14%;
+  --muted-foreground: 215 20% 65%;
+  --accent: 218 36% 18%;
+  --accent-foreground: 210 40% 96%;
+  --destructive: 0 74% 63%;
+  --border: 218 32% 19%;
+  --input: 218 30% 23%;
+  --ring: 217 91% 60%;
+
+  --chart-1: 217 91% 60%;
+  --chart-2: 213 94% 68%;
+  --chart-3: 199 80% 58%;
+  --chart-4: 228 70% 72%;
+  --chart-5: 215 20% 52%;
+
+  --sidebar: 228 58% 7%;
+  --sidebar-foreground: 214 28% 80%;
+  --sidebar-primary: 213 94% 68%;
+  --sidebar-primary-foreground: 229 84% 5%;
+  --sidebar-accent: 220 40% 13%;
+  --sidebar-accent-foreground: 210 40% 96%;
+  --sidebar-border: 220 34% 15%;
+  --sidebar-ring: 217 91% 60%;
+}
+
+html,
+body {
+  color-scheme: dark;
+  font-family: var(--font-body);
+  letter-spacing: 0.005em;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app-ground {
+  background:
+    radial-gradient(ellipse 70% 40% at 60% -10%, hsl(var(--cobalt) / 0.12), transparent 65%),
+    hsl(var(--background));
+}
+
+.glass {
+  background: hsl(var(--card) / 0.78);
+  border: 1px solid hsl(0 0% 100% / 0.05);
+  border-radius: var(--radius-xl);
+  backdrop-filter: blur(12px);
+  box-shadow: var(--shadow-glass);
+}
+
+.glass-active {
+  border-color: hsl(var(--cobalt) / 0.7);
+  box-shadow: var(--shadow-active-glow), inset 0 0 10px hsl(0 0% 0% / 0.55);
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+.mono-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  line-height: 1.3;
+}
+
+.cta-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 36px;
+  padding: 0 16px;
+  border-radius: 9999px;
+  background: hsl(var(--surface-deep));
+  color: hsl(var(--sky));
+  border: 1px solid hsl(var(--cobalt) / 0.35);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  transition: box-shadow 180ms cubic-bezier(0.25, 1, 0.5, 1), border-color 180ms;
+}
+.cta-pill:hover:not(:disabled) {
+  box-shadow: 0 0 12px hsl(var(--cobalt) / 0.4);
+  border-color: hsl(var(--cobalt) / 0.8);
+}
+.cta-pill:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+.cta-pill:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.ghost-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 9999px;
+  color: hsl(var(--muted-foreground));
+  border: 1px solid hsl(var(--border));
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  transition: color 160ms, border-color 160ms, background 160ms;
+}
+.ghost-pill:hover:not(:disabled) {
+  color: hsl(var(--foreground));
+  border-color: hsl(var(--input));
+  background: hsl(var(--accent) / 0.5);
+}
+.ghost-pill:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+.ghost-pill:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cta-pill,
+  .ghost-pill {
+    transition: none;
+  }
+}
+
+/* Variáveis e regras do motor */
+:root {
+  --canvas-chrome: 218 22% 9.6%;   /* header / barra de filtros */
+  --slate: 218 19% 11.2%;          /* painéis */
+  --ink: 218 19% 11.2%;            /* painel de execução */
+  --ink-soft: 220 16% 14.5%;       /* hover */
+  --ink-line: 221 16% 20%;         /* bordas finas */
+  --track: 223 16% 17.6%;          /* trilho de progresso */
+  --paper: 218 17% 90.6%;          /* texto principal */
+  --paper-dim: 219 9% 62.9%;       /* texto secundário */
+  --signal: 0 79% 62%;             /* erro */
+  --ok: 141 50% 50%;
+  --warn: 38 81% 58%;
+  --err: 0 79% 62%;
+  --row-alt: 223 16% 17.6%;
+}
+
+
+html { color-scheme: dark; }
+
+body {
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  line-height: 1.5;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); }
+
+/* Números, datas e códigos em Plex Mono tabular */
+.tabular-nums, .font-mono, pre, code {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+* { box-shadow: none !important; }
+
+@keyframes seg-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.seg-active { animation: seg-pulse 1.2s cubic-bezier(0.25, 1, 0.5, 1) infinite; }
+@media (prefers-reduced-motion: reduce) { .seg-active { animation: none; } }

@@ -1,0 +1,14 @@
+{
+  "version": "1.0.0",
+  "app": {
+    "name": "Continuidade de Projetos",
+    "slug": "fgvdgpe-projetos_continuidade",
+    "description": "Gestão de Equipes de Projetos em Encerramento. Substitui o Vibe Continuidade de Projetos (10557100).",
+    "color": "#C2F0D5",
+    "oauth": { "scopes": ["boards:read", "me:read", "users:read"] },
+    "features": [
+      { "key": "continuidade_projetos", "type": "AppFeatureBoardView", "name": "Continuidade de Projetos", "schemaVersion": "18",
+        "data": { "name": "Continuidade de Projetos", "mode": "iframe", "hideSidekick": false, "query_parmas": true, "hideBoardControls": false, "isMobileSupported": false } }
+    ]
+  }
+}

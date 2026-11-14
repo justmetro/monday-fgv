@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "ES2022", "module": "ESNext", "moduleResolution": "Bundler", "jsx": "react-jsx",
+    "strict": true, "skipLibCheck": true, "noEmit": true, "esModuleInterop": true, "resolveJsonModule": true,
+    "lib": ["ES2023", "DOM", "DOM.Iterable"], "types": ["node"],
+    "paths": {
+      "@generated/*": ["./src/generated/*"],
+      "@tanstack/react-start": ["./src/shims/react-start-client.ts"],
+      "@vibe/db": ["./src/shims/vibe-db.ts"],
+      "@vibe/db/server": ["./server/vibeDb.ts"],
+      "@/context/MondayContextProvider": ["./src/shims/MondayContextProvider.tsx"]
+    }
+  },
+  "include": ["src", "server"]
+}

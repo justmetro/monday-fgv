@@ -1,0 +1,19 @@
+{
+  "version": "1.0.0",
+  "app": {
+    "name": "Hub de Vagas (Gestão de RPC)",
+    "slug": "fgvdgpe-projetos_gestao_rpc",
+    "description": "Hub de vagas, perfis para realocação e match. Substitui o Vibe 10550576.",
+    "color": "#1E8E5A",
+    "oauth": { "scopes": ["boards:read", "boards:write", "me:read", "users:read"] },
+    "features": [
+      {
+        "key": "hub_vagas",
+        "type": "AppFeatureBoardView",
+        "name": "Hub de Vagas",
+        "schemaVersion": "18",
+        "data": { "name": "Hub de Vagas", "mode": "iframe", "hideSidekick": false, "query_parmas": true, "hideBoardControls": false, "isMobileSupported": false }
+      }
+    ]
+  }
+}

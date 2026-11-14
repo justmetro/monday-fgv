@@ -1,0 +1,821 @@
+{
+"18437180615": {
+"name": {
+"id": "name",
+"type": "name"
+},
+"nomeColaborador": {
+"id": "text_mm8g100a",
+"type": "text"
+},
+"projeto": {
+"id": "board_relation_mm8gr0ea",
+"type": "board_relation"
+},
+"cargoPlan": {
+"id": "dropdown_mm8gffp8",
+"type": "dropdown"
+},
+"modalidade": {
+"id": "dropdown_mm8gbphv",
+"type": "dropdown"
+},
+"valorBasePlan": {
+"id": "numeric_mm8g1jwk",
+"type": "numbers"
+},
+"projetoTexto": {
+"id": "text_mm8hf7bq",
+"type": "text"
+},
+"projetoEspelho": {
+"id": "lookup_mm8hvvab",
+"type": "mirror"
+}
+},
+"18436640715": {
+"name": {
+"id": "name",
+"type": "name"
+},
+"mesesDeManuteno": {
+"id": "numeric_mm8cvjwd",
+"type": "numbers"
+},
+"atualizaoDaEquipe": {
+"id": "date_mm8ct098",
+"type": "date"
+},
+"deciso": {
+"id": "color_mm8cg6jz",
+"type": "status",
+"labels": {
+"Reduzir equipe": 0,
+"Manter equipe": 1,
+"Desmobilizar": 2,
+"Em análise": 17
+}
+},
+"nClt": {
+"id": "numeric_mm8c3ewn",
+"type": "numbers"
+},
+"nEstgio": {
+"id": "numeric_mm8c474s",
+"type": "numbers"
+},
+"projeto": {
+"id": "board_relation_mm8c2h6s",
+"type": "board_relation"
+},
+"perspectivaDeFinalizao": {
+"id": "color_mm8cqyq1",
+"type": "status",
+"labels": {
+"Sim": 1,
+"Não": 2,
+"A avaliar": 17
+}
+},
+"dataPrevistaDeEntradarenovao": {
+"id": "date_mm8cqq3e",
+"type": "date"
+},
+"responsvelPelaDeciso": {
+"id": "multiple_person_mm8cca62",
+"type": "people"
+},
+"custoMensalEquipeR": {
+"id": "numeric_mm8c4ae1",
+"type": "numbers"
+},
+"dataDaDeciso": {
+"id": "date_mm8c5cmq",
+"type": "date"
+},
+"detalheDaDeciso": {
+"id": "long_text_mm8cvdrx",
+"type": "long_text"
+},
+"tipoContratoNovoaditivo": {
+"id": "color_mm8t7698",
+"type": "status",
+"labels": {
+"Aditivo": 4,
+"Contrato Novo": 7,
+"Sem informação": 17
+}
+},
+"perspectiva": {
+"id": "color_mm8tstym",
+"type": "status",
+"labels": {
+"Média": 0,
+"Alta": 1,
+"Baixa": 2,
+"Sem informação": 17
+}
+},
+"temperaturaDaPerspectiva": {
+"id": "color_mm8t4g9h",
+"type": "status",
+"labels": {
+"30 a 45 dias": 0,
+"15 a 30 dias": 2,
+"45 a 60 dias": 9,
+"Sem informação": 17,
+"Mais de 60 dias": 102
+}
+},
+"comentrioDaPerspectiva": {
+"id": "long_text_mm8tj7jx",
+"type": "long_text"
+},
+"statusDeCategorizao": {
+"id": "text_mm8z6eb1",
+"type": "text"
+},
+"equipeBase": {
+"id": "long_text_mm8zp80k",
+"type": "long_text"
+},
+"simulaoPorPessoa": {
+"id": "long_text_mm8z87fd",
+"type": "long_text"
+}
+},
+"18399249920": {
+"name": {
+"id": "name",
+"type": "name"
+},
+"subelementos": {
+"id": "subtasks_mm19kh1t",
+"type": "subtasks"
+},
+"nomeSgi": {
+"id": "text_mm0e6wny",
+"type": "text"
+},
+"gerenteAtual": {
+"id": "dropdown_mm15b621",
+"type": "dropdown"
+},
+"gerenteHistrico": {
+"id": "dropdown_mm26914y",
+"type": "dropdown"
+},
+"siglaDoProjeto": {
+"id": "text_mm13t2y6",
+"type": "text"
+},
+"statusDoProjeto": {
+"id": "status",
+"type": "status",
+"labels": {
+"Em execução": 0,
+"Finalizado": 1,
+"Pagamento pendente": 2,
+"Iniciação": 3,
+"Em planejamento": 4,
+"Aguardando planejamento": 6,
+"Pausado": 7,
+"Plan: Aguardando Aprovação SGI": 8,
+"Em encerramento": 9
+}
+},
+"centroDeCusto": {
+"id": "text_mm0dstra",
+"type": "text"
+},
+"eixoDeProjeto": {
+"id": "color_mm32z2y4",
+"type": "status",
+"labels": {
+"Gestão Estratégica": 0,
+"Alfabetização": 1,
+"GA": 2,
+"Gestão Pública": 3,
+"EPT": 4,
+"EJA": 6,
+"Formação Continuada": 7,
+"Pesquisa e Estudo": 8,
+"CNCA": 9,
+"Gestão para a aprendizagem": 10,
+"Educação profissional e tecnológica": 11,
+"Formação continuada": 12,
+"Educação de jovens e adultos": 14
+}
+},
+"valorPlanejado": {
+"id": "lookup_mm0h720z",
+"type": "mirror"
+},
+"abrangncia": {
+"id": "dropdown_mm0evmtk",
+"type": "dropdown"
+},
+"pas": {
+"id": "dropdown_mm0v90kt",
+"type": "dropdown"
+},
+"uf": {
+"id": "dropdown_mm0v5nax",
+"type": "dropdown"
+},
+"municpio": {
+"id": "dropdown_mm0vc8mn",
+"type": "dropdown"
+},
+"regio": {
+"id": "dropdown_mm0vh6w5",
+"type": "dropdown"
+},
+"municpiosImpactados": {
+"id": "numeric_mm0ev9hj",
+"type": "numbers"
+},
+"valorContrato": {
+"id": "numeric_mm0evf02",
+"type": "numbers"
+},
+"inciofimContratual": {
+"id": "timerange_mm0e808z",
+"type": "timeline"
+},
+"inciofimExecuoPrevisto": {
+"id": "timerange_mm0es48g",
+"type": "timeline"
+},
+"tipoDeProjeto": {
+"id": "dropdown_mm0v69nc",
+"type": "dropdown"
+},
+"cliente": {
+"id": "dropdown_mm0fbttg",
+"type": "dropdown"
+},
+"produtosPlanejados": {
+"id": "board_relation_mm0hbvdd",
+"type": "board_relation"
+},
+"espelhoLtimaEntregaPrevista": {
+"id": "lookup_mm0h6bd",
+"type": "mirror"
+},
+"suporteFrmLtimaEntrega": {
+"id": "formula_mm7q6cp2",
+"type": "formula"
+},
+"ltimaEntregaPrevista": {
+"id": "date_mm57bjbq",
+"type": "date"
+},
+"espelhoLtimoFaturamentoPrevisto": {
+"id": "lookup_mm7qwzwx",
+"type": "mirror"
+},
+"suporteFrmLtimoFaturamento": {
+"id": "formula_mm7q80nn",
+"type": "formula"
+},
+"ltimoFaturamentoPrevisto": {
+"id": "date_mm7q2var",
+"type": "date"
+},
+"entregaProdutos": {
+"id": "lookup_mm27j31b",
+"type": "mirror"
+},
+"faturamentoDeProdutos": {
+"id": "lookup_mm45b4k3",
+"type": "mirror"
+},
+"valorAPlanejar": {
+"id": "formula_mm0he3k5",
+"type": "formula"
+},
+"local": {
+"id": "location_mm0vwk3x",
+"type": "location"
+},
+"encerramento": {
+"id": "color_mm273nwz",
+"type": "status",
+"labels": {
+"2025": 0,
+"2026": 1,
+"2024": 2
+}
+},
+"tags": {
+"id": "tag_mm14m9h7",
+"type": "tags"
+},
+"reaQueAcompanha": {
+"id": "dropdown_mm145zny",
+"type": "dropdown"
+},
+"probono": {
+"id": "dropdown_mm1623hc",
+"type": "dropdown"
+},
+"tempoDeFaturamentoFluxo": {
+"id": "numeric_mm1ay5r5",
+"type": "numbers"
+},
+"cdigoDoProjeto": {
+"id": "text_mm1ask76",
+"type": "text"
+},
+"quadroDoProjeto": {
+"id": "link_mm1sc0k6",
+"type": "link"
+},
+"alocaoDeEquipe": {
+"id": "color_mm32sn32",
+"type": "status",
+"labels": {
+"Equipe finalizada": 0,
+"Verificar": 1,
+"Equipe alocada": 3,
+"Sem equipe": 11
+}
+},
+"incioRealDaOperao": {
+"id": "date_mm4dsqxe",
+"type": "date"
+},
+"fimRealDaOperao": {
+"id": "date_mm4dqnfb",
+"type": "date"
+},
+"linkPlanejamento": {
+"id": "board_relation_mm4debem",
+"type": "board_relation"
+},
+"statusPlan": {
+"id": "lookup_mm4d2yrg",
+"type": "mirror"
+},
+"espelhomediafaturamentoprojeto": {
+"id": "lookup_mm4k4hmk",
+"type": "mirror"
+},
+"espelhomediatempopagamentoprojeto": {
+"id": "lookup_mm4mcbxc",
+"type": "mirror"
+},
+"tipoDeEntregas": {
+"id": "lookup_mm4tg9nq",
+"type": "mirror"
+},
+"alertaDesalocao": {
+"id": "color_mm4xsz0r",
+"type": "status",
+"labels": {
+"Em Operação": 0,
+"Finalizado": 1,
+"Iniciar desalocação": 2,
+"Parado": 11
+}
+},
+"dataIncioPlanejamento": {
+"id": "lookup_mm5h3tzx",
+"type": "mirror"
+},
+"dataDeInciofimContratual": {
+"id": "timerange_mm648gxm",
+"type": "timeline"
+},
+"dataDeInciofimExecuo": {
+"id": "timerange_mm64n81x",
+"type": "timeline"
+},
+"entregaLtimoProdutoPlanejadoEspelho": {
+"id": "text_mm6c2gzd",
+"type": "text"
+},
+"idSgiProj": {
+"id": "text_mm6wmqzg",
+"type": "text"
+},
+"linkToGqcMatrizDeComplexidade": {
+"id": "board_relation_mm71jfvv",
+"type": "board_relation"
+},
+"faixaDeComplexidadeEspelho": {
+"id": "lookup_mm716q9b",
+"type": "mirror"
+},
+"nvelDeComplexidadeEspelho": {
+"id": "lookup_mm716h4r",
+"type": "mirror"
+},
+"pontuaoTotalNdiceDeComplexidade": {
+"id": "lookup_mm712521",
+"type": "mirror"
+},
+"colocaoNvelDeComplexidadeEspelho": {
+"id": "lookup_mm7233hg",
+"type": "mirror"
+},
+"aguardandoPlanejamento": {
+"id": "date_mm83dga7",
+"type": "date"
+},
+"iniciao": {
+"id": "date_mm83spxk",
+"type": "date"
+},
+"emPlanejamento": {
+"id": "date_mm83mnpj",
+"type": "date"
+},
+"planAguardandoAprovaoSgi": {
+"id": "date_mm83gnw7",
+"type": "date"
+},
+"emExecuo": {
+"id": "date_mm83b6tm",
+"type": "date"
+},
+"emEncerramento": {
+"id": "date_mm83h9ar",
+"type": "date"
+},
+"pagamentoPendente": {
+"id": "date_mm83gptr",
+"type": "date"
+},
+"finalizado": {
+"id": "date_mm83a2wx",
+"type": "date"
+},
+"pausado": {
+"id": "date_mm838t6m",
+"type": "date"
+},
+"emailDoGerente": {
+"id": "email_mm90t3f1",
+"type": "email"
+},
+"checagemDeDatas": {
+"id": "color_mm90d865",
+"type": "status",
+"labels": {
+"Datas conferidas": 1,
+"Revisar datas": 2
+}
+}
+},
+"18398687489": {
+"name": {
+"id": "name",
+"type": "name"
+},
+"subelementos": {
+"id": "subtasks_mm0dkf2s",
+"type": "subtasks"
+},
+"projeto": {
+"id": "board_relation_mm0egp2d",
+"type": "board_relation"
+},
+"valorDoProduto": {
+"id": "numeric_mm08x9pa",
+"type": "numbers"
+},
+"tipo": {
+"id": "dropdown_mm08y086",
+"type": "dropdown"
+},
+"statusDoProduto": {
+"id": "status",
+"type": "status",
+"labels": {
+"Concluído": 0,
+"Entrega Final": 1,
+"Em Execução": 2,
+"Não Há": 4,
+"Não Iniciado": 5
+}
+},
+"riscoNoFaturamento": {
+"id": "color_mm5jy93q",
+"type": "status",
+"labels": {
+"Risco Moderado": 0,
+"Sem Risco": 1,
+"Não avaliado": 5,
+"Alto Risco": 11
+}
+},
+"riscoNoPagamento": {
+"id": "color_mm7efnfd",
+"type": "status",
+"labels": {
+"Risco Moderado": 0,
+"Sem Risco": 1,
+"Não avaliado": 5,
+"Alto Risco": 11
+}
+},
+"dataCpaPrevista": {
+"id": "date_mm08s32a",
+"type": "date"
+},
+"dataPrevistaDeEntrega": {
+"id": "date_mm0gagmy",
+"type": "date"
+},
+"dataPlanejadaDeEntrega": {
+"id": "date_mm0827mb",
+"type": "date"
+},
+"dataReplanejadaDeEntrega": {
+"id": "date_mm08m51r",
+"type": "date"
+},
+"prazoDeEntrega": {
+"id": "date_mm33zxd3",
+"type": "date"
+},
+"dataDeEntregaRealCorporativo": {
+"id": "date_mm08m5zr",
+"type": "date"
+},
+"empenho": {
+"id": "color_mm323j0q",
+"type": "status",
+"labels": {
+"Empenhado": 0,
+"Sem necessidade": 1,
+"Sem empenho": 2,
+"Revisar": 3,
+"Parcialmente empenhado": 4
+}
+},
+"statusFinanceiro": {
+"id": "color_mm0881ty",
+"type": "status",
+"labels": {
+"Pagamento Parcial": 0,
+"Faturamento Parcial": 1,
+"Não Há": 2,
+"Valor Pago": 4,
+"Não Iniciado": 5,
+"Valor Faturado": 6
+}
+},
+"previsoDeFaturamento": {
+"id": "date_mm16tcc0",
+"type": "date"
+},
+"prazoDeFaturamento": {
+"id": "date_mm08g6fy",
+"type": "date"
+},
+"dataRealDeFaturamento": {
+"id": "date_mm086ddm",
+"type": "date"
+},
+"statusFat": {
+"id": "color_mm32wmry",
+"type": "status",
+"labels": {
+"Pagamento Parcial": 0,
+"Faturamento Parcial": 1,
+"Não Há": 2,
+"Não Iniciado": 5,
+"Valor Faturado": 6
+}
+},
+"previsoDePagamento": {
+"id": "date_mm1azkd9",
+"type": "date"
+},
+"prazoDePagamento": {
+"id": "date_mm128sqm",
+"type": "date"
+},
+"dataRealDePagamento": {
+"id": "date_mm12794s",
+"type": "date"
+},
+"statusPg": {
+"id": "color_mm327bej",
+"type": "status",
+"labels": {
+"Pagamento Parcial": 0,
+"Não Há": 2,
+"Valor Pago": 4,
+"Não Iniciado": 5
+}
+},
+"statusAtrasoEntrega": {
+"id": "formula_mm08f6se",
+"type": "formula"
+},
+"statusAtrasoEntregaAgregado": {
+"id": "formula_mm66g9g3",
+"type": "formula"
+},
+"diasDeAtrasoEntrega": {
+"id": "formula_mm082tyn",
+"type": "formula"
+},
+"tipoDeAtrasoEntrega": {
+"id": "formula_mm08taat",
+"type": "formula"
+},
+"statusAtrasoFaturamento": {
+"id": "formula_mm59yea7",
+"type": "formula"
+},
+"statusAtrasoFaturamentoAgregado": {
+"id": "formula_mm6enttn",
+"type": "formula"
+},
+"tempoDeFaturamento": {
+"id": "formula_mm2d2st2",
+"type": "formula"
+},
+"tipoDeAtrasoNoFaturamento": {
+"id": "formula_mm59rve2",
+"type": "formula"
+},
+"statusAtrasoPagamento": {
+"id": "formula_mm594nq8",
+"type": "formula"
+},
+"statusAtrasoPagamentoAgregado": {
+"id": "formula_mm6ezq9q",
+"type": "formula"
+},
+"tempoDePagamento": {
+"id": "formula_mm2dxy4j",
+"type": "formula"
+},
+"tipoDeAtrasoNoPagamento": {
+"id": "formula_mm59ak4x",
+"type": "formula"
+},
+"siglaDoProdutoExcluir": {
+"id": "text_mm0wdn3p",
+"type": "text"
+},
+"nomeDoProduto": {
+"id": "text_mm08bvkv",
+"type": "text"
+},
+"suporteCdigoDoProduto": {
+"id": "text_mm0qn5xz",
+"type": "text"
+},
+"suporteProjetoSgi": {
+"id": "text_mm08sg0d",
+"type": "text"
+},
+"suporteCdigoDoProjeto": {
+"id": "text_mm0890x0",
+"type": "text"
+},
+"historicoNomeDoProduto": {
+"id": "text_mm0wq291",
+"type": "text"
+},
+"coordenao": {
+"id": "lookup_mm147y1x",
+"type": "mirror"
+},
+"gerente": {
+"id": "dropdown_mm66kf55",
+"type": "dropdown"
+},
+"cliente": {
+"id": "lookup_mm8c9am",
+"type": "mirror"
+},
+"centroDeCusto": {
+"id": "lookup_mm0e1xjj",
+"type": "mirror"
+},
+"eixoDeProjeto": {
+"id": "lookup_mm0epmhf",
+"type": "mirror"
+},
+"statusDoProjeto": {
+"id": "lookup_mm14t279",
+"type": "mirror"
+},
+"botoDeEnvioCpa": {
+"id": "button_mm1gkpf5",
+"type": "button"
+},
+"envioCpa": {
+"id": "formula_mm1qx3md",
+"type": "formula"
+},
+"idDoElemento": {
+"id": "pulse_id_mm327b76",
+"type": "item_id"
+},
+"dataMxRepactuao": {
+"id": "date_mm45b5ha",
+"type": "date"
+},
+"valorDoProdutoEmMilho": {
+"id": "formula_mm2tert6",
+"type": "formula"
+},
+"automax": {
+"id": "button_mm33ga4p",
+"type": "button"
+},
+"frmula": {
+"id": "formula_mm3cr73t",
+"type": "formula"
+},
+"notaFiscal": {
+"id": "numeric_mm3f46eq",
+"type": "numbers"
+},
+"ttuloFinanceiro": {
+"id": "text_mm3fq8rq",
+"type": "text"
+},
+"sinalDeConferenciaFinanceira": {
+"id": "boolean_mm45vawq",
+"type": "checkbox"
+},
+"frmula1": {
+"id": "formula_mm4cr63z",
+"type": "formula"
+},
+"marcadorEmpenhoNosPrximos3Meses": {
+"id": "formula_mm4dqtej",
+"type": "formula"
+},
+"tempoMdioDeFaturamentoDoProjeto": {
+"id": "lookup_mm4k3p20",
+"type": "mirror"
+},
+"tempoMdioDePagamentoDoProjeto": {
+"id": "lookup_mm4mbyrp",
+"type": "mirror"
+},
+"checkDavi": {
+"id": "boolean_mm5392h5",
+"type": "checkbox"
+},
+"alcanceDeMetaFatpag": {
+"id": "board_relation_mm6c7re3",
+"type": "board_relation"
+},
+"idProdutoSgi": {
+"id": "text_mm6bmt0p",
+"type": "text"
+},
+"recalcularPrazos": {
+"id": "button_mm6jctey",
+"type": "button"
+},
+"checkReclculo": {
+"id": "boolean_mm6jj1rw",
+"type": "checkbox"
+},
+"checkDatasSgi": {
+"id": "boolean_mm6mzsrz",
+"type": "checkbox"
+},
+"confereId": {
+"id": "boolean_mm6r4xr3",
+"type": "checkbox"
+},
+"idProjetoSgi": {
+"id": "text_mm6wpvac",
+"type": "text"
+},
+"linkProdutoSgi": {
+"id": "formula_mm6wxt11",
+"type": "formula"
+},
+"fichaTcnicaDoProjeto": {
+"id": "formula_mm76j0p8",
+"type": "formula"
+},
+"suporteAnoFat": {
+"id": "formula_mm839z97",
+"type": "formula"
+},
+"cdigoDoProdutoSgi": {
+"id": "text_mm8v800p",
+"type": "text"
+},
+"suporteAnoDaEntrega": {
+"id": "formula_mm8zewzy",
+"type": "formula"
+}
+}
+}

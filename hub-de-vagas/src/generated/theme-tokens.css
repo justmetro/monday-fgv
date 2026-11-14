@@ -1,0 +1,151 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+@reference "../index.css";
+
+:root {
+  --radius: 0.375rem;
+  --radius-sm: 2px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
+  --radius-2xl: 20px;
+
+  --font-heading: "Inter", "Helvetica Neue", system-ui, sans-serif;
+  --font-body: "Inter", "Helvetica Neue", system-ui, sans-serif;
+
+  --font-weight-light: 300;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 600;
+
+  --spacing-unit: 0.25rem;
+
+  /* Light — paper canvas with emerald instrument accent */
+  --background: 150 14% 97.5%;
+  --foreground: 160 22% 9%;
+  --card: 0 0% 100%;
+  --card-foreground: 160 22% 9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 160 22% 9%;
+  --primary: 152 76% 32%;
+  --primary-foreground: 150 30% 98%;
+  --secondary: 150 18% 93%;
+  --secondary-foreground: 160 22% 12%;
+  --muted: 150 14% 93.5%;
+  --muted-foreground: 160 8% 40%;
+  --accent: 148 45% 90%;
+  --accent-foreground: 155 60% 18%;
+  --destructive: 354 70% 50%;
+  --border: 155 12% 86%;
+  --input: 155 12% 84%;
+  --ring: 152 76% 38%;
+
+  --chart-1: 152 76% 36%;
+  --chart-2: 158 64% 52%;
+  --chart-3: 142 69% 58%;
+  --chart-4: 165 40% 30%;
+  --chart-5: 150 20% 70%;
+
+  --sidebar: 150 16% 95%;
+  --sidebar-foreground: 160 22% 12%;
+  --sidebar-primary: 152 76% 32%;
+  --sidebar-primary-foreground: 150 30% 98%;
+  --sidebar-accent: 148 40% 89%;
+  --sidebar-accent-foreground: 155 60% 18%;
+  --sidebar-border: 155 12% 86%;
+  --sidebar-ring: 152 76% 38%;
+
+  --emerald: 152 76% 36%;
+  --warning: 30 95% 45%;
+  --success: 158 84% 34%;
+  --info: 212 72% 48%;
+  --alert: 268 60% 55%;
+  --glow-stack: 0 0 0 1px hsl(152 76% 36% / 0.25), 0 0 14px hsl(152 76% 40% / 0.18);
+  --glow-dot: 0 0 6px hsl(152 76% 40% / 0.6);
+  --lattice-line: 155 15% 50% / 0.08;
+  --shadow-pop: 0 8px 24px hsl(160 20% 20% / 0.12);
+}
+
+.dark {
+  /* Dark — graphite instrument field with emerald accent (not pure black) */
+  --background: 200 7% 11.5%;
+  --foreground: 150 8% 94%;
+  --card: 200 6% 15%;
+  --card-foreground: 150 8% 94%;
+  --popover: 200 6% 17%;
+  --popover-foreground: 150 8% 95%;
+  --primary: 142 64% 55%;
+  --primary-foreground: 150 30% 8%;
+  --secondary: 200 5% 19%;
+  --secondary-foreground: 150 8% 92%;
+  --muted: 200 5% 18.5%;
+  --muted-foreground: 190 6% 70%;
+  --accent: 152 30% 20%;
+  --accent-foreground: 142 64% 76%;
+  --destructive: 356 82% 66%;
+  --border: 200 6% 24%;
+  --input: 200 6% 28%;
+  --ring: 142 64% 55%;
+
+  --chart-1: 142 64% 55%;
+  --chart-2: 160 70% 44%;
+  --chart-3: 158 55% 62%;
+  --chart-4: 150 25% 78%;
+  --chart-5: 190 8% 50%;
+
+  --sidebar: 200 7% 13%;
+  --sidebar-foreground: 150 8% 92%;
+  --sidebar-primary: 142 64% 55%;
+  --sidebar-primary-foreground: 150 30% 8%;
+  --sidebar-accent: 152 25% 18%;
+  --sidebar-accent-foreground: 142 64% 76%;
+  --sidebar-border: 200 6% 21%;
+  --sidebar-ring: 142 64% 55%;
+
+  --emerald: 142 64% 55%;
+  --warning: 36 95% 62%;
+  --success: 158 64% 52%;
+  --info: 212 85% 66%;
+  --alert: 268 75% 72%;
+  --glow-stack: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 6px 18px rgba(0, 0, 0, 0.28), 0 0 10px rgba(74, 222, 128, 0.28);
+  --glow-dot: 0 0 6px rgba(74, 222, 128, 0.75);
+  --shadow-pop: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --lattice-line: 142 40% 70% / 0.06;
+}
+
+/* monday "night" theme — deeper graphite, same accent */
+.dark.night {
+  --background: 220 9% 7.5%;
+  --card: 220 8% 10.5%;
+  --popover: 220 8% 12.5%;
+  --secondary: 220 7% 14%;
+  --muted: 220 7% 13.5%;
+  --border: 220 7% 19%;
+  --input: 220 7% 23%;
+  --sidebar: 220 9% 9%;
+  --sidebar-border: 220 7% 16%;
+}
+
+body {
+  font-family: var(--font-body);
+  font-feature-settings: "tnum" 0, "cv11";
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  letter-spacing: -0.025em;
+}
+
+.lattice {
+  background-image:
+    linear-gradient(hsl(var(--lattice-line)) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--lattice-line)) 1px, transparent 1px),
+    radial-gradient(ellipse at 70% 0%, hsl(var(--emerald) / 0.12), transparent 60%);
+  background-size: 28px 28px, 28px 28px, 100% 100%;
+}
+
+/* Soft lift on hover for clickable cards */
+.lift { transition: transform 160ms cubic-bezier(.2,.7,.2,1), box-shadow 160ms ease, border-color 160ms ease; }
+.lift:hover { transform: translateY(-2px); }
+.lift:active { transform: translateY(0); }
+@media (prefers-reduced-motion: reduce) { .lift, .lift:hover { transition: none; transform: none; } }
