@@ -1,0 +1,7 @@
+node_modules/
+*/deploy/public/
+*/deploy/server.js
+.env
+*.token
+.mtoken
+.cs
