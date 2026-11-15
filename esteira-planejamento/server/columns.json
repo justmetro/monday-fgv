@@ -1,0 +1,563 @@
+{
+ "18422833691": {
+  "name": {
+   "id": "name",
+   "type": "name"
+  },
+  "subelementos": {
+   "id": "subtasks_mm7faf00",
+   "type": "subtasks"
+  },
+  "statusProjetoEspelho": {
+   "id": "lookup_mm5gt615",
+   "type": "mirror"
+  },
+  "statusProjeto": {
+   "id": "color_mm6v67nv",
+   "type": "status",
+   "labels": {
+    "Aguardando planejamento": 0,
+    "Pagamento pendente": 1,
+    "Iniciação": 2,
+    "Finalizado": 3,
+    "Em planejamento": 4,
+    "Não Iniciado": 5,
+    "Pausado": 6,
+    "Plan: Aguardando Aprovação SGI": 7,
+    "Em execução": 8,
+    "Em encerramento": 9
+   }
+  },
+  "colaStatus": {
+   "id": "button_mm67p6wc",
+   "type": "button"
+  },
+  "telefone": {
+   "id": "text_mm5ef4qw",
+   "type": "text"
+  },
+  "local": {
+   "id": "location_mm5ehn2c",
+   "type": "location"
+  },
+  "certificaoPmi": {
+   "id": "dropdown_mm5e50ej",
+   "type": "dropdown"
+  },
+  "processoDeQualificao": {
+   "id": "dropdown_mm7gbrw4",
+   "type": "dropdown"
+  },
+  "status": {
+   "id": "color_mm7gphww",
+   "type": "status",
+   "labels": {
+    "Em Progresso": 0,
+    "Concluído": 1,
+    "Cancelado": 2,
+    "Aguardando Inscrição": 3,
+    "Bolsa 2027": 4,
+    "N/A": 5,
+    "Aguardando GP": 11,
+    "Em Processo de Seleção": 12,
+    "Aguardando Início": 17
+   }
+  },
+  "perfil": {
+   "id": "dropdown_mm5e7wsd",
+   "type": "dropdown"
+  },
+  "projetosGerenciados": {
+   "id": "board_relation_mm5epxs",
+   "type": "board_relation"
+  },
+  "alocaoNoProjeto": {
+   "id": "lookup_mm6vcpsw",
+   "type": "mirror"
+  },
+  "fimAtuao": {
+   "id": "timerange_mm67nw07",
+   "type": "timeline"
+  },
+  "vignciaContratual": {
+   "id": "lookup_mm6vga5d",
+   "type": "mirror"
+  },
+  "atividadeAtual": {
+   "id": "color_mm5ehxrr",
+   "type": "status",
+   "labels": {
+    "SUPPRO": 0,
+    "SAE": 1,
+    "SUPGP": 2,
+    "GERENTE": 3,
+    "CORP": 4,
+    "Não Iniciado": 5,
+    "EXEC": 6,
+    "TI": 7,
+    "NAVEMÃE": 8,
+    "CONSULTOR": 9,
+    "ESPECIALISTA": 10,
+    "PESQUISADOR": 11,
+    "INATIVO": 12
+   }
+  },
+  "valorDoContrato": {
+   "id": "lookup_mm6vt27k",
+   "type": "mirror"
+  },
+  "eixo": {
+   "id": "lookup_mm6vmj6d",
+   "type": "mirror"
+  },
+  "sadaDoProjeto": {
+   "id": "date_mm6vsz95",
+   "type": "date"
+  },
+  "perodoNoProjeto": {
+   "id": "formula_mm6vrvqh",
+   "type": "formula"
+  },
+  "compexidadeDoProjeto": {
+   "id": "numeric_mm6vennr",
+   "type": "numbers"
+  },
+  "avDesempenho": {
+   "id": "numeric_mm7g61q5",
+   "type": "numbers"
+  },
+  "fimAtuao1": {
+   "id": "lookup_mm6vw2j9",
+   "type": "mirror"
+  },
+  "totalProjetos": {
+   "id": "formula_mm6vy9nt",
+   "type": "formula"
+  },
+  "email": {
+   "id": "email_mm5eqgfn",
+   "type": "email"
+  }
+ },
+ "18412010674": {
+  "name": {
+   "id": "name",
+   "type": "name"
+  },
+  "gerente": {
+   "id": "board_relation_mm5egrbf",
+   "type": "board_relation"
+  },
+  "statusPlanejamento": {
+   "id": "color_mm3axm14",
+   "type": "status",
+   "labels": {
+    "Em andamento": 0,
+    "Instrumento Concluído": 1,
+    "Sem planejamento [ANTIGOS]": 2,
+    "Em revisão": 3,
+    "Finalizado (Plan + SGI)": 4,
+    "Novo Cadastro - 30 a 45 dias": 5,
+    "Planejado aguardando assinatura": 6,
+    "Novo Cadastro - 45 a 60 dias": 7,
+    "Em replanejamento": 8,
+    "Pausado": 11,
+    "Despriorizado": 17
+   }
+  },
+  "statusSgi": {
+   "id": "color_mm34f2he",
+   "type": "status",
+   "labels": {
+    "Validado no SGI": 1,
+    "Sem planejamento [ANTIGOS]": 2,
+    "Em registro no SGI": 3,
+    "Em validação no SGI": 4,
+    "Não Iniciado": 5,
+    "TAP Reprovado": 6,
+    "Aguardando cadastro no SGI": 7,
+    "Aguardando planejamento": 8,
+    "Pausado": 11,
+    "Despriorizado": 17
+   }
+  },
+  "subelementos": {
+   "id": "subtasks_mm33p1kt",
+   "type": "subtasks"
+  },
+  "pontoFocal": {
+   "id": "person",
+   "type": "people"
+  },
+  "vignciaContratual": {
+   "id": "timerange_mm6vw3pb",
+   "type": "timeline"
+  },
+  "eixo": {
+   "id": "dropdown_mm38v0xw",
+   "type": "dropdown"
+  },
+  "gerente1": {
+   "id": "dropdown_mm6v1tw6",
+   "type": "dropdown"
+  },
+  "tipoDeContrato": {
+   "id": "dropdown_mm34venp",
+   "type": "dropdown"
+  },
+  "statusProspeco": {
+   "id": "dropdown_mm33pfht",
+   "type": "dropdown"
+  },
+  "tipoPlanejamento": {
+   "id": "dropdown_mm3a5hsg",
+   "type": "dropdown"
+  },
+  "avano": {
+   "id": "lookup_mm337trg",
+   "type": "mirror"
+  },
+  "prioridade": {
+   "id": "color_mm33f6am",
+   "type": "status",
+   "labels": {
+    "Não": 0,
+    "Baixa": 7,
+    "Crítico": 10,
+    "Média": 109,
+    "Alta": 110
+   }
+  },
+  "quadroDoPlanejamento": {
+   "id": "link_mm383m1p",
+   "type": "link"
+  },
+  "painelSgi": {
+   "id": "link_mm39c5rc",
+   "type": "link"
+  },
+  "dataValidaoSgi": {
+   "id": "date_mm4ycb3r",
+   "type": "date"
+  },
+  "incioPlanejamento": {
+   "id": "data",
+   "type": "date"
+  },
+  "alocaoGerente": {
+   "id": "date_mm33vrwt",
+   "type": "date"
+  },
+  "dataDeAssinatura": {
+   "id": "date_mm33km09",
+   "type": "date"
+  },
+  "calcPrazoDeConcluso": {
+   "id": "formula_mm33v8cc",
+   "type": "formula"
+  },
+  "prazoDeConcluso": {
+   "id": "formula_mm35rrft",
+   "type": "formula"
+  },
+  "msRefernciaResultado": {
+   "id": "color_mm34v1y5",
+   "type": "status",
+   "labels": {
+    "12.Dezembro": 0,
+    "11.Novembro": 1,
+    "10.Outubro": 2,
+    "09.Setembro": 3,
+    "08.Agosto": 4,
+    "N/A": 5,
+    "07.Julho": 6,
+    "06.Junho": 7,
+    "05.Maio": 8,
+    "04.Abril": 9,
+    "03.Março": 10,
+    "02.Fevereiro": 11,
+    "01.Janeiro": 12
+   }
+  },
+  "ltimoProdutoPrevisto": {
+   "id": "date_mm5g69fd",
+   "type": "date"
+  },
+  "uf": {
+   "id": "dropdown_mm3815pa",
+   "type": "dropdown"
+  },
+  "conclusoDoPlanejamento": {
+   "id": "date_mm3325j4",
+   "type": "date"
+  },
+  "resultadoConclusoPlanejamento": {
+   "id": "formula_mm3352pb",
+   "type": "formula"
+  },
+  "tempoDePlanejamento": {
+   "id": "formula_mm33q988",
+   "type": "formula"
+  },
+  "prazoRegistroSgi": {
+   "id": "formula_mm33q9bm",
+   "type": "formula"
+  },
+  "calcPrazoRegistroSgi": {
+   "id": "formula_mm3jrn1n",
+   "type": "formula"
+  },
+  "conclusoRegistroSgi": {
+   "id": "date_mm3397yt",
+   "type": "date"
+  },
+  "resultadoSgi": {
+   "id": "formula_mm33s95p",
+   "type": "formula"
+  },
+  "tempoRegistroSgi": {
+   "id": "formula_mm33r9s2",
+   "type": "formula"
+  },
+  "planilhaPlanejamento": {
+   "id": "link_mm34pjnd",
+   "type": "link"
+  },
+  "valorDoContrato": {
+   "id": "numeric_mm33ha60",
+   "type": "numbers"
+  },
+  "equipeOr": {
+   "id": "numeric_mm33x89s",
+   "type": "numbers"
+  },
+  "equipePlan": {
+   "id": "numeric_mm33rmra",
+   "type": "numbers"
+  },
+  "rSaldoEquipe": {
+   "id": "formula_mm33p5g8",
+   "type": "formula"
+  },
+  "rSaldoInsumos": {
+   "id": "formula_mm6crw51",
+   "type": "formula"
+  },
+  "oradoTotal": {
+   "id": "numeric_mm333732",
+   "type": "numbers"
+  },
+  "oradoInsumos": {
+   "id": "numeric_mm6cceqx",
+   "type": "numbers"
+  },
+  "planejadoInsumos": {
+   "id": "numeric_mm6c38bj",
+   "type": "numbers"
+  },
+  "planejadoTotal": {
+   "id": "numeric_mm33jpn2",
+   "type": "numbers"
+  },
+  "rSaldoTotal": {
+   "id": "formula_mm33av5w",
+   "type": "formula"
+  },
+  "it11": {
+   "id": "formula_mm34jx1f",
+   "type": "formula"
+  },
+  "it12": {
+   "id": "formula_mm34x4rw",
+   "type": "formula"
+  },
+  "it13": {
+   "id": "formula_mm34evxz",
+   "type": "formula"
+  },
+  "it14": {
+   "id": "formula_mm345wf4",
+   "type": "formula"
+  },
+  "mondayDocV2": {
+   "id": "direct_doc_mm386xze",
+   "type": "direct_doc"
+  },
+  "pendnciaSistema": {
+   "id": "text_mm3990vj",
+   "type": "text"
+  },
+  "pendnciaDeValidao": {
+   "id": "text_mm39657m",
+   "type": "text"
+  },
+  "pendnciaPlanejamento": {
+   "id": "text_mm39knp0",
+   "type": "text"
+  },
+  "radarMonitoramento": {
+   "id": "color_mm3zcq9z",
+   "type": "status",
+   "labels": {
+    "Alta Prob. de Repactuação": 0,
+    "Crono Produtos Pactuado": 3,
+    "Crono Produtos em Construção": 5
+   }
+  },
+  "cdigoProjeto": {
+   "id": "text_mm4dd4n0",
+   "type": "text"
+  },
+  "linkHistricoDeProjetos": {
+   "id": "board_relation_mm4dbzww",
+   "type": "board_relation"
+  },
+  "statusHistricoDeProjetos": {
+   "id": "lookup_mm4dprb8",
+   "type": "mirror"
+  },
+  "faixaDeComplexidadeEspelho": {
+   "id": "lookup_mm72vkd8",
+   "type": "mirror"
+  },
+  "nvelDeComplexidadeEspelho": {
+   "id": "lookup_mm72pfhy",
+   "type": "mirror"
+  },
+  "colocaoNvelDeMaturidadeDosProjetos": {
+   "id": "lookup_mm72889z",
+   "type": "mirror"
+  },
+  "botoLinkPlanMonit": {
+   "id": "button_mm4drjem",
+   "type": "button"
+  },
+  "linkToMapaDeGerentes": {
+   "id": "board_relation_mm5eyyvt",
+   "type": "board_relation"
+  },
+  "linkToMapaDeGerentes1": {
+   "id": "board_relation_mm5e21db",
+   "type": "board_relation"
+  },
+  "linkToMapaDeGerentes2": {
+   "id": "board_relation_mm5easxk",
+   "type": "board_relation"
+  },
+  "criaoQuadroDePlanejamentoDoProjeto": {
+   "id": "button_mm6chr0v",
+   "type": "button"
+  },
+  "abrangnciaDoProjetoCoverageCode": {
+   "id": "dropdown_mm6cxpgj",
+   "type": "dropdown"
+  },
+  "pas": {
+   "id": "text_mm6crjwh",
+   "type": "text"
+  },
+  "cliente": {
+   "id": "text_mm6cqc6v",
+   "type": "text"
+  },
+  "prazoIncioExecuo": {
+   "id": "date_mm6c7z59",
+   "type": "date"
+  },
+  "prazoTrminoExecuo": {
+   "id": "date_mm6cd45w",
+   "type": "date"
+  },
+  "tempoMdioDeRecebimento": {
+   "id": "numeric_mm6c9e48",
+   "type": "numbers"
+  },
+  "dataIncioExecuo": {
+   "id": "date_mm762pgv",
+   "type": "date"
+  },
+  "dataFimExecuo": {
+   "id": "date_mm76xjkw",
+   "type": "date"
+  },
+  "centroDeCusto": {
+   "id": "text_mm762gda",
+   "type": "text"
+  },
+  "idProjeto": {
+   "id": "text_mm76y727",
+   "type": "text"
+  },
+  "status": {
+   "id": "color_mm76p330",
+   "type": "status",
+   "labels": {
+    "Em Progresso": 0,
+    "Concluído": 1,
+    "Cancelado": 2,
+    "Em Planejamento": 3,
+    "Em Revisão": 4,
+    "Não Iniciado": 5,
+    "Iniciação": 6,
+    "Execução": 7,
+    "Encerramento": 8,
+    "Parado": 11,
+    "Despriorizado": 17
+   }
+  },
+  "nomeSgi": {
+   "id": "formula_mm76de1",
+   "type": "formula"
+  },
+  "alocaoDeEquipe": {
+   "id": "color_mm766rs9",
+   "type": "status",
+   "labels": {
+    "Equipe alocada": 3,
+    "Sem equipe": 4,
+    "Não preenchido": 5,
+    "Verificar": 17
+   }
+  },
+  "conclusoDoDimensionamento": {
+   "id": "date_mm7wr54s",
+   "type": "date"
+  },
+  "prazoDimensionamento": {
+   "id": "formula_mm7wr92h",
+   "type": "formula"
+  },
+  "diasDimensionamento": {
+   "id": "formula_mm7wx69z",
+   "type": "formula"
+  },
+  "io211NoPrazo": {
+   "id": "formula_mm7w17zq",
+   "type": "formula"
+  },
+  "io212Adequado": {
+   "id": "formula_mm7w4dy5",
+   "type": "formula"
+  },
+  "dimensionamentoConcludo": {
+   "id": "color_mm7y8hwt",
+   "type": "status",
+   "labels": {
+    "Concluído": 1,
+    "Não concluído": 5
+   }
+  },
+  "SaldoEquipe": {
+   "id": "formula_mm3448h8",
+   "type": "formula"
+  },
+  "SaldoInsumos": {
+   "id": "formula_mm6cqeep",
+   "type": "formula"
+  },
+  "SaldoTotal": {
+   "id": "formula_mm34y3tj",
+   "type": "formula"
+  }
+ }
+}

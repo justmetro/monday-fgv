@@ -1,0 +1,14 @@
+{
+  "version": "1.0.0",
+  "app": {
+    "name": "02.02 Esteira de Planejamento",
+    "slug": "fgvdgpe-projetos_esteira_planejamento",
+    "description": "Monitorar prazos, controlar planejamentos. Substitui o Vibe 02.02 Esteira de Planejamento (10551860).",
+    "color": "#F3D6FD",
+    "oauth": { "scopes": ["boards:read", "me:read", "users:read"] },
+    "features": [
+      { "key": "esteira_planejamento", "type": "AppFeatureBoardView", "name": "02.02 Esteira de Planejamento", "schemaVersion": "18",
+        "data": { "name": "02.02 Esteira de Planejamento", "mode": "iframe", "hideSidekick": false, "query_parmas": true, "hideBoardControls": false, "isMobileSupported": false } }
+    ]
+  }
+}

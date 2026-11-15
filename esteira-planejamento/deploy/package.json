@@ -1,0 +1,2 @@
+{ "name": "continuidade-server", "version": "1.0.0", "private": true, "main": "server.js",
+  "engines": { "node": ">=24.22" }, "scripts": { "start": "node server.js" }, "dependencies": { "mongodb": "^6.10.0" } }

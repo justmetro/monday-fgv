@@ -1,0 +1,17 @@
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import './index.css';
+import '@generated/theme-tokens.css';
+import { QueryClientProvider, vibeQueryClient } from '@vibe/db/client';
+import { MondayContextProvider } from '@/context/MondayContextProvider';
+import App from '@generated/App';
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <QueryClientProvider client={vibeQueryClient}>
+      <MondayContextProvider>
+        <App />
+      </MondayContextProvider>
+    </QueryClientProvider>
+  </StrictMode>
+);
