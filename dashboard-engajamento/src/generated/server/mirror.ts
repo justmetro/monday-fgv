@@ -44,7 +44,8 @@ import { assertTokenOwner } from './session.server';
 const claimSchema = z
   .object({ id: z.union([z.string(), z.number()]).optional(), email: z.string().optional(), name: z.string().optional(), isAdmin: z.boolean().optional() })
   .optional();
-const tokenSchema = z.string().trim().min(1, 'Informe o token da API do monday.').max(2000);
+// O app grava com o login de quem usa a tela; o token digitado não é mais usado.
+const tokenSchema = z.unknown().optional().transform(() => 'app' as string);
 const groupSchema = z.string().trim().min(1).max(255);
 const RUN_LOCK_STALE_MS = 3 * 60 * 1000;
 
@@ -68,7 +69,7 @@ const isoSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
 /** Base antiga, passo 1: grava a semana na Base com o intervalo e os checks da regra antiga (sem remover checks). */
 export const applyLegacyWeekToBase = createServerFn({ method: 'POST' })
-  .validator(z.object({ token: z.string().max(2000).optional(), groupName: groupSchema, analysisDate: isoSchema, weekStart: isoSchema, weekEnd: isoSchema, rows: z.array(rowSchema).max(20000), rewrite: z.boolean().optional(), clientClaim: claimSchema }))
+  .validator(z.object({ token: z.unknown().optional().transform(() => 'app' as string), groupName: groupSchema, analysisDate: isoSchema, weekStart: isoSchema, weekEnd: isoSchema, rows: z.array(rowSchema).max(20000), rewrite: z.boolean().optional(), clientClaim: claimSchema }))
   .handler(async ({ data }) => {
     const session = await requireManager(data.clientClaim);
     await assertTokenOwner(session, data.token);
@@ -106,7 +107,7 @@ async function sameDateRuns(analysisDate: string) {
 
 /** Linhas da semana na Base, histórico da data e (se houver token) as colunas do quadro, para a prévia. */
 export const getWeekPreviewContext = createServerFn({ method: 'POST' })
-  .validator(z.object({ token: z.string().max(2000).optional(), groupName: groupSchema, analysisDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), clientClaim: claimSchema }))
+  .validator(z.object({ token: z.unknown().optional().transform(() => 'app' as string), groupName: groupSchema, analysisDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), clientClaim: claimSchema }))
   .handler(async ({ data }) => {
     await requireManager(data.clientClaim);
     const { rows } = await loadBaseRows();
@@ -178,7 +179,7 @@ export const getWeekPreviewContext = createServerFn({ method: 'POST' })
  * Chamada só depois da prévia e das travas; a regravação é feita em seguida pelos passos normais da Base antiga.
  */
 export const resetLegacyWeekForRewrite = createServerFn({ method: 'POST' })
-  .validator(z.object({ token: z.string().min(1).max(2000), groupName: groupSchema, analysisDate: isoSchema, weekStart: isoSchema, weekEnd: isoSchema, clientClaim: claimSchema }))
+  .validator(z.object({ token: z.unknown().optional().transform(() => 'app' as string), groupName: groupSchema, analysisDate: isoSchema, weekStart: isoSchema, weekEnd: isoSchema, clientClaim: claimSchema }))
   .handler(async ({ data }) => {
     const session = await requireManager(data.clientClaim);
     await assertTokenOwner(session, data.token);
@@ -229,7 +230,7 @@ export const resetLegacyWeekForRewrite = createServerFn({ method: 'POST' })
 
 /** Passo 1: grava a semana na Base (uma linha por pessoa + semana, sem remover checks). */
 export const applyWeekToBase = createServerFn({ method: 'POST' })
-  .validator(z.object({ token: z.string().max(2000).optional(), groupName: groupSchema, analysisDate: isoSchema, weekStart: isoSchema, weekEnd: isoSchema, allowPeriodChange: z.boolean().optional(), rows: z.array(rowSchema).max(20000), deactivations: z.array(z.object({ name: z.string().max(500), email: z.string().max(500) })).max(20000).optional(), clientClaim: claimSchema }))
+  .validator(z.object({ token: z.unknown().optional().transform(() => 'app' as string), groupName: groupSchema, analysisDate: isoSchema, weekStart: isoSchema, weekEnd: isoSchema, allowPeriodChange: z.boolean().optional(), rows: z.array(rowSchema).max(20000), deactivations: z.array(z.object({ name: z.string().max(500), email: z.string().max(500) })).max(20000).optional(), clientClaim: claimSchema }))
   .handler(async ({ data }) => {
     const session = await requireManager(data.clientClaim);
     await assertTokenOwner(session, data.token);

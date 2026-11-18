@@ -41,7 +41,8 @@ import { assertTokenOwner } from './session.server';
 const claimSchema = z
   .object({ id: z.union([z.string(), z.number()]).optional(), email: z.string().optional(), name: z.string().optional(), isAdmin: z.boolean().optional() })
   .optional();
-const tokenSchema = z.string().trim().min(1, 'Informe o token da API do monday.').max(2000);
+// O app grava com o login de quem usa a tela; o token digitado não é mais usado.
+const tokenSchema = z.unknown().optional().transform(() => 'app' as string);
 const SYNC_DOC_ID = 'main_sync';
 
 const rowSchema = z.object({
@@ -128,7 +129,7 @@ export const reprocessWeekChecks = createServerFn({ method: 'POST' })
 
 /** Apaga a Base interna (linhas e metadados). O quadro não é afetado. */
 export const clearBaseData = createServerFn({ method: 'POST' })
-  .validator(z.object({ token: z.string().max(2000).optional(), clientClaim: claimSchema }))
+  .validator(z.object({ token: z.unknown().optional().transform(() => 'app' as string), clientClaim: claimSchema }))
   .handler(async ({ data }) => {
     const session = await requireBaseAccess(data.clientClaim);
     await assertTokenOwner(session, data.token);
@@ -184,7 +185,7 @@ export const updateBaseRows = createServerFn({ method: 'POST' })
         userStatus: z.string().max(200),
         checkedDays: z.array(z.string().max(5)).max(7),
       })).min(1).max(2000),
-      token: z.string().max(2000).optional(),
+      token: z.unknown().optional().transform(() => 'app' as string),
       clientClaim: claimSchema,
     })
   )

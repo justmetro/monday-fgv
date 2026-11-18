@@ -31,7 +31,7 @@ export function BaseEditDialog({ rows, saving, onClose, onSave }: Props) {
   const [edits, setEdits] = useState<RowEdit[]>(() => rows.map(toEdit));
   const [idx, setIdx] = useState(0);
   const [reviewing, setReviewing] = useState(false);
-  const [token, setToken] = useState('');
+  const token = 'app';
   const row = rows[idx];
   const edit = edits[idx];
   if (!row || !edit) return null;
@@ -72,10 +72,7 @@ export function BaseEditDialog({ rows, saving, onClose, onSave }: Props) {
                 return <li key={e.key} className="rounded-xl bg-muted/50 px-3 py-2 break-words"><span className="font-medium text-foreground">{r?.name}</span> <span className="text-muted-foreground">· {r?.group} · {diffs.join(' · ')}</span></li>;
               })}
             </ul>
-            <label className="block space-y-1 text-xs font-medium text-foreground">Token da API do monday (para espelhar no quadro)
-              <input type="password" autoComplete="off" className={inputCls} value={token} onChange={(e) => setToken(e.target.value)} placeholder="Cole seu token (não é guardado)" />
-              <span className="block font-normal text-muted-foreground">Primeiro grava na Base; depois envia ao quadro e confere lendo de volta. Sem token, a edição fica na fila da semana.</span>
-            </label>
+            <p className="text-xs text-muted-foreground">Primeiro grava na Base; depois envia ao quadro com o seu login no monday e confere lendo de volta.</p>
           </div>
         ) : (
           <div className="space-y-3">

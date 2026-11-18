@@ -21,7 +21,8 @@ export function ApiImportPanel({ onImported, onReportChange }: Props) {
   const { session } = useUserSession();
 
   // Estado efêmero do token (nunca salvo nem persistido)
-  const [token, setToken] = useState('');
+  // A leitura usa a autorização do app; não é preciso token pessoal.
+  const token = 'app';
 
   // IDs dos quadros (salvos no Vibe DB)
   const [engBoardId, setEngBoardId] = useState('');
@@ -126,7 +127,6 @@ export function ApiImportPanel({ onImported, onReportChange }: Props) {
       setError(errorText(e, 'Não foi possível importar pela API do monday.'));
     } finally {
       // Regra de segurança: token sempre limpo ao terminar (sucesso ou erro)
-      setToken('');
       setProgress(null);
       setBusy(false);
     }
@@ -141,12 +141,9 @@ export function ApiImportPanel({ onImported, onReportChange }: Props) {
             <h3 className="text-base font-medium text-foreground">Importação Direta pela API do monday</h3>
           </div>
           <p className="text-xs text-muted-foreground mt-1 max-w-2xl leading-relaxed">
-            Consulte os quadros diretamente com o seu token pessoal de API. O token fica apenas na memória da página durante a execução e nunca é salvo.
+            Consulta os quadros direto no monday, sem token pessoal.
           </p>
         </div>
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-muted text-[11px] text-muted-foreground shrink-0">
-          <Lock className="w-3 h-3" /> Token não armazenado
-        </span>
       </div>
 
       {/* IDs dos Quadros */}
@@ -204,25 +201,6 @@ export function ApiImportPanel({ onImported, onReportChange }: Props) {
         </div>
       </div>
 
-      {/* Campo de Senha para Token Pessoal */}
-      <div className="space-y-1.5">
-        <label htmlFor="monday-api-token" className="block text-xs font-medium text-foreground">
-          Token da API do monday
-        </label>
-        <input
-          id="monday-api-token"
-          type="password"
-          autoComplete="off"
-          placeholder="Cole seu token pessoal do monday.com (ex: eyJhbGciOi...)"
-          value={token}
-          onChange={(e) => setToken(e.target.value)}
-          disabled={busy}
-          className="w-full h-10 text-xs px-3 rounded-lg border border-border bg-background text-foreground font-mono focus:outline-none focus:ring-1 focus:ring-ring"
-        />
-        <p className="text-[11px] text-muted-foreground">
-          Obtenha seu token pessoal em <em>Avatar &gt; Desenvolvedores &gt; Minha chave de API (V2)</em>. O token é descartado assim que a importação finaliza.
-        </p>
-      </div>
 
       {/* Botão de Ação */}
       <div className="flex justify-end">

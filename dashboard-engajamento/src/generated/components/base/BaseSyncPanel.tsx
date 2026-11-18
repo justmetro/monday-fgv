@@ -12,14 +12,14 @@ type Preview = Awaited<ReturnType<typeof compareBoardAndBase>>['preview'];
 const when = (iso: string) => new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
 export function BaseSyncPanel({ clientClaim, sync, queues, onChanged }: Props) {
-  const [token, setToken] = useState('');
+  const token = 'app';
   const [busy, setBusy] = useState<'compare' | 'preview' | 'apply' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
   const [preview, setPreview] = useState<Preview | null>(null);
   const runner = usePanelUploadRunner(clientClaim, onChanged);
 
-  const needToken = () => { if (token.trim()) return false; setError('Informe o token da API do monday.'); return true; };
+  const needToken = () => false;
   const run = async (kind: 'compare' | 'preview', after?: (p: Preview) => void) => {
     if (needToken()) return;
     setBusy(kind); setError(null); setOk(null);
@@ -61,11 +61,6 @@ export function BaseSyncPanel({ clientClaim, sync, queues, onChanged }: Props) {
   return (
     <div className="space-y-4">
       <div className="grid sm:grid-cols-[1fr_auto] gap-2 items-end">
-        <label className="space-y-1.5 text-xs font-medium text-[hsl(var(--brand-navy))]">
-          <span className="flex items-center gap-1.5"><KeyRound className="w-3.5 h-3.5" /> Token pessoal da API monday</span>
-          <input type="password" autoComplete="off" value={token} onChange={(e) => setToken(e.target.value)} placeholder="Cole seu token (não é guardado)"
-            className="w-full h-11 px-3 rounded-xl border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
-        </label>
         <div className="flex flex-wrap gap-2">
           <button type="button" disabled={locked} onClick={() => void run('compare')} className="h-11 px-4 rounded-xl border border-border bg-background text-xs font-medium hover:bg-muted disabled:opacity-50 inline-flex items-center gap-1.5">
             {busy === 'compare' && <Loader2 className="w-3.5 h-3.5 animate-spin" />} Conferir sincronia

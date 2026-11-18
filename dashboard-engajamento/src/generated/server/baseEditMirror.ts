@@ -49,7 +49,7 @@ export const mirrorEditedRows = createServerFn({ method: 'POST' })
   .validator(
     z.object({
       keys: z.array(z.string().min(1).max(800)).min(1).max(200),
-      token: z.string().trim().max(2000).optional(),
+      token: z.unknown().optional().transform(() => 'app' as string),
       clientClaim: claimSchema,
     })
   )

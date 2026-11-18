@@ -5,6 +5,7 @@ import path from 'node:path';
 import { reqCtx, type ReqCtx } from './context';
 import type { ServerFn } from './serverFn';
 import { startJob } from './jobs';
+import { pendentes, registrarResultado } from './relay';
 import { oauthStart, oauthCallback, oauthStatus, lembrarCliente } from './oauth';
 import { MODULES } from './registry';
 
@@ -63,6 +64,8 @@ const server = http.createServer(async (req, res) => {
       const ctx = verifySession(String(req.headers.authorization ?? ''));
       if (!ctx) return send(res, 401, { ok: false, error: 'Sessão do monday inválida ou expirada. Recarregue a página.' });
       const body = JSON.parse((await readBody(req)) || '{}');
+      const callId = String(req.headers['x-call-id'] ?? '');
+      if (/^[a-f0-9]{16,64}$/.test(callId)) ctx.callId = callId;
       try {
         const result = await reqCtx.run(ctx, () => fn.run(body?.data ?? undefined));
         return send(res, 200, { ok: true, result: result ?? null });
@@ -70,7 +73,22 @@ const server = http.createServer(async (req, res) => {
         const msg = zodMessage(e) ?? (e instanceof Error ? e.message : String(e));
         console.error(`[fn ${id}]`, msg);
         return send(res, 200, { ok: false, error: msg.slice(0, 1000) });
+      } finally {
+        // Rotinas que continuam depois da resposta não têm mais o navegador: gravam com o token do app.
+        ctx.encerrada = true;
       }
+    }
+    if (req.method === 'POST' && (p === '/_mut/pendentes' || p === '/_mut/resultado')) {
+      const ctx = verifySession(String(req.headers.authorization ?? ''));
+      if (!ctx) return send(res, 401, { ok: false, error: 'Sessão do monday inválida ou expirada. Recarregue a página.' });
+      const b = JSON.parse((await readBody(req, 20 * 1024 * 1024)) || '{}');
+      if (p === '/_mut/pendentes') {
+        const callId = String(b?.callId ?? '');
+        if (!/^[a-f0-9]{16,64}$/.test(callId)) return send(res, 400, { ok: false });
+        return send(res, 200, { ok: true, result: await pendentes(callId, ctx.userId) });
+      }
+      await registrarResultado(String(b?.id ?? ''), ctx.userId, b?.resposta ?? null, b?.erro);
+      return send(res, 200, { ok: true });
     }
     // Agendador do monday code: /mndy-cronjob/<job>
     if (p.startsWith('/mndy-cronjob/') || p.startsWith('/cron/')) {

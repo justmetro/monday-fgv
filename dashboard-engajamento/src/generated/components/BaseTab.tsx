@@ -274,10 +274,6 @@ export function BaseTab({ session, onBaseUpdated }: Props) {
               <span>Digite <strong>APAGAR</strong> para confirmar</span>
               <input value={deleteWord} onChange={(e) => setDeleteWord(e.target.value)} autoFocus className="w-full h-11 px-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
             </label>
-            <label className="block space-y-1.5 text-xs text-foreground">
-              <span>Token da API do monday (confirma que é a sua conta; não é salvo)</span>
-              <input type="password" value={deleteToken} onChange={(e) => setDeleteToken(e.target.value)} autoComplete="off" className="w-full h-11 px-3 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
-            </label>
             <div className="flex justify-end gap-2">
               <button type="button" onClick={() => setConfirmDelete(false)} className="h-10 px-4 rounded-xl border border-border text-xs">Cancelar</button>
               <button type="button" disabled={deleteWord.trim() !== 'APAGAR'} onClick={() => void doDelete()} className="h-10 px-4 rounded-xl bg-destructive text-card text-xs font-medium disabled:opacity-50">Apagar base</button>

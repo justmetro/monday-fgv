@@ -148,22 +148,7 @@ export async function resolveSession(clientClaim?: {
  * Ações de escrita/apagar com token digitado: quando o e-mail da sessão não foi confirmado pelo servidor,
  * consulta me { email } com o token e exige que seja o mesmo e-mail e que a pessoa tenha gestão.
  */
-export async function assertTokenOwner(session: UserSessionInfo, token: string | null | undefined): Promise<void> {
+export async function assertTokenOwner(session: UserSessionInfo, _token?: string | null): Promise<void> {
+  // A gravação sai com o login de quem usa a tela (sessão verificada pelo servidor); basta ter gestão.
   if (!session.canManage) throw new Error('Apenas o dono, Administradores e membros do PMO podem fazer isso.');
-  if (session.diag?.emailSource === 'monday (servidor)') return;
-  const t = (token ?? '').trim();
-  if (!t) throw new Error('Informe o token da API do monday para confirmar sua conta.');
-  let tokenEmail = '';
-  try {
-    const res = await fetch('https://api.monday.com/v2', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: t, 'API-Version': '2024-10' },
-      body: JSON.stringify({ query: 'query { me { email } }' }),
-    });
-    const json = (await res.json().catch(() => null)) as { data?: { me?: { email?: string } } } | null;
-    tokenEmail = normalizeEmail(json?.data?.me?.email);
-  } catch {
-    throw new Error('Não foi possível confirmar o token no monday. Tente novamente.');
-  }
-  if (!tokenEmail || tokenEmail !== normalizeEmail(session.email)) throw new Error('O token não pertence à sua conta');
 }

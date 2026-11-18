@@ -67,7 +67,7 @@ export function UpdatePanelTab({ snapshot, onSnapshotUpdated }: Props) {
   const [activeSubSection, setActiveSubSection] = useState<'upload' | 'sync_boards' | 'de_para' | 'pmo'>('upload');
 
   // Token para a aba
-  const [token, setToken] = useState('');
+  const token = 'app';
   const [file, setFile] = useState<File | null>(null);
   const [groupName, setGroupName] = useState('');
   const [analysisDate, setAnalysisDate] = useState('');
@@ -133,7 +133,6 @@ export function UpdatePanelTab({ snapshot, onSnapshotUpdated }: Props) {
   const [queueKey, setQueueKey] = useState(0);
   const runner = usePanelUploadRunner(clientClaim, () => {
     setQueueKey((k) => k + 1);
-    setToken('');
     void loadHistory();
     onSnapshotUpdated?.();
   });
@@ -147,7 +146,6 @@ export function UpdatePanelTab({ snapshot, onSnapshotUpdated }: Props) {
 
   const makePreview = async () => {
     setMessage(null);
-    if (!token.trim()) return setMessage('Informe o token da API do monday para continuar.');
     if (!file) return setMessage('Escolha o arquivo CSV.');
     if (!groupName.trim()) return setMessage('Informe o nome do grupo.');
     if (!analysisDate) return setMessage('Informe a data da análise.');
@@ -221,7 +219,6 @@ export function UpdatePanelTab({ snapshot, onSnapshotUpdated }: Props) {
   };
 
   const resume = async () => {
-    if (!token.trim()) return setMessage('Informe o token da API do monday para reenviar as pendências.');
     const s = readSettings();
     if (!s.ok) return setMessage(s.message);
     if (!runner.run) return;
@@ -232,7 +229,6 @@ export function UpdatePanelTab({ snapshot, onSnapshotUpdated }: Props) {
 
   /** Reenvia ao quadro a fila de uma semana (botão da fila), mesmo sem gravação aberta nesta tela. */
   const resendGroup = async (group: string) => {
-    if (!token.trim()) return setMessage('Informe o token da API do monday (campo acima) para reenviar as pendências.');
     const s = readSettings();
     if (!s.ok) return setMessage(s.message);
     setMessage(null);
@@ -320,21 +316,6 @@ export function UpdatePanelTab({ snapshot, onSnapshotUpdated }: Props) {
             </div>
 
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              <div className="space-y-1.5">
-                <label htmlFor="up-token" className="text-[11px] font-medium text-[hsl(var(--brand-navy))] flex items-center gap-1">
-                  <KeyRound className="w-3 h-3" /> Token da API do monday
-                </label>
-                <input
-                  id="up-token"
-                  type="password"
-                  autoComplete="off"
-                  value={token}
-                  onChange={(e) => setToken(e.target.value)}
-                  disabled={runner.running}
-                  className={inputCls}
-                  placeholder="Cole o token pessoal"
-                />
-              </div>
               <div className="space-y-1.5">
                 <label htmlFor="up-file" className="text-[11px] font-medium text-[hsl(var(--brand-navy))] flex items-center gap-1">
                   <FileUp className="w-3 h-3" /> Arquivo CSV

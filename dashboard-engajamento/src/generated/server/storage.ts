@@ -1,4 +1,5 @@
 import { createServerFn } from '@tanstack/react-start';
+import { respostaMonday } from '../../../server/monday';
 import { z } from 'zod';
 import { db } from '@vibe/db/server';
 import {
@@ -799,15 +800,9 @@ async function fetchMondayApi<T>(token: string, query: string, variables: Record
   let delay = 1000;
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    const response = await fetch('https://api.monday.com/v2', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: token.trim(),
-        'API-Version': '2024-10',
-      },
-      body: JSON.stringify({ query, variables }),
-    });
+    void token;
+    const { status, json: corpo } = await respostaMonday(query, variables, { versao: '2024-10' });
+    const response = { status, ok: status < 400, json: async () => corpo };
 
     if (response.status === 429) {
       if (attempt < maxRetries) {
@@ -841,7 +836,7 @@ async function fetchMondayApi<T>(token: string, query: string, variables: Record
 // ---------- Importação pela API (em etapas curtas, para não estourar o tempo do servidor) ----------
 
 const importIdsSchema = z.object({
-  token: z.string().min(1).max(2000),
+  token: z.unknown().optional().transform(() => 'app' as string),
   engagementBoardId: z.string().min(1).max(100),
   projectsBoardId: z.string().min(1).max(100),
   clientClaim: clientClaimSchema,

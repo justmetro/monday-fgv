@@ -1,3 +1,4 @@
+import { respostaMonday } from '../../../server/monday';
 // Chamadas à API do monday para a aba "Atualizar Painel" (somente servidor).
 // O token nunca é registrado em logs nem devolvido ao navegador.
 import { parseDateFlexible, toISODate } from '@generated/lib/dates';
@@ -30,12 +31,8 @@ export async function mondayCallOnce<T>(
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), MONDAY_CALL_TIMEOUT_MS);
   try {
-    const res = await fetch('https://api.monday.com/v2', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: token, 'API-Version': '2024-10' },
-      body: JSON.stringify({ query, variables }),
-      signal: controller.signal,
-    });
+    const r0 = await respostaMonday(query, variables, { versao: '2024-10', signal: controller.signal });
+    const res = { status: r0.status, ok: r0.status < 400, json: async () => r0.json };
     if (res.status === 429) return { ok: false, retryable: true, message: 'Limite de requisições do monday atingido.' };
     if (res.status === 401 || res.status === 403) {
       return { ok: false, retryable: false, message: 'Token inválido ou sem permissão no quadro.' };
@@ -157,12 +154,8 @@ export async function mondayUpsertItemsBatch(
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), MONDAY_BATCH_TIMEOUT_MS);
   try {
-    const res = await fetch('https://api.monday.com/v2', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: token, 'API-Version': '2024-10' },
-      body: JSON.stringify({ query, variables: vars }),
-      signal: controller.signal,
-    });
+    const r0 = await respostaMonday(query, vars, { versao: '2024-10', signal: controller.signal });
+    const res = { status: r0.status, ok: r0.status < 400, json: async () => r0.json };
     if (!res.ok && res.status >= 500) {
       return { delivered: false, kind: 'servidor', message: `Erro temporário do monday (HTTP ${res.status}).` };
     }

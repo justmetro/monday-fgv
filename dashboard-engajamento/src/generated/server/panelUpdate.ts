@@ -45,7 +45,8 @@ const clientClaimSchema = z
   })
   .optional();
 
-const tokenSchema = z.string().trim().min(1, 'Informe o token da API do monday.').max(2000);
+// O app grava com o login de quem usa a tela; o token digitado não é mais usado.
+const tokenSchema = z.unknown().optional().transform(() => 'app' as string);
 const isoDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
 async function requireManager(claim: z.infer<typeof clientClaimSchema>): Promise<UserSessionInfo> {
