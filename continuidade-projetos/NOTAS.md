@@ -6,4 +6,4 @@ Quadros lidos: Histórico de Projetos 18399249920, Levantamento de Produtos 1839
 
 Build: `npm i --legacy-peer-deps && npm run build`; em deploy/: `npm i --package-lock-only`; publicar com `mapps code:push -a 12688562 -i <versão> -d deploy -f`.
 
-OAuth: o servidor usa o token OAuth do app guardado no banco (coleção app_oauth), autorizado uma vez por um admin em <servidor>/oauth/start; redirect URL cadastrada no Developer Center: <servidor>/oauth/callback. Situação em <servidor>/oauth/status. MONDAY_API_TOKEN fica só como reserva enquanto o app não estiver autorizado.
+OAuth: o servidor usa o token OAuth do app guardado no banco (coleção app_oauth), autorizado uma vez por um admin em https://live1-service-29669755-df0a7511.us.monday.app/oauth/start; redirect URL cadastrada no Developer Center: https://live1-service-29669755-df0a7511.us.monday.app/oauth/callback. Situação em .../oauth/status. Versão v2 (20379669) criada em 18/11/2026 com os escopos do OAuth (v1 20049935 ficou bloqueada); publicar com -i 20379669. MONDAY_API_TOKEN fica só como reserva enquanto o app não estiver autorizado.
