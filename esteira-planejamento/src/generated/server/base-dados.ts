@@ -9,7 +9,7 @@ export interface Avanco { concluidos: number; total: number; pct: number | null 
 type PaginaSub = { items: { id: string; subitems: { column_values: { text: string | null }[] }[] | null }[]; cursor: string | null };
 const CAMPOS_SUB = 'cursor items { id subitems { column_values(ids: ["status"]) { text } } }';
 
-async function buscarAvanco(): Promise<Map<string, Avanco>> {
+async function lerAvanco(): Promise<Map<string, Avanco>> {
   const { client } = await getServerApiClient();
   const mapa = new Map<string, Avanco>();
   const somar = (pg: PaginaSub | undefined) => {
@@ -70,11 +70,26 @@ async function buscarBase() {
     items.push(...(next?.items ?? []));
     cursor = next?.cursor ?? null;
   }
-  const avanco = await buscarAvanco().catch((e: unknown) => {
-    console.error('Leitura dos subitens (avanço) falhou', e);
-    return new Map<string, Avanco>();
-  });
-  return items.map((i) => ({ ...i, avanco: avanco.get(String(i.id)) ?? null }));
+  return items;
+}
+
+/** Subitens são lentos de ler (~8 s por página de 100); cache próprio de 5 min, fora da carga principal. */
+const TTL_AVANCO_MS = 5 * 60 * 1000;
+let cacheAvanco: { at: number; dados: Record<string, Avanco> } | null = null;
+let avancoEmVoo: Promise<Record<string, Avanco>> | null = null;
+
+export async function obterAvanco(force: boolean): Promise<Record<string, Avanco>> {
+  if (!force && cacheAvanco && Date.now() - cacheAvanco.at < TTL_AVANCO_MS) return cacheAvanco.dados;
+  if (!avancoEmVoo) {
+    avancoEmVoo = lerAvanco()
+      .then((m) => {
+        cacheAvanco = { at: Date.now(), dados: Object.fromEntries(m) };
+        return cacheAvanco.dados;
+      })
+      .finally(() => { avancoEmVoo = null; });
+  }
+  if (cacheAvanco && !force) return cacheAvanco.dados;
+  return avancoEmVoo;
 }
 
 export type BaseItem = Awaited<ReturnType<typeof buscarBase>>[number];
@@ -107,7 +122,7 @@ function recarregar(): Promise<BaseItem[]> {
       // Fresh single-item re-reads newer than this read's start win over it.
       const merged = items.map((i) => {
         const f = frescos.get(i.id);
-        return f && f.v > v0 ? { ...f.item, avanco: i.avanco } : i;
+        return f && f.v > v0 ? f.item : i;
       });
       for (const [id, f] of frescos) if (f.v <= v0) frescos.delete(id);
       cache = { at: Date.now(), items: merged };
@@ -138,8 +153,7 @@ export async function obterBase(force: boolean): Promise<{ items: BaseItem[]; at
 /** Re-reads one item (fresh formulas) and applies it to the cache; an older revalidation can't overwrite it. */
 export async function relerItem(id: string) {
   const v = versao;
-  const lido = await new Board0201ProjetosEmPlanejamentoBoard().item(id).withColumns([...COLUMNS]).execute();
-  const fresh: BaseItem | null = lido ? { ...lido, avanco: cache?.items.find((i) => i.id === lido.id)?.avanco ?? null } : null;
+  const fresh = await new Board0201ProjetosEmPlanejamentoBoard().item(id).withColumns([...COLUMNS]).execute();
   if (fresh) {
     frescos.set(fresh.id, { v, item: fresh });
     if (cache) cache = { ...cache, items: cache.items.map((i) => (i.id === fresh.id ? fresh : i)) };

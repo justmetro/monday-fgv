@@ -5,7 +5,7 @@ import { gerentesValidos } from '@generated/server/gerentes-cadastro';
 import getServerApiClient from '@api/api-client.server';
 import { BOARD_ID } from '@generated/lib/links';
 
-import { obterBase, relerItem, invalidarBase } from '@generated/server/base-dados';
+import { obterBase, relerItem, invalidarBase, obterAvanco } from '@generated/server/base-dados';
 import { invalidarMapa } from '@generated/server/mapa-dados';
 
 export const getBase = createServerFn({ method: 'POST' })
@@ -14,6 +14,11 @@ export const getBase = createServerFn({ method: 'POST' })
     // Esteira + Histórico, server cache 60 s (stale-while-revalidate); force skips the cache.
     return obterBase(!!data.force);
   });
+
+/** Avanço do planejamento por projeto (subitens), carregado à parte por ser lento. */
+export const getAvanco = createServerFn({ method: 'POST' })
+  .validator((d: unknown) => z.object({ force: z.boolean().optional() }).parse(d ?? {}))
+  .handler(async ({ data }) => obterAvanco(!!data.force));
 
 /** Current monday user — called once when the app opens. */
 export const getMe = createServerFn({ method: 'GET' })

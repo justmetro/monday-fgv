@@ -1,6 +1,8 @@
 import { TabelaScroll } from '@generated/components/TabelaScroll';
 import { NomeLink } from '@generated/components/NomeLink';
-import { Fragment, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
+import { getAvanco } from '@generated/server/projetos';
+import type { Avanco } from '@generated/server/base-dados';
 import { cn } from '@lib/utils';
 import { type Projeto, codigoDe, gerenteDe, fmtDate, DASH } from '@generated/lib/format';
 import { type Etapa, type Farol, etapasDe, severidade, proximoPrazo } from '@generated/lib/farol';
@@ -28,8 +30,8 @@ const SEG_REGRA: Record<Filtro, string> = {
 
 const AVANCO_REGRA = 'Avanço do planejamento: subitens do projeto no 02.01 com status Concluído ÷ total de subitens (os Despriorizados não entram na conta).';
 
-function AvancoCell({ p }: { p: Projeto }) {
-  const a = p.avanco;
+function AvancoCell({ a, carregando }: { a: Avanco | undefined; carregando: boolean }) {
+  if (carregando) return <td className="px-3 py-2 align-top text-[11px] text-muted-foreground">carregando…</td>;
   if (!a || !a.total) return <td className="px-3 py-2 align-top text-muted-foreground">{DASH}</td>;
   const pct = a.pct ?? 0;
   return (
@@ -64,6 +66,14 @@ export function PrazosTab({ items, onOpen }: { items: Projeto[]; onOpen: (p: Pro
   const [visiveis, setVisiveis] = useState(PAGE);
   const abAss = useAberto('prazos:assinados');
   const abPac = useAberto('prazos:pactuacao');
+  const [avanco, setAvanco] = useState<Record<string, Avanco> | null>(null);
+  useEffect(() => {
+    let vivo = true;
+    getAvanco({ data: {} })
+      .then((r) => { if (vivo) setAvanco(r ?? {}); })
+      .catch((e: unknown) => { console.error('Erro ao carregar avanço', e); if (vivo) setAvanco({}); });
+    return () => { vivo = false; };
+  }, []);
 
   const linhas = useMemo(() => {
     return items
@@ -180,7 +190,7 @@ export function PrazosTab({ items, onOpen }: { items: Projeto[]; onOpen: (p: Pro
                     <span className="mt-0.5 block truncate text-xs text-muted-foreground" title={gerenteDe(p)}>{gerenteDe(p)}</span>
                     <StatusPill label={p.statusPlanejamento} className="mt-1" />
                   </td>
-                  <AvancoCell p={p} />
+                  <AvancoCell a={avanco?.[String(p.id)]} carregando={avanco === null} />
                   {etapas.map((e) => <EtapaCell key={e.key} e={e} />)}
                 </tr>
                 ))}
