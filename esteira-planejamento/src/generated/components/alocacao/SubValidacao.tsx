@@ -150,7 +150,7 @@ export function SubValidacao({ ctx }: { ctx: AlocCtx }) {
             <FileText className="size-3.5" aria-hidden /> Gerar relatório{selecionados.length ? ` (${selecionados.length})` : ''}
           </button>
           <button type="button" onClick={() => setConfirmar(true)} disabled={!selecionados.length || rodando}
-            className={cn('relative h-11 rounded-[var(--radius-md)] border border-input bg-[hsl(var(--surface-3))] px-3 font-medium text-foreground hover:bg-[hsl(var(--surface-2))] disabled:opacity-50 md:h-8', selecionados.length > 0 && !rodando && 'fx-conic')}>
+            className={cn('relative h-11 rounded-[var(--radius-md)] border border-input bg-[hsl(var(--surface-3))] px-3 font-medium text-foreground hover:bg-[hsl(var(--surface-2))] disabled:opacity-50 md:h-8', selecionados.length > 0 && !rodando && '')}>
             Validar selecionadas
           </button>
         </div>

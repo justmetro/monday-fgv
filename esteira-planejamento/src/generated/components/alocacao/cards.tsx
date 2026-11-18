@@ -13,7 +13,7 @@ export function Cards({ cards, ativos, onClick, cols = 'sm:grid-cols-4 xl:grid-c
   cards: CardInfo[]; ativos?: Set<string>; onClick?: (k: string) => void; cols?: string;
 }) {
   return (
-    <div className={cn('fx-stagger grid grid-cols-2 gap-px overflow-hidden rounded-[var(--radius-lg)] border border-border bg-border', cols)}>
+    <div className={cn(' grid grid-cols-2 gap-px overflow-hidden rounded-[var(--radius-lg)] border border-border bg-border', cols)}>
       {cards.map((c) => {
         const ativo = !!ativos?.has(c.key);
         const titulo = (
@@ -144,7 +144,7 @@ function useAberto(chave: string | null, grupo?: string) {
 export function Secao({ titulo, aside, children, id, grupo }: { titulo: ReactNode; aside?: ReactNode; children: ReactNode; id?: string; grupo?: string }) {
   const { aberto, alternar } = useAberto(chaveDe(titulo, id), grupo);
   return (
-    <section className="fx-grain min-w-0 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+    <section className=" min-w-0 overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
       <header className={cn('flex flex-wrap items-center justify-between gap-2 px-4 py-2.5', aberto && 'border-b border-border')}>
         <h3 className="min-w-0 text-sm font-semibold text-foreground">
           <button type="button" onClick={alternar} aria-expanded={aberto}

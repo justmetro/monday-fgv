@@ -43,7 +43,7 @@ export interface GrupoAssinatura { label: string; n: number; orc: number; saldo:
  */
 export function ResumoCiclo({ res, t, grupos }: { res: ResAcumulado; t: Totais; grupos: GrupoAssinatura[] }) {
   return (
-    <section className="fx-rise fx-conic fx-grain relative overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+    <section className="fx-rise relative overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
       <div className="grid grid-cols-1 gap-x-8 gap-y-4 border-b border-border px-4 py-4 sm:px-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]">
         <div className="min-w-0">
           <p className="flex items-center gap-1 text-xs text-muted-foreground">

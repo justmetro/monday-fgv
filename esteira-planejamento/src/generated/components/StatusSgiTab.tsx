@@ -78,7 +78,7 @@ export function StatusSgiTab({ items, opcoes, onOpen, salvar }: Props) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="fx-stagger fx-conic fx-grain relative grid grid-cols-2 gap-px overflow-hidden rounded-[var(--radius-lg)] border border-border bg-border sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+      <div className=" relative grid grid-cols-2 gap-px overflow-hidden rounded-[var(--radius-lg)] border border-border bg-border sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
         {card(null, 'Total', items.length)}
         {ordem.map((k) => card(k, rotuloSgi(k), contagem.get(k) ?? 0))}
       </div>

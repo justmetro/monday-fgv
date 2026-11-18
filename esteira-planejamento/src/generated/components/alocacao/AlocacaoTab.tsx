@@ -166,9 +166,9 @@ export function AlocacaoTab({ base, mapaState, sub, setSub, onItem, eixoOpts, dd
   if (!modelo || !api.dados || !mapa) {
     return (
       <div className="flex flex-col gap-3" aria-busy="true" aria-label="Carregando alocação de gerentes">
-        <Skeleton className="fx-shimmer h-10 w-full max-w-md bg-[hsl(var(--surface-2))]" />
-        <Skeleton className="fx-shimmer h-44 w-full bg-[hsl(var(--surface-2))]" />
-        <Skeleton className="fx-shimmer h-64 w-full bg-[hsl(var(--surface-2))]" />
+        <Skeleton className=" h-10 w-full max-w-md bg-[hsl(var(--surface-2))]" />
+        <Skeleton className=" h-44 w-full bg-[hsl(var(--surface-2))]" />
+        <Skeleton className=" h-64 w-full bg-[hsl(var(--surface-2))]" />
       </div>
     );
   }

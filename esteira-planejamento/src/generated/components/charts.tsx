@@ -10,7 +10,6 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { useReducedMotion } from '@generated/components/fx/motion';
 
 export interface Datum {
   label: string;
@@ -46,8 +45,8 @@ function gradiente(id: string, vertical?: boolean) {
   return (
     <defs>
       <linearGradient id={id} x1="0" y1={vertical ? '1' : '0'} x2={vertical ? '0' : '1'} y2="0">
-        <stop offset="0%" stopColor="hsl(212 74% 58%)" />
-        <stop offset="100%" stopColor="hsl(199 55% 52%)" />
+        <stop offset="0%" stopColor="hsl(var(--chart-1))" />
+        <stop offset="100%" stopColor="hsl(var(--chart-2))" />
       </linearGradient>
     </defs>
   );
@@ -56,7 +55,6 @@ function gradiente(id: string, vertical?: boolean) {
 export function HBarChart({ data, height, labelWidth = 170, onSelect, selected }: { data: Datum[]; height: number; labelWidth?: number } & Clicavel) {
   const gid = `hb-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
   const [hover, setHover] = useState<number | null>(null);
-  const reduz = useReducedMotion();
   return (
     <ResponsiveContainer width="100%" height={height}>
       <BarChart data={data} layout="vertical" margin={{ top: 4, right: 36, bottom: 4, left: 4 }} barCategoryGap={6}
@@ -67,7 +65,7 @@ export function HBarChart({ data, height, labelWidth = 170, onSelect, selected }
         <YAxis type="category" dataKey="label" width={labelWidth} tick={{ fill: 'hsl(var(--foreground))', fontSize: 12 }}
           axisLine={false} tickLine={false} interval={0} />
         <Tooltip cursor={{ fill: 'hsl(var(--surface-3))' }} content={<TipBox />} />
-        <Bar dataKey="value" radius={[0, 4, 4, 0]} maxBarSize={18} isAnimationActive={!reduz} animationDuration={600}
+        <Bar dataKey="value" radius={[0, 4, 4, 0]} maxBarSize={18} isAnimationActive={false}
           className={onSelect ? 'cursor-pointer' : undefined}
           onMouseEnter={(_, i) => setHover(i)} onMouseLeave={() => setHover(null)}
           onClick={(_, i) => { const d = data[i]; if (d && onSelect) onSelect(d.label); }}>
@@ -86,7 +84,6 @@ export function HBarChart({ data, height, labelWidth = 170, onSelect, selected }
 export function VBarChart({ data, height, onSelect, selected }: { data: Datum[]; height: number } & Clicavel) {
   const gid = `vb-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
   const [hover, setHover] = useState<number | null>(null);
-  const reduz = useReducedMotion();
   return (
     <ResponsiveContainer width="100%" height={height}>
       <BarChart data={data} margin={{ top: 18, right: 8, bottom: 0, left: -18 }} barCategoryGap={4} onMouseLeave={() => setHover(null)}>
@@ -95,7 +92,7 @@ export function VBarChart({ data, height, onSelect, selected }: { data: Datum[];
         <XAxis dataKey="label" tick={{ fill: AXIS, fontSize: 11 }} axisLine={false} tickLine={false} interval={0} />
         <YAxis allowDecimals={false} tick={{ fill: AXIS, fontSize: 11 }} axisLine={false} tickLine={false} />
         <Tooltip cursor={{ fill: 'hsl(var(--surface-3))' }} content={<TipBox />} />
-        <Bar dataKey="value" radius={[4, 4, 0, 0]} maxBarSize={28} isAnimationActive={!reduz} animationDuration={600}
+        <Bar dataKey="value" radius={[4, 4, 0, 0]} maxBarSize={28} isAnimationActive={false}
           className={onSelect ? 'cursor-pointer' : undefined}
           onMouseEnter={(_, i) => setHover(i)} onMouseLeave={() => setHover(null)}
           onClick={(_, i) => { const d = data[i]; if (d && onSelect) onSelect(d.label); }}>

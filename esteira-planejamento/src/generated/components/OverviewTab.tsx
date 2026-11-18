@@ -154,8 +154,8 @@ export function OverviewTab({ items: todos, concluidos, mostrar, opcoesStatus, s
       <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
         <SemEixoUf items={items} />
       </div>
-      <section className="fx-rise fx-conic fx-grain relative overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
-        <div className="fx-stagger grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="fx-rise relative overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
+        <div className=" grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
           <Kpi label="Projetos na esteira" n={items.length} fmt={(v) => fmtInt(Math.round(v))}
             regra="Quantidade de projetos do grupo Esteira no escopo dos filtros (sem cancelados). É a soma das barras do funil por Status Planejamento."
             foot={`Retrato atual · ${fmtInt(s.composicao.ativos)} ativos · ${fmtInt(s.composicao.finalizados)} finalizados · soma do funil`} />

@@ -1,15 +1,16 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react';
 import { filtrarPorFimAtuacao } from '@generated/lib/carga';
 import { Toaster } from '@components/ui/sonner';
-import { DotBackground } from '@generated/components/fx/DotBackground';
+import { useTema } from '@generated/hooks/useTema';
 import { comTransicao, piscar, useTabIndicator } from '@generated/components/fx/motion';
 import { TooltipProvider } from '@components/ui/tooltip';
 import { useSalvarProjeto } from '@generated/hooks/useSalvarProjeto';
 import { useNavigate, useSearch } from '@tanstack/react-router';
-import { AlertTriangle, ArrowRightLeft, BarChart3, LayoutGrid, CalendarClock, Wallet, ListTodo, RotateCw, UserX } from 'lucide-react';
-import { IndicadoresTab } from '@generated/components/indicadores/IndicadoresTab';
+import { AlertTriangle, ArrowRightLeft, BarChart3, LayoutGrid, CalendarClock, Wallet, ListTodo, RotateCw, UserX, Sun, Moon } from 'lucide-react';
+const IndicadoresTab = lazy(() => import('@generated/components/indicadores/IndicadoresTab').then((m) => ({ default: m.IndicadoresTab })));
 import { baseResAcumulado } from '@generated/lib/resAcumulado';
-import { AlocacaoTab, type Sub } from '@generated/components/alocacao/AlocacaoTab';
+import type { Sub } from '@generated/components/alocacao/AlocacaoTab';
+const AlocacaoTab = lazy(() => import('@generated/components/alocacao/AlocacaoTab').then((m) => ({ default: m.AlocacaoTab })));
 import { useMeusProjetos } from '@generated/hooks/useMeusProjetos';
 import { useOpcoesEdicao } from '@generated/hooks/useOpcoesEdicao';
 import { useMapaGerentes } from '@generated/hooks/useMapaGerentes';
@@ -22,9 +23,9 @@ import { type Projeto, toDate } from '@generated/lib/format';
 import type { Changes } from '@generated/server/projetos';
 import { FilterBar } from '@generated/components/FilterBar';
 import { OverviewTab } from '@generated/components/OverviewTab';
-import { PrazosTab } from '@generated/components/PrazosTab';
-import { FinanceiroTab } from '@generated/components/FinanceiroTab';
-import { StatusSgiTab } from '@generated/components/StatusSgiTab';
+const PrazosTab = lazy(() => import('@generated/components/PrazosTab').then((m) => ({ default: m.PrazosTab })));
+const FinanceiroTab = lazy(() => import('@generated/components/FinanceiroTab').then((m) => ({ default: m.FinanceiroTab })));
+const StatusSgiTab = lazy(() => import('@generated/components/StatusSgiTab').then((m) => ({ default: m.StatusSgiTab })));
 import { OPT } from '@generated/lib/board-options';
 import { ProjectSheet } from '@generated/components/ProjectSheet';
 import { PeriodoGlobalControle } from '@generated/components/PeriodoGlobalControle';
@@ -75,16 +76,16 @@ function LoadingSkeleton() {
       <div className="grid grid-cols-1 gap-px overflow-hidden rounded-[var(--radius-lg)] border border-border bg-border sm:grid-cols-2 xl:grid-cols-4">
         {[0, 1, 2, 3].map((i) => (
           <div key={i} className="flex flex-col gap-2 bg-card px-5 py-4">
-            <Skeleton className="fx-shimmer h-3 w-32 bg-[hsl(var(--surface-3))]" />
-            <Skeleton className="fx-shimmer h-9 w-24 bg-[hsl(var(--surface-3))]" />
-            <Skeleton className="fx-shimmer h-3 w-40 bg-[hsl(var(--surface-2))]" />
+            <Skeleton className="h-3 w-32 bg-[hsl(var(--surface-3))]" />
+            <Skeleton className="h-9 w-24 bg-[hsl(var(--surface-3))]" />
+            <Skeleton className="h-3 w-40 bg-[hsl(var(--surface-2))]" />
           </div>
         ))}
       </div>
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {[0, 1].map((i) => (
           <div key={i} className="flex flex-col gap-2.5 rounded-[var(--radius-lg)] border border-border bg-card p-4">
-            {[0, 1, 2, 3, 4, 5].map((j) => <Skeleton key={j} className="fx-shimmer h-5 bg-[hsl(var(--surface-2))]" />)}
+            {[0, 1, 2, 3, 4, 5].map((j) => <Skeleton key={j} className="h-5 bg-[hsl(var(--surface-2))]" />)}
           </div>
         ))}
       </div>
@@ -216,12 +217,12 @@ export default function App() {
     return ok;
   }, [salvarItem, atualizarSilencioso]);
   const tabs = useTabIndicator(aba);
+  const { tema, alternar: alternarTema } = useTema();
 
   return (
     <TooltipProvider delayDuration={150}>
     <AbrirProjetoCtx.Provider value={setAberto}>
-    <div className="dark relative isolate flex min-h-dvh flex-col bg-background text-foreground">
-      <DotBackground />
+    <div className="relative isolate flex min-h-dvh flex-col bg-background text-foreground">
       <header className="fx-glass sticky top-0 z-40">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-4 pt-3 md:px-6">
           <div className="min-w-0">
@@ -246,6 +247,12 @@ export default function App() {
                 {' '}· {aba === 'alocacao' ? 'alocação' : 'esteira'}
               </span>
             )}
+            <button type="button" onClick={alternarTema}
+              title={tema === 'dark' ? 'Mudar para o modo claro' : 'Mudar para o modo escuro'}
+              aria-label={tema === 'dark' ? 'Mudar para o modo claro' : 'Mudar para o modo escuro'}
+              className="inline-flex size-11 items-center justify-center rounded-[var(--radius-md)] border border-border bg-card text-muted-foreground transition-colors duration-150 hover:bg-[hsl(var(--surface-2))] hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:size-8">
+              {tema === 'dark' ? <Sun className="size-4" aria-hidden /> : <Moon className="size-4" aria-hidden />}
+            </button>
           </div>
         </div>
         {REF_PERIODO[aba] && (
@@ -313,6 +320,7 @@ export default function App() {
             </button>
           </div>
         ) : (
+          <Suspense fallback={<LoadingSkeleton />}>
           <div key={aba} className="fx-fade">
             {error && (
               <div role="alert" className="mb-3 flex flex-wrap items-center gap-2 rounded-[var(--radius-md)] border border-[hsl(var(--danger)/0.4)] bg-[hsl(var(--danger-soft))] px-3 py-2 text-[13px]">
@@ -331,12 +339,13 @@ export default function App() {
                 onItem={onItem} recarregarBase={atualizar} onContagem={setContagemAloc} periodo={periodo} eixoOpts={edicao.res?.opts.eixo ?? OPT.eixo} ddGerenteOpts={edicao.res?.opts.gerente1 ?? OPT.gerente1} />
             )}
           </div>
+          </Suspense>
         )}
       </main>
 
       <ProjectSheet projeto={aberto} onClose={() => setAberto(null)} edicao={edicao} salvar={salvar} salvando={salvando} />
       <Toaster
-        theme="dark"
+        theme={tema}
         position="bottom-right"
         toastOptions={{ classNames: { toast: '!bg-popover !text-popover-foreground !border-border !rounded-[var(--radius-lg)]', description: '!text-muted-foreground' } }}
       />

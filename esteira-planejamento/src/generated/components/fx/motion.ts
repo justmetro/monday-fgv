@@ -16,13 +16,9 @@ export function useReducedMotion() {
   return r;
 }
 
-type DocVT = Document & { startViewTransition?: (cb: () => Promise<void> | void) => unknown };
-
-/** Runs a tab change inside a View Transition, awaiting the (async) navigation; fallback: the existing fade. */
+/** Troca de aba direta (a View Transition foi retirada por desempenho). */
 export function comTransicao(fn: () => Promise<unknown> | void) {
-  const d = document as DocVT;
-  if (reduz() || !d.startViewTransition) { void fn(); return; }
-  d.startViewTransition(async () => { await fn(); });
+  void fn();
 }
 
 /** Sliding tab indicator: put `navRef` on a relative nav and render <span ref={indRef} className="fx-tab-ind" />. */

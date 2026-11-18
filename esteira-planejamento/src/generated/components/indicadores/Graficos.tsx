@@ -31,7 +31,7 @@ function TipValor({ active, payload, label }: { active?: boolean; payload?: { na
   );
 }
 
-export function OrcPlanMes({ dados, p, altura = 280, animar = true }: Base & { dados: PontoMes[] }) {
+export function OrcPlanMes({ dados, p, altura = 280, animar = false }: Base & { dados: PontoMes[] }) {
   return (
     <ResponsiveContainer width="100%" height={altura}>
       <BarChart data={dados} margin={{ top: 22, right: 8, bottom: 0, left: 4 }} barGap={2}>
@@ -69,7 +69,7 @@ const pctEixo = (v: number) => `${dec.format(v)}%`;
 const rotuloPct = (v: unknown) => (typeof v === 'number' ? pctEixo(v) : '');
 
 /** % of saldo per month (Saldo ÷ Orçado × 100, Total cut); the R$ stays in the tooltip. */
-export function SaldoMes({ dados, p, altura = 260, animar = true }: Base & { dados: PontoMes[] }) {
+export function SaldoMes({ dados, p, altura = 260, animar = false }: Base & { dados: PontoMes[] }) {
   return (
     <ResponsiveContainer width="100%" height={altura}>
       <LineChart data={dados} margin={{ top: 22, right: 16, bottom: 0, left: 4 }}>
@@ -85,7 +85,7 @@ export function SaldoMes({ dados, p, altura = 260, animar = true }: Base & { dad
   );
 }
 
-export function StatusBarras({ dados, p, animar = true }: Base & { dados: { label: string; value: number }[] }) {
+export function StatusBarras({ dados, p, animar = false }: Base & { dados: { label: string; value: number }[] }) {
   const altura = Math.max(120, dados.length * 30 + 20);
   return (
     <ResponsiveContainer width="100%" height={altura}>

@@ -1,9 +1,4 @@
-/** Light dotted background + top glow (two CSS layers, no element per dot). Render once, behind everything. */
+/** Fundo pontilhado retirado por desempenho; mantido como no-op para não quebrar imports. */
 export function DotBackground() {
-  return (
-    <>
-      <div aria-hidden className="fx-dots" />
-      <div aria-hidden className="fx-glow" />
-    </>
-  );
+  return null;
 }

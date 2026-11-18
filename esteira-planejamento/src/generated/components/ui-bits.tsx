@@ -105,7 +105,7 @@ export function Panel({
   const { aberto, alternar } = useAberto(recolhivel);
   const visivel = !recolhivel || aberto;
   return (
-    <section className={cn('fx-grain min-w-0 rounded-[var(--radius-lg)] border border-border bg-card', className)}>
+    <section className={cn(' min-w-0 rounded-[var(--radius-lg)] border border-border bg-card', className)}>
       {title && (
         <header className={cn('flex flex-wrap items-center justify-between gap-2 px-4 py-2.5', visivel && 'border-b border-border')}>
           <h2 className="min-w-0 text-sm font-semibold text-foreground">

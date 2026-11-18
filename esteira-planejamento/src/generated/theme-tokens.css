@@ -1,17 +1,17 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
 @reference "../index.css";
 
+/* Fontes do sistema (sem download externo): Segoe UI no Windows, SF no Mac. */
 :root {
-  --radius: 0.375rem;
-  --radius-sm: 3px;
-  --radius-md: 5px;
-  --radius-lg: 6px;
-  --radius-xl: 6px;
-  --radius-2xl: 8px;
+  --radius: 0.5rem;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --radius-2xl: 14px;
 
-  --font-heading: 'IBM Plex Sans', system-ui, sans-serif;
-  --font-body: 'IBM Plex Sans', system-ui, sans-serif;
-  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --font-heading: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-body: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Mono', Consolas, 'SF Mono', Menlo, monospace;
 
   --font-weight-light: 300;
   --font-weight-normal: 400;
@@ -21,48 +21,119 @@
 
   --spacing-unit: 0.25rem;
 
-  /* Ground + surfaces: one hue (institutional blue 216), lightness steps only */
-  --background: 216 14% 8%;
-  --foreground: 216 12% 91%;
-  --card: 216 13% 11%;
-  --card-foreground: 216 12% 91%;
-  --popover: 216 13% 12%;
-  --popover-foreground: 216 12% 91%;
-  --primary: 212 74% 58%;
-  --primary-foreground: 216 30% 8%;
-  --secondary: 216 12% 15%;
-  --secondary-foreground: 216 12% 88%;
-  --muted: 216 12% 14%;
-  --muted-foreground: 216 9% 63%;
-  --accent: 216 12% 17%;
-  --accent-foreground: 216 12% 93%;
-  --destructive: 0 62% 60%;
-  --border: 216 11% 19%;
-  --input: 216 11% 24%;
-  --ring: 212 74% 58%;
+  /* Modo claro: fundo cinza bem leve, cartões brancos, texto quase preto */
+  --background: 220 20% 97%;
+  --foreground: 222 28% 12%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 28% 12%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 28% 12%;
+  --primary: 213 72% 46%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 220 16% 94%;
+  --secondary-foreground: 222 28% 16%;
+  --muted: 220 16% 95%;
+  --muted-foreground: 220 9% 42%;
+  --accent: 220 16% 93%;
+  --accent-foreground: 222 28% 12%;
+  --destructive: 0 70% 50%;
+  --border: 220 14% 89%;
+  --input: 220 13% 84%;
+  --ring: 213 72% 46%;
 
-  --chart-1: 212 74% 58%;
+  --chart-1: 213 72% 50%;
+  --chart-2: 199 70% 42%;
+  --chart-3: 230 50% 60%;
+  --chart-4: 186 55% 36%;
+  --chart-5: 220 12% 56%;
+
+  --sidebar: 0 0% 100%;
+  --sidebar-foreground: 222 28% 16%;
+  --sidebar-primary: 213 72% 46%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 220 16% 94%;
+  --sidebar-accent-foreground: 222 28% 12%;
+  --sidebar-border: 220 14% 89%;
+  --sidebar-ring: 213 72% 46%;
+
+  --surface-chrome: 0 0% 100%;
+  --surface-2: 220 16% 95%;
+  --surface-3: 220 15% 91%;
+  --border-strong: 220 12% 78%;
+  --fg-subtle: 220 8% 50%;
+  --accent-soft: 213 72% 46% / 0.10;
+
+  --success: 148 60% 34%;
+  --success-soft: 148 60% 34% / 0.12;
+  --warning: 36 90% 40%;
+  --warning-soft: 36 90% 45% / 0.14;
+  --danger: 0 68% 48%;
+  --danger-soft: 0 68% 48% / 0.10;
+  --info: 213 72% 46%;
+  --info-soft: 213 72% 46% / 0.10;
+  --neutral-status: 220 8% 46%;
+  --neutral-soft: 220 8% 46% / 0.12;
+
+  --farol-red: 0 78% 52%;
+  --farol-green: 145 63% 40%;
+  --farol-yellow: 42 100% 47%;
+  --farol-blue: 210 90% 52%;
+  --farol-gray: 220 9% 58%;
+  --temp-reforco: 330 75% 52%;
+  --temp-assinado: 145 60% 38%;
+  --temp-15: 0 75% 52%;
+  --temp-30: 24 90% 50%;
+  --temp-45: 44 95% 45%;
+  --temp-mudanca: 268 55% 58%;
+  --temp-sem: 220 9% 56%;
+  --cap-curto: 210 85% 56%;
+  --cap-medio: 340 72% 76%;
+  --cap-longo: 268 55% 64%;
+  --cap-ink: 222 40% 10%;
+  color-scheme: light;
+}
+
+.dark {
+  --background: 220 14% 7%;
+  --foreground: 220 12% 92%;
+  --card: 220 13% 10%;
+  --card-foreground: 220 12% 92%;
+  --popover: 220 13% 11%;
+  --popover-foreground: 220 12% 92%;
+  --primary: 212 74% 60%;
+  --primary-foreground: 220 30% 8%;
+  --secondary: 220 12% 14%;
+  --secondary-foreground: 220 12% 88%;
+  --muted: 220 12% 13%;
+  --muted-foreground: 220 9% 63%;
+  --accent: 220 12% 16%;
+  --accent-foreground: 220 12% 93%;
+  --destructive: 0 62% 60%;
+  --border: 220 11% 17%;
+  --input: 220 11% 23%;
+  --ring: 212 74% 60%;
+
+  --chart-1: 212 74% 60%;
   --chart-2: 199 55% 52%;
   --chart-3: 228 45% 66%;
   --chart-4: 186 38% 46%;
-  --chart-5: 216 18% 52%;
+  --chart-5: 220 14% 52%;
 
-  --sidebar: 216 14% 9.5%;
-  --sidebar-foreground: 216 12% 88%;
-  --sidebar-primary: 212 74% 58%;
-  --sidebar-primary-foreground: 216 30% 8%;
-  --sidebar-accent: 216 12% 15%;
-  --sidebar-accent-foreground: 216 12% 93%;
-  --sidebar-border: 216 11% 19%;
-  --sidebar-ring: 212 74% 58%;
+  --sidebar: 220 14% 9%;
+  --sidebar-foreground: 220 12% 88%;
+  --sidebar-primary: 212 74% 60%;
+  --sidebar-primary-foreground: 220 30% 8%;
+  --sidebar-accent: 220 12% 15%;
+  --sidebar-accent-foreground: 220 12% 93%;
+  --sidebar-border: 220 11% 17%;
+  --sidebar-ring: 212 74% 60%;
 
-  /* Extra style tokens */
-  --surface-chrome: 216 15% 9.5%;
-  --surface-2: 216 12% 14%;
-  --surface-3: 216 12% 17%;
-  --border-strong: 216 10% 28%;
-  --fg-subtle: 216 8% 52%;
-  --accent-soft: 212 74% 58% / 0.14;
+  --surface-chrome: 220 14% 8.5%;
+  --surface-2: 220 12% 13%;
+  --surface-3: 220 12% 16%;
+  --border-strong: 220 10% 28%;
+  --fg-subtle: 220 8% 52%;
+  --accent-soft: 212 74% 60% / 0.14;
 
   --success: 148 48% 50%;
   --success-soft: 148 48% 50% / 0.14;
@@ -72,69 +143,26 @@
   --danger-soft: 0 62% 62% / 0.15;
   --info: 212 74% 62%;
   --info-soft: 212 74% 62% / 0.14;
-  --neutral-status: 216 8% 50%;
-  --neutral-soft: 216 8% 50% / 0.16;
+  --neutral-status: 220 8% 50%;
+  --neutral-soft: 220 8% 50% / 0.16;
 
-  /* Saturated farol dots (high contrast on the dark surfaces) */
   --farol-red: 0 88% 62%;
   --farol-green: 145 72% 46%;
   --farol-yellow: 44 100% 54%;
   --farol-blue: 210 100% 64%;
-  --farol-gray: 216 10% 58%;
-  /* Temperatura de assinatura (Alocação de Gerentes) */
+  --farol-gray: 220 10% 58%;
   --temp-reforco: 330 85% 66%;
   --temp-assinado: 145 66% 48%;
   --temp-15: 0 84% 62%;
   --temp-30: 26 94% 58%;
   --temp-45: 46 98% 56%;
   --temp-mudanca: 268 70% 74%;
-  --temp-sem: 216 10% 52%;
-  /* Capacidade no Gantt (Alocação por Gerente): azul / rosa claro / roxo + tinta escura para o texto nas barras */
+  --temp-sem: 220 10% 52%;
   --cap-curto: 210 88% 62%;
   --cap-medio: 340 78% 82%;
   --cap-longo: 268 62% 68%;
   --cap-ink: 222 40% 10%;
-}
-
-.dark {
-  --background: 216 14% 8%;
-  --foreground: 216 12% 91%;
-  --card: 216 13% 11%;
-  --card-foreground: 216 12% 91%;
-  --popover: 216 13% 12%;
-  --popover-foreground: 216 12% 91%;
-  --primary: 212 74% 58%;
-  --primary-foreground: 216 30% 8%;
-  --secondary: 216 12% 15%;
-  --secondary-foreground: 216 12% 88%;
-  --muted: 216 12% 14%;
-  --muted-foreground: 216 9% 63%;
-  --accent: 216 12% 17%;
-  --accent-foreground: 216 12% 93%;
-  --destructive: 0 62% 60%;
-  --border: 216 11% 19%;
-  --input: 216 11% 24%;
-  --ring: 212 74% 58%;
-
-  --chart-1: 212 74% 58%;
-  --chart-2: 199 55% 52%;
-  --chart-3: 228 45% 66%;
-  --chart-4: 186 38% 46%;
-  --chart-5: 216 18% 52%;
-
-  --sidebar: 216 14% 9.5%;
-  --sidebar-foreground: 216 12% 88%;
-  --sidebar-primary: 212 74% 58%;
-  --sidebar-primary-foreground: 216 30% 8%;
-  --sidebar-accent: 216 12% 15%;
-  --sidebar-accent-foreground: 216 12% 93%;
-  --sidebar-border: 216 11% 19%;
-  --sidebar-ring: 212 74% 58%;
-
-  --cap-curto: 210 88% 62%;
-  --cap-medio: 340 78% 82%;
-  --cap-longo: 268 62% 68%;
-  --cap-ink: 222 40% 10%;
+  color-scheme: dark;
 }
 
 body {
@@ -160,144 +188,34 @@ h1, h2, h3, h4, h5, h6 {
   font-variant-numeric: tabular-nums;
 }
 
-/* ---------- FX (visual only) — every animation is disabled under prefers-reduced-motion ---------- */
-@keyframes fx-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+/* Efeitos leves: só opacidade em transições curtas; nada infinito, sem blur, sem máscara, sem rastreio do mouse. */
 @keyframes fx-fade { from { opacity: 0; } to { opacity: 1; } }
-@keyframes fx-beam { from { offset-distance: 0%; } to { offset-distance: 100%; } }
+.fx-fade, .fx-rise { animation: fx-fade 120ms ease-out both; }
 
-.fx-fade { animation: fx-fade 150ms ease-out both; }
-.fx-rise { animation: fx-rise 420ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-/* Staggered entry of direct children (40 ms steps). */
-.fx-stagger > * { animation: fx-rise 420ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-.fx-stagger > *:nth-child(2) { animation-delay: 40ms; }
-.fx-stagger > *:nth-child(3) { animation-delay: 80ms; }
-.fx-stagger > *:nth-child(4) { animation-delay: 120ms; }
-.fx-stagger > *:nth-child(5) { animation-delay: 160ms; }
-.fx-stagger > *:nth-child(6) { animation-delay: 200ms; }
-.fx-stagger > *:nth-child(7) { animation-delay: 240ms; }
-.fx-stagger > *:nth-child(8) { animation-delay: 280ms; }
-.fx-stagger > *:nth-child(n + 9) { animation-delay: 320ms; }
-
-/* Border beam: the light travels along the rounded border; the mask keeps only the border ring. */
-.fx-beam-ring {
-  position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
-  border: 1px solid transparent;
-  mask: linear-gradient(transparent, transparent) padding-box, linear-gradient(#000, #000) border-box;
-  mask-composite: intersect;
-  -webkit-mask: linear-gradient(transparent, transparent) padding-box, linear-gradient(#000, #000) border-box;
-}
-.fx-beam-dot {
-  position: absolute; width: 80px; aspect-ratio: 1;
-  background: linear-gradient(to left, hsl(212 74% 58%), hsl(199 55% 52%), transparent);
-  offset-path: rect(0 auto auto 0 round 80px);
-  animation: fx-beam 8s linear infinite;
-}
-
-/* Spotlight following the pointer (--fx-x / --fx-y set by SpotlightCard, no re-render). */
-.fx-spot { position: relative; isolation: isolate; --fx-x: -999px; --fx-y: -999px; }
-.fx-spot::before {
-  content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none; z-index: 1;
-  background: radial-gradient(220px circle at var(--fx-x) var(--fx-y), hsl(212 74% 58%), hsl(199 55% 52% / 0.6), transparent 100%);
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor; mask-composite: exclude;
-  opacity: 0; transition: opacity 300ms ease;
-}
-.fx-spot::after {
-  content: ''; position: absolute; inset: 1px; border-radius: inherit; pointer-events: none; z-index: 1;
-  background: radial-gradient(220px circle at var(--fx-x) var(--fx-y), hsl(212 74% 58% / 0.10), transparent 100%);
-  opacity: 0; transition: opacity 300ms ease;
-}
-.fx-spot:hover::before, .fx-spot:hover::after { opacity: 1; }
-
-/* Light dotted background + top glow, painted once behind everything. */
-.fx-dots {
-  position: fixed; inset: 0; z-index: -10; pointer-events: none;
-  background-image: radial-gradient(hsl(216 10% 40% / 0.35) 1px, transparent 1px);
-  background-size: 18px 18px;
-  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
-  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
-}
-.fx-glow {
-  position: fixed; inset: 0; z-index: -10; pointer-events: none;
-  background: radial-gradient(ellipse 60% 40% at 50% -10%, hsl(212 74% 58% / 0.18), transparent 70%);
-}
-
-@layer base {
-  tbody tr { transition: background-color 150ms ease; }
-  tbody tr:hover { background-color: hsl(var(--surface-2) / 0.45); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .fx-fade, .fx-rise, .fx-stagger > * { animation: none !important; }
-  .fx-beam-ring { display: none; }
-  .fx-spot::before, .fx-spot::after, tbody tr { transition: none; }
-}
-.fx-spot > * { position: relative; z-index: 2; }
-
-/* ---------- FX v2 (visual only) ---------- */
-.fx-glass {
-  background: hsl(var(--surface-chrome) / 0.72);
-  backdrop-filter: blur(12px) saturate(140%);
-  -webkit-backdrop-filter: blur(12px) saturate(140%);
-  border-bottom: 1px solid hsl(var(--border) / 0.7);
-}
+.fx-glass { background: hsl(var(--surface-chrome)); border-bottom: 1px solid hsl(var(--border)); }
 
 .fx-tab-ind {
   position: absolute; bottom: 0; left: 0; width: 0; height: 2px; border-radius: 2px;
-  background: hsl(var(--primary)); box-shadow: 0 0 12px hsl(var(--primary) / 0.7);
-  transition: left 300ms cubic-bezier(0.22, 1, 0.36, 1), width 300ms cubic-bezier(0.22, 1, 0.36, 1);
+  background: hsl(var(--foreground));
+  transition: left 200ms ease, width 200ms ease;
   pointer-events: none;
 }
 
-::view-transition-old(root) { animation: fx-vt-out 160ms ease-in both; }
-::view-transition-new(root) { animation: fx-vt-in 220ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-@keyframes fx-vt-out { to { opacity: 0; transform: scale(0.995); } }
-@keyframes fx-vt-in { from { opacity: 0; transform: scale(1.005); } }
+.fx-num { color: hsl(var(--foreground)); }
 
-@property --fx-ang { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
-.fx-conic { position: relative; isolation: isolate; }
-.fx-conic::before {
-  content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none; z-index: 3;
-  background: conic-gradient(from var(--fx-ang), transparent 0 70%, hsl(212 74% 58%) 85%, hsl(199 55% 52%) 92%, transparent 100%);
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor; mask-composite: exclude;
-  animation: fx-spin 6s linear infinite;
-}
-@keyframes fx-spin { to { --fx-ang: 360deg; } }
-
-.fx-grain { position: relative; }
-.fx-grain::after {
-  content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 0;
-  opacity: 0.035; mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-
-.fx-num {
-  background: linear-gradient(180deg, hsl(var(--foreground)) 30%, hsl(212 74% 72%));
-  -webkit-background-clip: text; background-clip: text; color: transparent;
-}
-
-.fx-shimmer { position: relative; overflow: hidden; }
-.fx-shimmer::after {
-  content: ''; position: absolute; inset: 0; transform: translateX(-100%);
-  background: linear-gradient(90deg, transparent, hsl(var(--foreground) / 0.06), transparent);
-  animation: fx-shim 1.4s infinite;
-}
-@keyframes fx-shim { to { transform: translateX(100%); } }
-
-.fx-saved { animation: fx-saved 1.5s ease-out; }
+.fx-saved { animation: fx-saved 1.2s ease-out; }
 @keyframes fx-saved {
-  0% { background: hsl(var(--primary) / 0.18); box-shadow: inset 3px 0 0 hsl(var(--primary)); }
+  0% { background: hsl(var(--primary) / 0.14); box-shadow: inset 3px 0 0 hsl(var(--primary)); }
   100% { background: transparent; box-shadow: inset 3px 0 0 transparent; }
 }
 
-.fx-pulse { transform-box: fill-box; transform-origin: center; animation: fx-pulse 1.6s ease-out infinite; }
-@keyframes fx-pulse { from { transform: scale(1); opacity: 0.6; } to { transform: scale(2.2); opacity: 0; } }
+@layer base {
+  tbody tr:hover { background-color: hsl(var(--surface-2) / 0.6); }
+}
 
 @media (prefers-reduced-motion: reduce) {
-  ::view-transition-old(root), ::view-transition-new(root) { animation: none !important; }
+  .fx-fade, .fx-rise, .fx-saved { animation: none !important; }
   .fx-tab-ind { transition: none; }
-  .fx-conic::before, .fx-shimmer::after, .fx-saved, .fx-pulse { animation: none !important; }
 }
 
 /* Status Planejamento — exact monday colors (same in light/dark). */
