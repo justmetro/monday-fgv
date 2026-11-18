@@ -31,8 +31,8 @@ export function useTabIndicator(ativo: string) {
     const btn = nav?.querySelector<HTMLElement>('[aria-current="page"]');
     if (!nav || !ind) return;
     if (!btn) { ind.style.width = '0px'; return; }
-    ind.style.left = `${btn.offsetLeft + 8}px`;
-    ind.style.width = `${Math.max(0, btn.offsetWidth - 16)}px`;
+    ind.style.left = `${btn.offsetLeft}px`;
+    ind.style.width = `${btn.offsetWidth}px`;
   }, [nav]);
   useEffect(() => { medir(); }, [ativo, medir]);
   useEffect(() => {

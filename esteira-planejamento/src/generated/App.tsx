@@ -223,11 +223,11 @@ export default function App() {
     <TooltipProvider delayDuration={150}>
     <AbrirProjetoCtx.Provider value={setAberto}>
     <div className="relative isolate flex min-h-dvh flex-col bg-background text-foreground">
-      <header className="fx-glass sticky top-0 z-40">
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-4 pt-3 md:px-6">
+      <header className="sticky top-0 z-40 border-b border-[hsl(var(--border)/0.7)] bg-background">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-4 pt-5 md:px-6">
           <div className="min-w-0">
-            <h1 className="truncate text-[15px] font-semibold tracking-[-0.01em] text-foreground">Painel da Esteira de Planejamento</h1>
-            <p className="truncate text-[11px] text-muted-foreground">Coordenação de Planejamento de Projetos · FGV DGPE</p>
+            <h1 className="truncate text-[26px] font-bold leading-tight tracking-[-0.025em] text-foreground">Esteira de Planejamento</h1>
+            <p className="truncate text-[12px] text-muted-foreground">Coordenação de Planejamento de Projetos · FGV DGPE</p>
           </div>
           <div className="ml-auto flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
             <button type="button" onClick={atualizar} disabled={loading || refetching}
@@ -269,7 +269,8 @@ export default function App() {
             {REGRA_ABA[aba] && <p className="text-[11px] text-[hsl(var(--fg-subtle))]">{REGRA_ABA[aba]}</p>}
           </div>
         )}
-        <nav ref={tabs.navRef} aria-label="Seções" className="relative -mb-px mt-1 flex gap-1 overflow-x-auto px-2 md:px-4">
+        <div className="px-4 pb-3 pt-3 md:px-6">
+        <nav ref={tabs.navRef} aria-label="Seções" className="relative flex w-fit max-w-full gap-0.5 overflow-x-auto rounded-full bg-[hsl(var(--surface-3))] p-1">
           <span ref={tabs.indRef} className="fx-tab-ind" aria-hidden />
           {ABAS.map(({ key, label, icon: Icon }) => (
             <button
@@ -278,19 +279,21 @@ export default function App() {
               aria-current={aba === key ? 'page' : undefined}
               onClick={() => comTransicao(() => navigate({ search: (prev) => ({ aba: key, per: prev.per }) }))}
               className={cn(
-                'relative inline-flex h-11 shrink-0 items-center gap-1.5 px-3 text-[13px] transition-colors duration-150 md:h-10',
+                'relative inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-medium transition-colors duration-150 md:h-8',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
                 aba === key ? 'text-foreground' : 'text-muted-foreground hover:text-foreground',
+                'focus-visible:rounded-full',
               )}
             >
               <Icon className="size-4" aria-hidden /> {label}
             </button>
           ))}
         </nav>
+        </div>
       </header>
 
       {/* "Alocação de Gerentes" has its own search and always works on the whole esteira. */}
-      <div className={cn('fx-glass px-4 py-2 md:px-6', aba === 'alocacao' && 'hidden')}>
+      <div className={cn('px-4 pb-1 md:px-6', aba === 'alocacao' && 'hidden')}>
         <FilterBar visaoGeral={aba === 'geral'} novoCadastro={aba === 'prazos' || aba === 'financeiro' || aba === 'sgi'} filtros={filtros} setFiltros={setFiltros} opcoes={opcoes} opcoesLoading={opcoesLoading}
           meusCount={meusCount} onToggleMeus={toggleMeus} meusDisponivel={!meus.ready || !!meus.meId}
           fimCarregando={filtros.fimAtuacao > 0 && !mapaGerentes.mapa && !mapaGerentes.error} fimErro={filtros.fimAtuacao > 0 && !!mapaGerentes.error} />

@@ -215,11 +215,11 @@ export function AlocacaoTab({ base, mapaState, sub, setSub, onItem, eixoOpts, dd
         {resumoAberto && <div className="border-t border-border px-4 py-4"><Resumo modelo={modelo} regra={regraState.regra} /></div>}
       </section>
 
-      <nav ref={subTabs.navRef} aria-label="Sub-abas de alocação" className="relative flex gap-1 overflow-x-auto border-b border-border">
+      <nav ref={subTabs.navRef} aria-label="Sub-abas de alocação" className="relative flex w-fit max-w-full gap-0.5 overflow-x-auto rounded-full bg-[hsl(var(--surface-3))] p-1">
         <span ref={subTabs.indRef} className="fx-tab-ind" aria-hidden />
         {SUBS.map((s) => (
           <button key={s} type="button" aria-current={sub === s ? 'page' : undefined} onClick={() => setSub(s)}
-            className={cn('relative inline-flex h-11 shrink-0 items-center gap-1.5 px-3 text-[13px] transition-colors duration-150 md:h-9',
+            className={cn('relative inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-medium transition-colors duration-150 md:h-8',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
               sub === s ? 'text-foreground' : 'text-muted-foreground hover:text-foreground')}>
             {SUB_LABEL[s]}
