@@ -1,5 +1,37 @@
 import { Board0201ProjetosEmPlanejamentoBoard } from '@api/BoardSDK';
 import { GROUP_ESTEIRA, GROUP_HISTORICO } from '@generated/lib/grupos';
+import getServerApiClient from '@api/api-client.server';
+import { BOARD_ID } from '@generated/lib/links';
+
+/** Avanço do planejamento pelos subitens: Concluído ÷ (subitens − Despriorizado). */
+export interface Avanco { concluidos: number; total: number; pct: number | null }
+
+type PaginaSub = { items: { id: string; subitems: { column_values: { text: string | null }[] }[] | null }[]; cursor: string | null };
+const CAMPOS_SUB = 'cursor items { id subitems { column_values(ids: ["status"]) { text } } }';
+
+async function buscarAvanco(): Promise<Map<string, Avanco>> {
+  const { client } = await getServerApiClient();
+  const mapa = new Map<string, Avanco>();
+  const somar = (pg: PaginaSub | undefined) => {
+    for (const it of pg?.items ?? []) {
+      const st = (it.subitems ?? []).map((s) => (s.column_values[0]?.text ?? '').trim());
+      const validos = st.filter((t) => t !== 'Despriorizado');
+      const concluidos = validos.filter((t) => t === 'Concluído').length;
+      mapa.set(String(it.id), { concluidos, total: validos.length, pct: validos.length ? Math.round((concluidos / validos.length) * 100) : null });
+    }
+  };
+  const r = await client.request<{ boards: { items_page: PaginaSub }[] }>(
+    `query($b:[ID!]){ boards(ids:$b){ items_page(limit:100){ ${CAMPOS_SUB} } } }`, { b: [String(BOARD_ID)] });
+  let pg: PaginaSub | undefined = r.boards?.[0]?.items_page;
+  somar(pg);
+  while (pg?.cursor) {
+    const n = await client.request<{ next_items_page: PaginaSub }>(
+      `query($c:String!){ next_items_page(limit:100, cursor:$c){ ${CAMPOS_SUB} } }`, { c: pg.cursor });
+    pg = n.next_items_page;
+    somar(pg);
+  }
+  return mapa;
+}
 
 /**
  * Server-side data module for board 02.01 — imported by server functions and used ONLY inside
@@ -38,7 +70,11 @@ async function buscarBase() {
     items.push(...(next?.items ?? []));
     cursor = next?.cursor ?? null;
   }
-  return items;
+  const avanco = await buscarAvanco().catch((e: unknown) => {
+    console.error('Leitura dos subitens (avanço) falhou', e);
+    return new Map<string, Avanco>();
+  });
+  return items.map((i) => ({ ...i, avanco: avanco.get(String(i.id)) ?? null }));
 }
 
 export type BaseItem = Awaited<ReturnType<typeof buscarBase>>[number];
@@ -71,7 +107,7 @@ function recarregar(): Promise<BaseItem[]> {
       // Fresh single-item re-reads newer than this read's start win over it.
       const merged = items.map((i) => {
         const f = frescos.get(i.id);
-        return f && f.v > v0 ? f.item : i;
+        return f && f.v > v0 ? { ...f.item, avanco: i.avanco } : i;
       });
       for (const [id, f] of frescos) if (f.v <= v0) frescos.delete(id);
       cache = { at: Date.now(), items: merged };
@@ -102,7 +138,8 @@ export async function obterBase(force: boolean): Promise<{ items: BaseItem[]; at
 /** Re-reads one item (fresh formulas) and applies it to the cache; an older revalidation can't overwrite it. */
 export async function relerItem(id: string) {
   const v = versao;
-  const fresh = await new Board0201ProjetosEmPlanejamentoBoard().item(id).withColumns([...COLUMNS]).execute();
+  const lido = await new Board0201ProjetosEmPlanejamentoBoard().item(id).withColumns([...COLUMNS]).execute();
+  const fresh: BaseItem | null = lido ? { ...lido, avanco: cache?.items.find((i) => i.id === lido.id)?.avanco ?? null } : null;
   if (fresh) {
     frescos.set(fresh.id, { v, item: fresh });
     if (cache) cache = { ...cache, items: cache.items.map((i) => (i.id === fresh.id ? fresh : i)) };

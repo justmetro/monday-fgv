@@ -37,7 +37,7 @@ import { AbrirProjetoCtx } from '@generated/components/AbrirProjeto';
 type Aba = 'geral' | 'prazos' | 'financeiro' | 'sgi' | 'indicadores' | 'alocacao';
 const ABAS: { key: Aba; label: string; icon: typeof LayoutGrid }[] = [
   { key: 'geral', label: 'Visão geral', icon: LayoutGrid },
-  { key: 'prazos', label: 'Prazos', icon: CalendarClock },
+  { key: 'prazos', label: 'Projetos', icon: CalendarClock },
   { key: 'financeiro', label: 'Financeiro', icon: Wallet },
   { key: 'sgi', label: 'Status SGI', icon: ListTodo },
   { key: 'indicadores', label: 'Indicadores', icon: BarChart3 },
@@ -57,7 +57,7 @@ const REF_PERIODO: Partial<Record<Aba, string>> = {
 /** One-line rule shown right under the period control, so the filter logic of the current tab is always visible. */
 const REGRA_ABA: Partial<Record<Aba, string>> = {
   geral: 'Visão geral: tempo de planejamento e IT pela base Res. Acumulado do ano; “Planejados” pela Conclusão do Planejamento no período.',
-  prazos: 'Prazos: projetos com alguma etapa com prazo no período, mais os projetos sem prazo calculado (farol “Sem data”).',
+  prazos: 'Projetos: projetos com alguma etapa com prazo no período, mais os projetos sem prazo calculado (farol “Sem data”).',
   financeiro: 'Financeiro: tabela pela Data de Assinatura (não assinados no ano corrente); resumo do ano pela base Res. Acumulado.',
   sgi: 'Status SGI: só o grupo Esteira do 02.01, sem “Despriorizado”; ano da Data de Assinatura; não assinados aparecem no ano corrente.',
   indicadores: 'Indicadores: base Res. Acumulado do ano (Início Planejamento 01/01–15/12, Conclusão até 31/12), comparada ao ano anterior.',

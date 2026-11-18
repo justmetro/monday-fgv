@@ -26,6 +26,23 @@ const SEG_REGRA: Record<Filtro, string> = {
   vence: 'Projetos ativos com ao menos uma etapa que vence entre hoje e os próximos 7 dias.',
 };
 
+const AVANCO_REGRA = 'Avanço do planejamento: subitens do projeto no 02.01 com status Concluído ÷ total de subitens (os Despriorizados não entram na conta).';
+
+function AvancoCell({ p }: { p: Projeto }) {
+  const a = p.avanco;
+  if (!a || !a.total) return <td className="px-3 py-2 align-top text-muted-foreground">{DASH}</td>;
+  const pct = a.pct ?? 0;
+  return (
+    <td className="px-3 py-2 align-top" title={`${a.concluidos} de ${a.total} subitens concluídos`}>
+      <span className="tnum text-foreground">{pct}%</span>
+      <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-[hsl(var(--surface-3))]">
+        <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
+      </div>
+      <span className="tnum mt-0.5 block text-[11px] text-muted-foreground">{a.concluidos}/{a.total}</span>
+    </td>
+  );
+}
+
 function EtapaCell({ e }: { e: Etapa }) {
   return (
     <td className="px-3 py-2 align-top">
@@ -79,7 +96,7 @@ export function PrazosTab({ items, onOpen }: { items: Projeto[]; onOpen: (p: Pro
   const mostradas = new Set(abertas.slice(0, visiveis).map((x) => x.l.p.id));
 
   if (!items.length) {
-    return <EmptyState title="Nenhum projeto para avaliar prazos" hint="Os farois aparecem aqui assim que houver projetos no escopo dos filtros." />;
+    return <EmptyState title="Nenhum projeto para listar" hint="Os farois aparecem aqui assim que houver projetos no escopo dos filtros." />;
   }
 
   const seg = (k: Filtro, label: string, n?: number) => (
@@ -127,16 +144,17 @@ export function PrazosTab({ items, onOpen }: { items: Projeto[]; onOpen: (p: Pro
             <thead className="sticky top-0 bg-[hsl(var(--surface-chrome))] text-xs text-muted-foreground">
               <tr className="border-b border-border">
                 <th className="px-3 py-2 font-medium">Projeto</th>
-                <th className="w-[22%] px-3 py-2 font-medium">Planejamento</th>
-                <th className="w-[22%] px-3 py-2 font-medium">Registro SGI</th>
-                <th className="w-[22%] px-3 py-2 font-medium">Dimensionamento</th>
+                <th className="w-[9%] px-3 py-2 font-medium"><span className="inline-flex items-center gap-1">Avanço <InfoDica texto={AVANCO_REGRA} /></span></th>
+                <th className="w-[20%] px-3 py-2 font-medium">Planejamento</th>
+                <th className="w-[20%] px-3 py-2 font-medium">Registro SGI</th>
+                <th className="w-[20%] px-3 py-2 font-medium">Dimensionamento</th>
               </tr>
             </thead>
             <tbody>
               {grupos.filter((g) => g.linhas.length > 0).map((g) => (
                 <Fragment key={g.k}>
                 <tr className="border-b border-border bg-[hsl(var(--surface-chrome))]">
-                  <td colSpan={4} className="px-3 py-1 text-xs font-semibold text-foreground">
+                  <td colSpan={5} className="px-3 py-1 text-xs font-semibold text-foreground">
                     <span className="inline-flex items-center gap-1">
                       <button type="button" onClick={g.ab.alternar} aria-expanded={g.ab.aberto}
                         className="-ml-1.5 inline-flex min-h-11 items-center gap-1.5 rounded-[var(--radius-sm)] px-1.5 text-left hover:bg-[hsl(var(--surface-2))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:min-h-7">
@@ -162,6 +180,7 @@ export function PrazosTab({ items, onOpen }: { items: Projeto[]; onOpen: (p: Pro
                     <span className="mt-0.5 block truncate text-xs text-muted-foreground" title={gerenteDe(p)}>{gerenteDe(p)}</span>
                     <StatusPill label={p.statusPlanejamento} className="mt-1" />
                   </td>
+                  <AvancoCell p={p} />
                   {etapas.map((e) => <EtapaCell key={e.key} e={e} />)}
                 </tr>
                 ))}

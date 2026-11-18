@@ -11,20 +11,20 @@ export interface Par {
   pct: number | null;
 }
 
+const SEM_ORC = 'SEM ORÇ';
+
+/** Orçado vazio ou zero = sem orçamento. A fórmula do quadro devolve 0 nesse caso (só o 0 digitado vira "SEM ORÇ",
+ *  e o R$ Saldo Total nunca devolve o marcador), então a regra fica aqui. */
+function par(key: Par['key'], label: string, orcado: number | null, planejado: number | null, rRaw: string | null, pRaw: string | null): Par {
+  if (!orcado) return { key, label, orcado, planejado, saldoRaw: SEM_ORC, saldo: null, pctRaw: SEM_ORC, pct: null };
+  return { key, label, orcado, planejado, saldoRaw: rRaw, saldo: parseNum(rRaw), pctRaw: pRaw, pct: parsePct(pRaw) };
+}
+
 export function paresDe(p: Projeto): Par[] {
   return [
-    {
-      key: 'equipe', label: 'Equipe', orcado: p.equipeOr, planejado: p.equipePlan,
-      saldoRaw: p.rSaldoEquipe, saldo: parseNum(p.rSaldoEquipe), pctRaw: p.SaldoEquipe, pct: parsePct(p.SaldoEquipe),
-    },
-    {
-      key: 'insumos', label: 'Insumos', orcado: p.oradoInsumos, planejado: p.planejadoInsumos,
-      saldoRaw: p.rSaldoInsumos, saldo: parseNum(p.rSaldoInsumos), pctRaw: p.SaldoInsumos, pct: parsePct(p.SaldoInsumos),
-    },
-    {
-      key: 'total', label: 'Total', orcado: p.oradoTotal, planejado: p.planejadoTotal,
-      saldoRaw: p.rSaldoTotal, saldo: parseNum(p.rSaldoTotal), pctRaw: p.SaldoTotal, pct: parsePct(p.SaldoTotal),
-    },
+    par('equipe', 'Equipe', p.equipeOr, p.equipePlan, p.rSaldoEquipe, p.SaldoEquipe),
+    par('insumos', 'Insumos', p.oradoInsumos, p.planejadoInsumos, p.rSaldoInsumos, p.SaldoInsumos),
+    par('total', 'Total', p.oradoTotal, p.planejadoTotal, p.rSaldoTotal, p.SaldoTotal),
   ];
 }
 
