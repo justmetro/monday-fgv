@@ -9,3 +9,5 @@ Gravações no 02.01 saem com o token de serviço (MONDAY_API_TOKEN); a autoria 
 Shims: server/boardSdk.ts (BoardSDK sobre GraphQL, filtro por grupo, users.me, página de 100 quando há fórmula), server/apiClient.ts, server/vibeDb.ts (cursor com ordenação, aggregate/groupBy/count), src/shims/vibe-db-client.ts (TanStack Query, chaves com prefixo 'vibedb'), src/shims/react-router.ts (aba/sub/per na query string com a validação da rota do Vibe), src/shims/pptx-export.ts (pptxgenjs).
 
 Build: `npm i --legacy-peer-deps && npm run build`; em deploy/: `npm i --package-lock-only`; publicar com `mapps code:push -a 12703980 -i 20111849 -d deploy -f`.
+
+OAuth: o servidor usa o token OAuth do app guardado no banco (coleção app_oauth), autorizado uma vez por um admin em <servidor>/oauth/start; redirect URL cadastrada no Developer Center: <servidor>/oauth/callback. Situação em <servidor>/oauth/status. MONDAY_API_TOKEN fica só como reserva enquanto o app não estiver autorizado.

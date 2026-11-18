@@ -1,3 +1,4 @@
+import { tokenOAuth } from './oauth';
 // Chamadas à API do monday com o token de serviço (variável secreta MONDAY_API_TOKEN).
 const API = 'https://api.monday.com/v2';
 
@@ -5,7 +6,8 @@ export function serviceToken(): string {
   return (process.env.MONDAY_API_TOKEN ?? '').trim();
 }
 
-export async function gql<T = any>(query: string, variables: Record<string, unknown> = {}, token = serviceToken()): Promise<T> {
+export async function gql<T = any>(query: string, variables: Record<string, unknown> = {}, tokenFixo?: string): Promise<T> {
+  const token = tokenFixo ?? (await tokenOAuth()) ?? serviceToken();
   if (!token) throw new Error('Token de serviço do monday não configurado no servidor.');
   let wait = 1500;
   for (let attempt = 1; ; attempt++) {

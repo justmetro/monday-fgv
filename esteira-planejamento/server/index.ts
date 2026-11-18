@@ -5,6 +5,7 @@ import path from 'node:path';
 import { reqCtx, type ReqCtx } from './context';
 import type { ServerFn } from './serverFn';
 import { startJob } from './jobs';
+import { oauthStart, oauthCallback, oauthStatus, lembrarCliente } from './oauth';
 import { MODULES } from './registry';
 
 const FNS = new Map<string, ServerFn>();
@@ -31,6 +32,7 @@ function verifySession(token: string): ReqCtx | null {
     if (p.exp && p.exp * 1000 < Date.now()) return null;
     const d = p.dat ?? p;
     if (!d.user_id) return null;
+    lembrarCliente(d.client_id, d.account_id);
     return { userId: String(d.user_id), accountId: String(d.account_id ?? ''), isAdmin: d.is_admin === true, isGuest: d.is_guest === true || d.user_kind === 'guest' };
   } catch { return null; }
 }
@@ -76,6 +78,9 @@ const server = http.createServer(async (req, res) => {
       const out = await startJob(job).catch((e) => ({ error: String(e?.message ?? e) }));
       return send(res, 200, { ok: true, result: out });
     }
+    if (req.method === 'GET' && p === '/oauth/start') return await oauthStart(req, res);
+    if (req.method === 'GET' && p === '/oauth/callback') return await oauthCallback(req, res, url);
+    if (req.method === 'GET' && p === '/oauth/status') return await oauthStatus(res);
     if (p === '/health') return send(res, 200, { ok: true });
     const rel = p === '/' ? 'index.html' : path.normalize(p).replace(/^([/\\])+/, '');
     const file = path.join(PUBLIC, rel);
