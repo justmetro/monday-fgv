@@ -15,7 +15,7 @@ import { TempoBloco, ItLinhas, fmtDias1 } from '@generated/components/overview/T
 import { Panel, EmptyState, InfoDica } from '@generated/components/ui-bits';
 import { HBarChart, VBarChart, CompositionBar, type Datum } from '@generated/components/charts';
 import { NumberTicker } from '@generated/components/fx/NumberTicker';
-import { SpotlightCard } from '@generated/components/fx/SpotlightCard';
+import { Destaques, type ListaDrill } from '@generated/components/overview/Destaques';
 
 function contar(items: Projeto[], pick: (p: Projeto) => string[] | null | undefined): Datum[] {
   const m = new Map<string, number>();
@@ -37,19 +37,6 @@ function porStatus(items: Projeto[], pick: (p: Projeto) => string | null, ordem:
   return [...ordem, ...extras, vazio].map((label) => ({
     label, value: m.get(label) ?? 0, color: corDe(label === vazio ? null : label),
   }));
-}
-
-function Kpi({ label, n, fmt, unit, foot, regra }: { label: string; n: number | null; fmt: (v: number) => string; unit?: string; foot: string; regra: string }) {
-  return (
-    <SpotlightCard className="flex min-w-0 flex-col gap-1 border-border px-4 py-4 sm:px-5 [&:not(:first-child)]:border-t sm:[&:not(:first-child)]:border-t-0 sm:[&:not(:first-child)]:border-l">
-      <p className="flex items-start gap-1 text-xs text-muted-foreground"><span className="min-w-0">{label}</span><InfoDica texto={regra} /></p>
-      <p className="tnum text-4xl font-light leading-none tracking-[-0.02em] text-foreground">
-        {n === null ? '—' : <NumberTicker value={n} format={fmt} className="fx-num" />}
-        {unit && <span className="ml-1 text-base font-normal text-muted-foreground">{unit}</span>}
-      </p>
-      <p className="text-xs text-[hsl(var(--fg-subtle))]">{foot}</p>
-    </SpotlightCard>
-  );
 }
 
 type Dim = 'status' | 'eixo' | 'radar' | 'uf';
@@ -110,8 +97,9 @@ export function OverviewTab({ items: todos, concluidos, mostrar, opcoesStatus, s
   const rotulo = rotuloPeriodoGlobal(periodo);
   const [ordemFunil, setOrdemFunil] = useState<'esteira' | 'qtd'>('esteira');
   const [drill, setDrill] = useState<{ dim: Dim; label: string } | null>(null);
-  const fecharDrill = useCallback(() => setDrill(null), []);
-  const abrir = (dim: Dim) => (label: string) => setDrill({ dim, label });
+  const [drillLista, setDrillLista] = useState<ListaDrill | null>(null);
+  const fecharDrill = useCallback(() => { setDrill(null); setDrillLista(null); }, []);
+  const abrir = (dim: Dim) => (label: string) => { setDrillLista(null); setDrill({ dim, label }); };
   const sel = (dim: Dim) => (drill?.dim === dim ? drill.label : null);
   const drillItens = useMemo(
     () => (drill ? items.filter((p) => pertence(p, drill.dim, drill.label)).sort((a, b) => a.name.localeCompare(b.name, 'pt-BR')) : []),
@@ -154,22 +142,12 @@ export function OverviewTab({ items: todos, concluidos, mostrar, opcoesStatus, s
       <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
         <SemEixoUf items={items} />
       </div>
-      <section className="fx-rise relative overflow-hidden rounded-[var(--radius-lg)] border border-border bg-card">
-        <div className=" grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
-          <Kpi label="Projetos na esteira" n={items.length} fmt={(v) => fmtInt(Math.round(v))}
-            regra="Quantidade de projetos do grupo Esteira no escopo dos filtros (sem cancelados). É a soma das barras do funil por Status Planejamento."
-            foot={`Retrato atual · ${fmtInt(s.composicao.ativos)} ativos · ${fmtInt(s.composicao.finalizados)} finalizados · soma do funil`} />
-          <Kpi label={`Planejados · ${rotulo}`} n={metas.planejados.length} fmt={(v) => fmtInt(Math.round(v))}
-            regra="Projetos com Status Planejamento “Instrumento Concluído” ou “Finalizado (Plan + SGI)” cuja Conclusão do Planejamento cai no período escolhido."
-            foot="Instrumento Concluído ou Finalizado, por data de conclusão do planejamento" />
-          <Kpi label="Tempo de planejamento (mediana)" n={tempo.mediana} fmt={(v) => fmtDias1(v).replace(' dias', '')} unit={tempo.mediana === null ? undefined : 'dias'}
-            regra={`Mediana da coluna Tempo de Planejamento (dias) dos projetos da base Res. Acumulado com Mês Referência Resultado diferente de N/A. ${regraResAcumulado(resAcum)}`}
-            foot={`Res. Acumulado ${resAcum.ano} · n = ${tempo.n}`} />
-          <Kpi label="Tempo de planejamento (média)" n={tempo.media} fmt={(v) => fmtDias1(v).replace(' dias', '')} unit={tempo.media === null ? undefined : 'dias'}
-            regra={`Média da coluna Tempo de Planejamento (dias) dos projetos da base Res. Acumulado com Mês Referência Resultado diferente de N/A. ${regraResAcumulado(resAcum)}`}
-            foot={`Res. Acumulado ${resAcum.ano} · n = ${tempo.n}`} />
-        </div>
+      <Destaques items={items} status={s.status} planejados={metas.planejados.length} rotuloPeriodo={rotulo}
+        medianaDias={tempo.mediana === null ? '—' : fmtDias1(tempo.mediana)}
+        ativos={s.composicao.ativos} finalizados={s.composicao.finalizados}
+        abrirStatus={abrir('status')} abrirLista={(l) => { setDrill(null); setDrillLista(l); }} />
 
+      <section className="relative overflow-hidden rounded-[var(--radius-xl)] border border-border bg-card">
         <TempoBloco res={resAcum} />
         <ItLinhas res={resAcum} mes={mesIt} setMes={setMesIt} />
 
@@ -251,7 +229,7 @@ export function OverviewTab({ items: todos, concluidos, mostrar, opcoesStatus, s
       <Evolucao items={concluidos} baseSnapshot={baseSnapshot} />
 
       <AbrirFechando fechar={fecharDrill}>
-        <DrilldownSheet titulo={drill ? drill.label : null} subtitulo={drill ? DIM_NOME[drill.dim] : ''} projetos={drillItens}
+        <DrilldownSheet titulo={drill ? drill.label : drillLista?.titulo ?? null} subtitulo={drill ? DIM_NOME[drill.dim] : drillLista?.subtitulo ?? ''} projetos={drill ? drillItens : drillLista?.projetos ?? []}
           opcoesStatus={opcoesStatus} salvar={salvar} onClose={fecharDrill} />
       </AbrirFechando>
     </div>
