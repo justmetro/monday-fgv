@@ -222,7 +222,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @layer base {
-  button:not(:disabled):active { transform: scale(0.97); }
+  button:not(:disabled):not([class*="after:absolute"]):active { transform: scale(0.97); }
   tbody tr:hover { background-color: hsl(var(--surface-2) / 0.6); }
 }
 
