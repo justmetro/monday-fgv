@@ -13,7 +13,7 @@ function serverStubs(): Plugin {
     name: 'server-fn-stubs',
     enforce: 'pre',
     load(id) {
-      const file = id.split('?')[0];
+      const file = path.normalize(id.split('?')[0]);
       if (!file.startsWith(SERVER_DIR) || !/\.tsx?$/.test(file)) return null;
       const mod = path.basename(file).replace(/\.tsx?$/, '');
       const src = readFileSync(file, 'utf8');
