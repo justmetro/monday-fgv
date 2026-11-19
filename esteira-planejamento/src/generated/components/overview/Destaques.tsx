@@ -8,6 +8,7 @@ import { parDe, semOrcamentoEm, foraDoTotalPorStatus } from '@generated/lib/fina
 import { corDe } from '@generated/lib/status';
 import type { Datum } from '@generated/components/charts';
 import { InfoDica } from '@generated/components/ui-bits';
+import { useAbrirProjeto } from '@generated/components/AbrirProjeto';
 
 export interface ListaDrill { titulo: string; subtitulo: string; projetos: Projeto[] }
 
@@ -44,6 +45,7 @@ function Bloco({ children, className, onClick, titulo }: { children: ReactNode; 
 /** Topo da Visão geral em blocos (estilo widgets) e a lista de próximos prazos com filtros rápidos. */
 export function Destaques({ items, status, planejados, rotuloPeriodo, medianaDias, ativos, finalizados, abrirStatus, abrirLista }: Props) {
   const [filtro, setFiltro] = useState<Filtro>('todos');
+  const abrirProjeto = useAbrirProjeto();
 
   const d = useMemo(() => {
     const abertos: Linha[] = [];
@@ -185,7 +187,7 @@ export function Destaques({ items, status, planejados, rotuloPeriodo, medianaDia
               const ultimo = i === visiveis.length - 1;
               return (
                 <li key={p.id}>
-                  <button type="button" onClick={() => lista(tituloDe(p), [p])}
+                  <button type="button" onClick={() => (abrirProjeto ? abrirProjeto(p) : lista(tituloDe(p), [p]))}
                     className="flex min-h-16 w-full items-center gap-3.5 px-6 text-left transition-colors duration-150 hover:bg-[hsl(var(--surface-2))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring">
                     <span className="size-2.5 shrink-0 rounded-full" style={{ background: cor }} aria-hidden />
                     <span className={cn('flex min-w-0 flex-1 items-center gap-3 self-stretch py-3', !ultimo && 'border-b border-border')}>
