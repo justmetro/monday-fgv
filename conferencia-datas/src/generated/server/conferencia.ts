@@ -20,10 +20,12 @@ const C = {
   id02: 'text_mm9dpdv2',
   prazo: 'date_mm9d4xyp',
   email: 'text_mm9dt26h',
+  desaloca: 'color_mm9d3prr',
+  saidas: 'long_text_mm9d3857',
 };
 const PLAN = { vig: 'timerange_mm6vw3pb', ultimo: 'date_mm5g69fd' };
 
-import type { Item, Eu, Registro } from '../tipos';
+import { DESALOCA, type Item, type Eu, type Registro } from '../tipos';
 import { mongo } from '../../../server/mongo';
 
 async function registrar(e: Eu, acao: string, item: Pick<Item, 'id' | 'nome'>, detalhe = '') {
@@ -77,7 +79,7 @@ async function todos(): Promise<Item[]> {
         status: txt(cv, C.status) || 'Não iniciado',
         vigDe: v.de, vigAte: v.ate, ultimo: txt(cv, C.ultimo),
         vigOkDe: vo.de, vigOkAte: vo.ate, ultimoOk: txt(cv, C.ultimoOk),
-        obs: txt(cv, C.obs), id02: txt(cv, C.id02), prazo: txt(cv, C.prazo), linkQuadro: '', linkSGI: '',
+        obs: txt(cv, C.obs), id02: txt(cv, C.id02), prazo: txt(cv, C.prazo), linkQuadro: '', linkSGI: '', desaloca: txt(cv, C.desaloca), saidas: txt(cv, C.saidas),
       });
     }
     cursor = page.cursor;
@@ -129,13 +131,18 @@ export const carregar = createServerFn({ method: 'POST' }).handler(async () => {
 const data = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).or(z.literal('')).optional();
 
 export const responder = createServerFn({ method: 'POST' })
-  .validator(z.object({ itemId: z.string(), conferida: z.boolean(), vigDe: data, vigAte: data, ultimo: data, obs: z.string().max(2000).optional() }))
+  .validator(z.object({ itemId: z.string(), conferida: z.boolean(), vigDe: data, vigAte: data, ultimo: data, obs: z.string().max(2000).optional(), desaloca: z.enum(['toda', 'parte']), saidas: z.string().max(2000).optional() }))
   .handler(async ({ data: d }) => {
     const e = await eu();
     const item = (await todos()).find((i) => i.id === d.itemId);
     if (!item) throw new Error('Projeto não encontrado.');
     if (!e.coplan && !ehDoGerente(item, e)) throw new Error('Este projeto não está sob sua gerência.');
-    const cv: Record<string, unknown> = { [C.status]: { label: d.conferida ? 'Datas conferidas' : 'Datas corrigidas' } };
+    if (d.desaloca === 'parte' && !d.saidas?.trim()) throw new Error('Informe quem sai antes da data de fim e quando.');
+    const cv: Record<string, unknown> = {
+      [C.status]: { label: d.conferida ? 'Datas conferidas' : 'Datas corrigidas' },
+      [C.desaloca]: { label: DESALOCA[d.desaloca] },
+      [C.saidas]: d.desaloca === 'parte' ? { text: d.saidas!.trim() } : null,
+    };
     if (!d.conferida) {
       if (!d.vigDe && !d.vigAte && !d.ultimo) throw new Error('Informe ao menos uma data correta.');
       if (d.vigDe || d.vigAte) {
@@ -158,7 +165,7 @@ export const responder = createServerFn({ method: 'POST' })
       cv[C.vigOk] ? `vigência ${String((cv[C.vigOk] as any).from).split('-').reverse().join('/')} a ${String((cv[C.vigOk] as any).to).split('-').reverse().join('/')}` : '',
       d.ultimo ? `último produto ${d.ultimo.split('-').reverse().join('/')}` : '',
     ].filter(Boolean).join('; ');
-    await registrar(e, d.conferida ? 'Confirmou as datas' : 'Corrigiu as datas', item, [det, d.obs?.trim()].filter(Boolean).join('. '));
+    await registrar(e, d.conferida ? 'Confirmou as datas' : 'Corrigiu as datas', item, [det, d.desaloca === 'parte' ? `parte da equipe sai antes: ${d.saidas!.trim()}` : 'toda a equipe desaloca na data de fim', d.obs?.trim()].filter(Boolean).join('. '));
     return { ok: true };
   });
 

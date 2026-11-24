@@ -10,7 +10,10 @@ export interface Item {
   vigOkDe: string; vigOkAte: string; ultimoOk: string;
   obs: string; id02: string; prazo: string;
   linkQuadro: string; linkSGI: string;
+  desaloca: string; saidas: string;
 }
+
+export const DESALOCA = { toda: 'Toda a equipe na data de fim', parte: 'Parte da equipe sai antes' } as const;
 
 export interface Registro { id: string; em: string; usuarioId: string; usuario: string; perfil: string; acao: string; itemId: string; projeto: string; detalhe: string }
 

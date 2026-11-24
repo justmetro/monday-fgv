@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { RefreshCw, Search, Send, CheckCircle2, PencilLine, X, Upload, ExternalLink } from 'lucide-react';
 import { carregar, responder, solicitar, aplicarNo0201, carregarLog } from '@generated/server/conferencia';
-import { STATUS, type Item, type Eu, type Registro } from '@generated/tipos';
+import { STATUS, DESALOCA, type Item, type Eu, type Registro } from '@generated/tipos';
 
 const hojeISO = () => new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 10);
 const br = (d: string) => (d ? d.split('-').reverse().join('/') : '');
@@ -38,14 +38,18 @@ function Conferir({ item, onFechar, onSalvo }: { item: Item; onFechar: () => voi
   const [vigAte, setVigAte] = useState(item.vigAte);
   const [ultimo, setUltimo] = useState(item.ultimo);
   const [obs, setObs] = useState('');
+  const [desaloca, setDesaloca] = useState<'' | 'toda' | 'parte'>(item.desaloca === DESALOCA.parte ? 'parte' : item.desaloca === DESALOCA.toda ? 'toda' : '');
+  const [saidas, setSaidas] = useState(item.saidas);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState('');
 
   async function salvar(conferida: boolean) {
+    if (!desaloca) { setErro('Responda se toda a equipe desaloca na data de fim.'); return; }
+    if (desaloca === 'parte' && !saidas.trim()) { setErro('Informe quem sai antes da data de fim e quando.'); return; }
     setSalvando(true); setErro('');
     try {
-      await responder({ data: conferida ? { itemId: item.id, conferida, obs } : {
-        itemId: item.id, conferida, obs,
+      await responder({ data: conferida ? { itemId: item.id, conferida, obs, desaloca, saidas } : {
+        itemId: item.id, conferida, obs, desaloca, saidas,
         vigDe: vigDe !== item.vigDe || vigAte !== item.vigAte ? vigDe : '',
         vigAte: vigDe !== item.vigDe || vigAte !== item.vigAte ? vigAte : '',
         ultimo: ultimo !== item.ultimo ? ultimo : '',
@@ -76,6 +80,16 @@ function Conferir({ item, onFechar, onSalvo }: { item: Item; onFechar: () => voi
             <label className="col-span-2">Último produto previsto<input type="date" className={input} value={ultimo} onChange={(e) => setUltimo(e.target.value)} /></label>
           </div>
         )}
+        <div className="mt-4 text-sm">
+          <div className="font-medium">A equipe toda desaloca na data de fim?</div>
+          <div className="mt-2 space-y-1.5">
+            <label className="flex items-center gap-2"><input type="radio" name="desaloca" checked={desaloca === 'toda'} onChange={() => setDesaloca('toda')} />Sim, toda a equipe desaloca nessa data</label>
+            <label className="flex items-center gap-2"><input type="radio" name="desaloca" checked={desaloca === 'parte'} onChange={() => setDesaloca('parte')} />Não, parte da equipe será desalocada antes</label>
+          </div>
+          {desaloca === 'parte' && (
+            <textarea className={`${input} h-20`} value={saidas} onChange={(e) => setSaidas(e.target.value)} placeholder="Quem sai antes e quando. Ex.: 2 formadores em 31/03/2027, coordenação até o fim." />
+          )}
+        </div>
         <label className="mt-4 block text-sm">Observação (opcional)
           <textarea className={`${input} h-20`} value={obs} onChange={(e) => setObs(e.target.value)} placeholder="Ex.: aditivo em assinatura, nova data prevista..." />
         </label>
@@ -126,6 +140,7 @@ function Lateral({ item, coplan, onFechar, onConferir }: { item: Item; coplan: b
               <div><dt className="text-xs text-warn">Último produto correto</dt><dd>{br(item.ultimoOk) || 'Sem alteração'}</dd></div>
             </>
           )}
+          {item.desaloca && <div className="col-span-2"><dt className="text-xs text-muted-foreground">Desalocação da equipe</dt><dd>{item.desaloca}{item.saidas && <div className="mt-1 whitespace-pre-line text-muted-foreground">{item.saidas}</div>}</dd></div>}
           <div><dt className="text-xs text-muted-foreground">Prazo de resposta</dt><dd className={vencido(item) ? 'text-bad' : ''}>{br(item.prazo) || 'Sem prazo'}</dd></div>
         </dl>
 
@@ -382,7 +397,7 @@ export default function App() {
                         <td className="whitespace-nowrap p-2.5">{faixa(i.vigDe, i.vigAte) || <span className="text-muted-foreground">Sem data</span>}{corr && i.vigOkDe && <div className="text-xs text-warn">Correta: {faixa(i.vigOkDe, i.vigOkAte)}</div>}</td>
                         <td className="whitespace-nowrap p-2.5">{br(i.ultimo) || <span className="text-muted-foreground">Sem data</span>}{corr && i.ultimoOk && <div className="text-xs text-warn">Correta: {br(i.ultimoOk)}</div>}</td>
                         <td className={`whitespace-nowrap p-2.5 ${vencido(i) ? 'font-semibold text-bad' : ''}`}>{br(i.prazo)}</td>
-                        <td className="p-2.5"><Badge s={i.status} /></td>
+                        <td className="p-2.5"><Badge s={i.status} />{i.desaloca === DESALOCA.parte && <div className="mt-1 text-xs text-warn">Parte da equipe sai antes</div>}</td>
                         <td className="p-2.5 text-right">
                           {(i.status === 'Revisar datas' || !coplan || respondido(i.status)) && i.status !== 'Atualizado no 02.01' && (
                             <button onClick={(e) => { e.stopPropagation(); setAberto(i); }} className={`whitespace-nowrap rounded-md px-2.5 py-1 ${i.status === 'Revisar datas' ? 'bg-primary text-primary-foreground' : 'border hover:bg-muted'}`}>
