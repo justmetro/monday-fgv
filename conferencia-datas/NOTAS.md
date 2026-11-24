@@ -5,12 +5,12 @@ Painel para a CoPlan pedir aos gerentes a conferência das datas de fim dos proj
 ## IDs
 
 - App: 12846014
-- Versão: v1 20698699 (live)
-- Feature: Painel 130425574 (AppFeatureBoardView)
+- Versão: v2 20701222 (live). A v1 20698699 ficou sem URL na feature depois de reimportar o manifest.
+- Feature: Painel 130430932 na v2 (130425574 na v1)
 - Servidor: https://live1-service-29669755-cb23eb9d.us.monday.app
 - Quadro de acesso (gerentes como assinantes, só a aba): 18441325686, aba Painel 293737785
 - Item usado como alvo das notificações: 13626485007
-- Quadro de dados (só CoPlan): 18441323203 "Conferência de Datas de Fim"
+- Quadro de dados (só CoPlan, gerentes removidos em 24/11/2026): 18441323203 "Conferência de Datas de Fim"
 - Fonte das datas: 02.01 Projetos em Planejamento (18412010674), colunas timerange_mm6vw3pb e date_mm5g69fd
 
 ## Regras
@@ -18,7 +18,7 @@ Painel para a CoPlan pedir aos gerentes a conferência das datas de fim dos proj
 - CoPlan = donos do quadro de dados. Vê todos os projetos, pede conferência (status Revisar datas + prazo + notificação da monday) e aplica as correções no 02.01.
 - Gerente = pessoa na coluna Gerente ou e-mail na coluna "E-mail do gerente". Responde "datas conferidas" ou "datas corrigidas".
 - Leituras e gravações no quadro de dados usam o token OAuth do app (o gerente não acessa esse quadro). A gravação no 02.01 sai pelo navegador de quem aplica (relay).
-- Job `lembrete` (server/jobs.ts) avisa os gerentes com projetos em Revisar datas. Agendamento ainda não criado.
+- Job `lembrete` (server/jobs.ts) avisa os gerentes com projetos em Revisar datas. Agendamento desligado por enquanto (horário a confirmar com o Pedro).
 
 ## Variáveis
 
