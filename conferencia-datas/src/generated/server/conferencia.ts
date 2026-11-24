@@ -8,6 +8,7 @@ export const BOARD = 18441323203;
 export const BOARD_ACESSO = 18441325686;
 export const ITEM_ACESSO = 13626485007;
 export const BOARD_PLAN = 18412010674;
+export const BOARD_MAPA = 18422833691;
 
 const C = {
   gerente: 'multiple_person_mm9dqqyb',
@@ -95,6 +96,29 @@ async function todos(): Promise<Item[]> {
     });
   }
   out.forEach((i) => { const l = links.get(i.id02); if (l) { i.linkQuadro = l.q; i.linkSGI = l.s; } });
+  const nomeMapa = new Map<string, string>();
+  // Mapa de Gerentes é a fonte principal: projeto do 02.01 ligado em "Projetos Gerenciados" -> e-mail do gerente.
+  try {
+    const dm = await gql<{ boards: { items_page: { items: { group: { title: string }; column_values: { id: string; text: string | null; linked_item_ids?: string[] }[] }[] } }[] }>(
+      'query ($b: [ID!]) { boards(ids: $b) { items_page(limit: 500) { items { name group { title } column_values(ids: ["board_relation_mm5epxs", "email_mm5eqgfn"]) { id text ... on BoardRelationValue { linked_item_ids } } } } } }',
+      { b: [BOARD_MAPA] },
+    );
+    const mapa = new Map<string, string[]>();
+    for (const g of dm.boards[0]?.items_page.items ?? []) {
+      if (g.group.title !== 'Gerentes') continue;
+      const c = Object.fromEntries(g.column_values.map((x) => [x.id, x]));
+      const em = (c.email_mm5eqgfn?.text ?? '').trim().toLowerCase();
+      if (!em) continue;
+      nomeMapa.set(em, (g as any).name ?? '');
+      for (const p of c.board_relation_mm5epxs?.linked_item_ids ?? []) mapa.set(String(p), [...new Set([...(mapa.get(String(p)) ?? []), em])]);
+    }
+    out.forEach((i) => {
+      const m = mapa.get(i.id02);
+      if (m?.length) { i.emails = m; i.gerentes = []; }
+    });
+  } catch (x) {
+    console.error('[mapa de gerentes]', x);
+  }
   // Gerente só por e-mail (sem acesso ao quadro de dados para ir na coluna Pessoa): resolve o usuário pelo e-mail.
   const semId = [...new Set(out.flatMap((i) => i.emails))];
   if (semId.length) {
@@ -112,8 +136,8 @@ async function todos(): Promise<Item[]> {
   if (ids.length) {
     const nomes = new Map<string, string>();
     for (let i = 0; i < ids.length; i += 100) {
-      const d = await gql<{ users: { id: string; name: string }[] }>('query ($ids: [ID!]) { users(ids: $ids, limit: 100) { id name } }', { ids: ids.slice(i, i + 100) });
-      d.users.forEach((u) => nomes.set(String(u.id), u.name));
+      const d = await gql<{ users: { id: string; name: string; email: string }[] }>('query ($ids: [ID!]) { users(ids: $ids, limit: 100) { id name email } }', { ids: ids.slice(i, i + 100) });
+      d.users.forEach((u) => nomes.set(String(u.id), nomeMapa.get((u.email ?? '').toLowerCase()) || u.name));
     }
     out.forEach((i) => i.gerentes.forEach((g) => { g.nome = nomes.get(g.id) ?? ''; }));
   }
@@ -188,6 +212,10 @@ export const solicitar = createServerFn({ method: 'POST' })
       await registrar(e, 'Pediu conferência', i, [i.gerentes.map((g) => g.nome).join(', ') || 'sem gerente', d.prazo ? `prazo ${d.prazo.split('-').reverse().join('/')}` : ''].filter(Boolean).join('; '));
       if (!i.gerentes.length) semGerente++;
       i.gerentes.forEach((g) => porGerente.set(g.id, [...(porGerente.get(g.id) ?? []), i]));
+    }
+    // Garante que todo gerente notificado consiga abrir o painel (assinante do quadro de acesso).
+    if (porGerente.size) {
+      await gqlApp('mutation ($b: ID!, $u: [ID!]!) { add_users_to_board(board_id: $b, user_ids: $u, kind: subscriber) { id } }', { b: BOARD_ACESSO, u: [...porGerente.keys()] }).catch((x) => console.error('[acesso]', x));
     }
     const prazoTxt = d.prazo ? ` até ${d.prazo.split('-').reverse().join('/')}` : '';
     for (const [uid, lista] of porGerente) {
