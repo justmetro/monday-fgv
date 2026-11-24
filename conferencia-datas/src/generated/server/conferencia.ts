@@ -93,6 +93,19 @@ async function todos(): Promise<Item[]> {
     });
   }
   out.forEach((i) => { const l = links.get(i.id02); if (l) { i.linkQuadro = l.q; i.linkSGI = l.s; } });
+  // Gerente só por e-mail (sem acesso ao quadro de dados para ir na coluna Pessoa): resolve o usuário pelo e-mail.
+  const semId = [...new Set(out.flatMap((i) => i.emails))];
+  if (semId.length) {
+    const porEmail = new Map<string, string>();
+    for (let k = 0; k < semId.length; k += 100) {
+      const d = await gql<{ users: { id: string; email: string }[] }>('query ($e: [String!]) { users(emails: $e, limit: 100) { id email } }', { e: semId.slice(k, k + 100) });
+      d.users.forEach((u) => porEmail.set(u.email.toLowerCase(), String(u.id)));
+    }
+    out.forEach((i) => i.emails.forEach((em) => {
+      const id = porEmail.get(em);
+      if (id && !i.gerentes.some((g) => g.id === id)) i.gerentes.push({ id, nome: '' });
+    }));
+  }
   const ids = [...new Set(out.flatMap((i) => i.gerentes.map((g) => g.id)))];
   if (ids.length) {
     const nomes = new Map<string, string>();
