@@ -9,6 +9,7 @@ export interface Item {
   vigDe: string; vigAte: string; ultimo: string;
   vigOkDe: string; vigOkAte: string; ultimoOk: string;
   obs: string; id02: string; prazo: string;
+  linkQuadro: string; linkSGI: string;
 }
 
 export interface Registro { id: string; em: string; usuarioId: string; usuario: string; perfil: string; acao: string; itemId: string; projeto: string; detalhe: string }

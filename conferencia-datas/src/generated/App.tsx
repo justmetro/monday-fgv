@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { RefreshCw, Search, Send, CheckCircle2, PencilLine, X, Upload } from 'lucide-react';
+import { RefreshCw, Search, Send, CheckCircle2, PencilLine, X, Upload, ExternalLink } from 'lucide-react';
 import { carregar, responder, solicitar, aplicarNo0201, carregarLog } from '@generated/server/conferencia';
 import { STATUS, type Item, type Eu, type Registro } from '@generated/tipos';
 
@@ -98,6 +98,56 @@ function Conferir({ item, onFechar, onSalvo }: { item: Item; onFechar: () => voi
   );
 }
 
+const URL_0201 = (id: string) => `https://fgvdgpe-projetos.monday.com/boards/18412010674/pulses/${id}`;
+
+function Lateral({ item, coplan, onFechar, onConferir }: { item: Item; coplan: boolean; onFechar: () => void; onConferir: () => void }) {
+  const link = (href: string, rotulo: string) => (
+    <a href={href} target="_blank" rel="noreferrer" className="flex items-center justify-between rounded-md border px-3 py-2 hover:bg-muted">
+      {rotulo}<ExternalLink className="h-4 w-4 text-muted-foreground" />
+    </a>
+  );
+  const corr = item.status === 'Datas corrigidas' || item.status === 'Atualizado no 02.01';
+  return (
+    <div className="fixed inset-0 z-40 flex justify-end bg-black/20" onClick={onFechar}>
+      <aside className="h-full w-full max-w-md overflow-y-auto border-l bg-card p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-start justify-between gap-3">
+          <div className="font-semibold leading-snug">{item.nome}</div>
+          <button onClick={onFechar} className="rounded p-1 hover:bg-muted"><X className="h-4 w-4" /></button>
+        </div>
+        <div className="mt-2 flex flex-wrap items-center gap-2"><Badge s={item.status} />{vencido(item) && <span className="text-xs font-medium text-bad">Prazo vencido</span>}</div>
+
+        <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-3">
+          <div className="col-span-2"><dt className="text-xs text-muted-foreground">Gerente</dt><dd>{item.gerentes.map((g) => g.nome).join(', ') || 'Sem gerente'}</dd></div>
+          <div><dt className="text-xs text-muted-foreground">Vigência contratual</dt><dd>{faixa(item.vigDe, item.vigAte) || 'Sem data'}</dd></div>
+          <div><dt className="text-xs text-muted-foreground">Último produto previsto</dt><dd>{br(item.ultimo) || 'Sem data'}</dd></div>
+          {corr && (item.vigOkDe || item.ultimoOk) && (
+            <>
+              <div><dt className="text-xs text-warn">Vigência correta</dt><dd>{faixa(item.vigOkDe, item.vigOkAte) || 'Sem alteração'}</dd></div>
+              <div><dt className="text-xs text-warn">Último produto correto</dt><dd>{br(item.ultimoOk) || 'Sem alteração'}</dd></div>
+            </>
+          )}
+          <div><dt className="text-xs text-muted-foreground">Prazo de resposta</dt><dd className={vencido(item) ? 'text-bad' : ''}>{br(item.prazo) || 'Sem prazo'}</dd></div>
+        </dl>
+
+        {(item.status === 'Revisar datas' || (!coplan && item.status !== 'Atualizado no 02.01') || (coplan && respondido(item.status) && item.status !== 'Atualizado no 02.01')) && (
+          <button onClick={onConferir} className="mt-5 w-full rounded-md bg-primary px-3 py-2 text-primary-foreground hover:opacity-90">{item.status === 'Revisar datas' ? 'Conferir as datas' : 'Rever resposta'}</button>
+        )}
+
+        <div className="mt-6 text-xs font-medium text-muted-foreground">Links</div>
+        <div className="mt-2 space-y-2">
+          {item.linkQuadro && link(item.linkQuadro, 'Quadro do projeto')}
+          {coplan && item.id02 && link(URL_0201(item.id02), 'Item no 02.01')}
+          {item.linkSGI && link(item.linkSGI, 'Painel SGI')}
+          {!item.linkQuadro && !(coplan && item.id02) && !item.linkSGI && <div className="text-muted-foreground">Sem links cadastrados.</div>}
+        </div>
+
+        <div className="mt-6 text-xs font-medium text-muted-foreground">Observações</div>
+        <div className="mt-2 whitespace-pre-line rounded-md bg-muted p-3">{item.obs || 'Nenhuma observação.'}</div>
+      </aside>
+    </div>
+  );
+}
+
 export default function App() {
   const [eu, setEu] = useState<Eu | null>(null);
   const [itens, setItens] = useState<Item[]>([]);
@@ -114,6 +164,8 @@ export default function App() {
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [prazo, setPrazo] = useState('');
   const [aberto, setAberto] = useState<Item | null>(null);
+  const [lateral, setLateral] = useState<Item | null>(null);
+  const [buscaGer, setBuscaGer] = useState('');
   const [ocupado, setOcupado] = useState(false);
 
   async function recarregar() {
@@ -237,13 +289,18 @@ export default function App() {
             </div>
           </div>
         ) : aba === 'gerentes' && coplan ? (
-          <div className="mt-4 overflow-x-auto rounded-lg border bg-card">
+          <div className="mt-4">
+          <div className="relative mb-3 w-72">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <input value={buscaGer} onChange={(e) => setBuscaGer(e.target.value)} placeholder="Buscar gerente" className="w-full rounded-md border bg-card py-2 pl-8 pr-2" />
+          </div>
+          <div className="overflow-x-auto rounded-lg border bg-card">
             <table className="w-full">
               <thead className="bg-muted text-left text-xs text-muted-foreground">
                 <tr><th className="p-2.5">Gerente</th><th className="p-2.5 text-right">Projetos</th><th className="p-2.5 text-right">Aguardando</th><th className="p-2.5 text-right">Prazo vencido</th><th className="p-2.5 text-right">Respondidos</th><th className="p-2.5">% respondido</th></tr>
               </thead>
               <tbody>
-                {porGerente.map((g) => (
+                {porGerente.filter((g) => { const q = buscaGer.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); return !q || g.nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(q); }).map((g) => (
                   <tr key={g.nome} className="cursor-pointer border-t hover:bg-muted/50" onClick={() => { setFGerente(g.nome === 'Sem gerente' ? '-' : g.nome); setAba('projetos'); }}>
                     <td className="p-2.5">{g.nome}</td>
                     <td className="p-2.5 text-right">{g.total}</td>
@@ -259,6 +316,7 @@ export default function App() {
                 ))}
               </tbody>
             </table>
+          </div>
           </div>
         ) : (
           <>
@@ -317,8 +375,8 @@ export default function App() {
                   {visiveis.map((i) => {
                     const corr = i.status === 'Datas corrigidas';
                     return (
-                      <tr key={i.id} className="border-t align-top hover:bg-muted/40">
-                        {coplan && <td className="p-2.5"><input type="checkbox" checked={sel.has(i.id)} onChange={() => alternar(i.id)} /></td>}
+                      <tr key={i.id} className="cursor-pointer border-t align-top hover:bg-muted/40" onClick={() => setLateral(i)}>
+                        {coplan && <td className="p-2.5" onClick={(e) => e.stopPropagation()}><input type="checkbox" checked={sel.has(i.id)} onChange={() => alternar(i.id)} /></td>}
                         <td className="max-w-xs p-2.5">{i.nome}{i.obs && <div className="mt-0.5 line-clamp-2 text-xs text-muted-foreground" title={i.obs}>{i.obs.split('\n').pop()}</div>}</td>
                         {coplan && <td className="p-2.5">{i.gerentes.map((g) => g.nome).join(', ') || <span className="text-muted-foreground">Sem gerente</span>}</td>}
                         <td className="whitespace-nowrap p-2.5">{faixa(i.vigDe, i.vigAte) || <span className="text-muted-foreground">Sem data</span>}{corr && i.vigOkDe && <div className="text-xs text-warn">Correta: {faixa(i.vigOkDe, i.vigOkAte)}</div>}</td>
@@ -327,7 +385,7 @@ export default function App() {
                         <td className="p-2.5"><Badge s={i.status} /></td>
                         <td className="p-2.5 text-right">
                           {(i.status === 'Revisar datas' || !coplan || respondido(i.status)) && i.status !== 'Atualizado no 02.01' && (
-                            <button onClick={() => setAberto(i)} className={`whitespace-nowrap rounded-md px-2.5 py-1 ${i.status === 'Revisar datas' ? 'bg-primary text-primary-foreground' : 'border hover:bg-muted'}`}>
+                            <button onClick={(e) => { e.stopPropagation(); setAberto(i); }} className={`whitespace-nowrap rounded-md px-2.5 py-1 ${i.status === 'Revisar datas' ? 'bg-primary text-primary-foreground' : 'border hover:bg-muted'}`}>
                               {i.status === 'Revisar datas' ? 'Conferir' : 'Rever'}
                             </button>
                           )}
@@ -344,6 +402,7 @@ export default function App() {
           </>
         )}
       </div>
+      {lateral && <Lateral item={lateral} coplan={coplan} onFechar={() => setLateral(null)} onConferir={() => { setAberto(lateral); setLateral(null); }} />}
       {aberto && <Conferir item={aberto} onFechar={() => setAberto(null)} onSalvo={() => { setAberto(null); setAviso('Resposta registrada. Obrigado!'); void recarregar(); }} />}
     </div>
   );

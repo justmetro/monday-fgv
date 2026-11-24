@@ -77,11 +77,22 @@ async function todos(): Promise<Item[]> {
         status: txt(cv, C.status) || 'Não iniciado',
         vigDe: v.de, vigAte: v.ate, ultimo: txt(cv, C.ultimo),
         vigOkDe: vo.de, vigOkAte: vo.ate, ultimoOk: txt(cv, C.ultimoOk),
-        obs: txt(cv, C.obs), id02: txt(cv, C.id02), prazo: txt(cv, C.prazo),
+        obs: txt(cv, C.obs), id02: txt(cv, C.id02), prazo: txt(cv, C.prazo), linkQuadro: '', linkSGI: '',
       });
     }
     cursor = page.cursor;
   } while (cursor);
+  const ids02 = [...new Set(out.map((i) => i.id02).filter((x) => /^\d+$/.test(x)))];
+  const links = new Map<string, { q: string; s: string }>();
+  const url = (v: string | null) => { try { return String(JSON.parse(v ?? '{}')?.url ?? ''); } catch { return ''; } };
+  for (let k = 0; k < ids02.length; k += 100) {
+    const d = await gql<{ items: { id: string; column_values: { id: string; value: string | null }[] }[] }>('query ($ids: [ID!]) { items(ids: $ids, limit: 100) { id column_values(ids: ["link_mm383m1p", "link_mm39c5rc"]) { id value } } }', { ids: ids02.slice(k, k + 100) });
+    d.items.forEach((it) => {
+      const c = Object.fromEntries(it.column_values.map((x) => [x.id, x.value]));
+      links.set(String(it.id), { q: url(c.link_mm383m1p), s: url(c.link_mm39c5rc) });
+    });
+  }
+  out.forEach((i) => { const l = links.get(i.id02); if (l) { i.linkQuadro = l.q; i.linkSGI = l.s; } });
   const ids = [...new Set(out.flatMap((i) => i.gerentes.map((g) => g.id)))];
   if (ids.length) {
     const nomes = new Map<string, string>();
