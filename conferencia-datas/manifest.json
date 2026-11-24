@@ -1,0 +1,36 @@
+{
+  "version": "1.0.0",
+  "app": {
+    "name": "Conferência de Datas de Fim",
+    "description": "Painel da CoPlan para conferir com os gerentes as datas de fim dos projetos. Cada gerente vê só os próprios projetos.",
+    "oauth": {
+      "scopes": [
+        "boards:read",
+        "boards:write",
+        "me:read",
+        "users:read",
+        "notifications:write"
+      ],
+      "redirectUri": [
+        "https://live1-service-29669755-cb23eb9d.us.monday.app/oauth/callback"
+      ]
+    },
+    "features": [
+      {
+        "key": "painel",
+        "type": "AppFeatureBoardView",
+        "name": "Painel",
+        "schemaVersion": "18",
+        "data": {
+          "name": "Painel",
+          "mode": "iframe",
+          "hideSidekick": false,
+          "query_parmas": true,
+          "hideBoardControls": false,
+          "isMobileSupported": false
+        }
+      }
+    ],
+    "slug": "fgvdgpe-projetos_conferencia-datas-fim"
+  }
+}

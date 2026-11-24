@@ -1,0 +1,15 @@
+:root {
+  --background: 220 20% 98%;
+  --foreground: 222 30% 14%;
+  --card: 0 0% 100%;
+  --primary: 221 70% 45%;
+  --primary-foreground: 0 0% 100%;
+  --muted: 220 16% 94%;
+  --muted-foreground: 220 10% 42%;
+  --border: 220 14% 88%;
+  --ok: 152 55% 38%;
+  --warn: 35 90% 48%;
+  --bad: 356 70% 50%;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+}
