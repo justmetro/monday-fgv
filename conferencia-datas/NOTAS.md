@@ -18,6 +18,8 @@ Painel para a CoPlan pedir aos gerentes a conferência das datas de fim dos proj
 - CoPlan = donos do quadro de dados. Vê todos os projetos, pede conferência (status Revisar datas + prazo + notificação da monday) e aplica as correções no 02.01.
 - Gerente = pessoa na coluna Gerente ou e-mail na coluna "E-mail do gerente". Responde "datas conferidas" ou "datas corrigidas".
 - Leituras e gravações no quadro de dados usam o token OAuth do app (o gerente não acessa esse quadro). A gravação no 02.01 sai pelo navegador de quem aplica (relay).
+- CoPlan hoje: Mariana Barbosa Silva, Viviane Pimenta da Silva, Umberto Bezerra Cruz Neto, Arthur de Oliveira Maçaneiro, Mateus Goulart, Alex Shisller e Pedro (donos do quadro de dados).
+- Histórico: cada pedido de conferência, confirmação, correção e aplicação no 02.01 fica na coleção `log_conferencia` do banco do app e aparece na aba Histórico (só CoPlan).
 - Job `lembrete` (server/jobs.ts) avisa os gerentes com projetos em Revisar datas. Agendamento desligado por enquanto (horário a confirmar com o Pedro).
 
 ## Variáveis

@@ -23,7 +23,13 @@ const C = {
 };
 const PLAN = { vig: 'timerange_mm6vw3pb', ultimo: 'date_mm5g69fd' };
 
-import type { Item, Eu } from '../tipos';
+import type { Item, Eu, Registro } from '../tipos';
+import { mongo } from '../../../server/mongo';
+
+async function registrar(e: Eu, acao: string, item: Pick<Item, 'id' | 'nome'>, detalhe = '') {
+  const r: Omit<Registro, 'id'> = { em: new Date().toISOString(), usuarioId: e.id, usuario: e.nome, perfil: e.coplan ? 'CoPlan' : 'Gerente', acao, itemId: item.id, projeto: item.nome, detalhe };
+  await (await mongo()).collection('log_conferencia').insertOne(r as Record<string, unknown>).catch((x) => console.error('[log]', x));
+}
 
 let cacheDonos: { at: number; ids: Set<string> } | null = null;
 async function donos(): Promise<Set<string>> {
@@ -124,6 +130,11 @@ export const responder = createServerFn({ method: 'POST' })
     cv[C.obs] = { text: item.obs ? `${item.obs}\n${nota}` : nota };
     // Gerente não acessa o quadro de dados: grava no nome do app.
     await gqlApp('mutation ($b: ID!, $i: ID!, $v: JSON!) { change_multiple_column_values(board_id: $b, item_id: $i, column_values: $v) { id } }', { b: BOARD, i: item.id, v: JSON.stringify(cv) });
+    const det = d.conferida ? '' : [
+      cv[C.vigOk] ? `vigência ${String((cv[C.vigOk] as any).from).split('-').reverse().join('/')} a ${String((cv[C.vigOk] as any).to).split('-').reverse().join('/')}` : '',
+      d.ultimo ? `último produto ${d.ultimo.split('-').reverse().join('/')}` : '',
+    ].filter(Boolean).join('; ');
+    await registrar(e, d.conferida ? 'Confirmou as datas' : 'Corrigiu as datas', item, [det, d.obs?.trim()].filter(Boolean).join('. '));
     return { ok: true };
   });
 
@@ -143,6 +154,7 @@ export const solicitar = createServerFn({ method: 'POST' })
       const cv: Record<string, unknown> = { [C.status]: { label: 'Revisar datas' } };
       if (d.prazo) cv[C.prazo] = { date: d.prazo };
       await gqlApp('mutation ($b: ID!, $i: ID!, $v: JSON!) { change_multiple_column_values(board_id: $b, item_id: $i, column_values: $v) { id } }', { b: BOARD, i: i.id, v: JSON.stringify(cv) });
+      await registrar(e, 'Pediu conferência', i, [i.gerentes.map((g) => g.nome).join(', ') || 'sem gerente', d.prazo ? `prazo ${d.prazo.split('-').reverse().join('/')}` : ''].filter(Boolean).join('; '));
       if (!i.gerentes.length) semGerente++;
       i.gerentes.forEach((g) => porGerente.set(g.id, [...(porGerente.get(g.id) ?? []), i]));
     }
@@ -173,9 +185,17 @@ export const aplicarNo0201 = createServerFn({ method: 'POST' })
       if (i.vigOkDe && i.vigOkAte) atual[C.vig] = { from: i.vigOkDe, to: i.vigOkAte };
       if (i.ultimoOk) atual[C.ultimo] = { date: i.ultimoOk };
       await gql('mutation ($b: ID!, $i: ID!, $v: JSON!) { change_multiple_column_values(board_id: $b, item_id: $i, column_values: $v) { id } }', { b: BOARD, i: i.id, v: JSON.stringify(atual) });
+      await registrar(e, 'Aplicou a correção no 02.01', i);
     }
     return { atualizados: itens.length };
   });
+
+export const carregarLog = createServerFn({ method: 'POST' }).handler(async () => {
+  const e = await eu();
+  if (!e.coplan) throw new Error('O histórico é só da CoPlan.');
+  const docs = await (await mongo()).collection('log_conferencia').find({}).sort({ em: -1 }).limit(2000).toArray();
+  return docs.map(({ _id, ...r }) => ({ id: String(_id), ...r })) as unknown as Registro[];
+});
 
 /** Job diário: lembra cada gerente dos projetos ainda em "Revisar datas". */
 export async function lembretePendentes() {

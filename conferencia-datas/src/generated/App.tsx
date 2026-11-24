@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { RefreshCw, Search, Send, CheckCircle2, PencilLine, X, Upload } from 'lucide-react';
-import { carregar, responder, solicitar, aplicarNo0201 } from '@generated/server/conferencia';
-import { STATUS, type Item, type Eu } from '@generated/tipos';
+import { carregar, responder, solicitar, aplicarNo0201, carregarLog } from '@generated/server/conferencia';
+import { STATUS, type Item, type Eu, type Registro } from '@generated/tipos';
 
 const hojeISO = () => new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 10);
 const br = (d: string) => (d ? d.split('-').reverse().join('/') : '');
@@ -104,7 +104,10 @@ export default function App() {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
   const [aviso, setAviso] = useState('');
-  const [aba, setAba] = useState<'projetos' | 'gerentes'>('projetos');
+  const [aba, setAba] = useState<'projetos' | 'gerentes' | 'historico'>('projetos');
+  const [log, setLog] = useState<Registro[] | null>(null);
+  const [buscaLog, setBuscaLog] = useState('');
+  useEffect(() => { if (aba === 'historico') carregarLog().then((r) => setLog(r as Registro[])).catch((e) => setErro((e as Error).message)); }, [aba]);
   const [busca, setBusca] = useState('');
   const [fStatus, setFStatus] = useState('');
   const [fGerente, setFGerente] = useState('');
@@ -198,15 +201,42 @@ export default function App() {
 
         {coplan && (
           <div className="mt-5 flex gap-1 border-b">
-            {(['projetos', 'gerentes'] as const).map((a) => (
+            {(['projetos', 'gerentes', 'historico'] as const).map((a) => (
               <button key={a} onClick={() => setAba(a)} className={`-mb-px border-b-2 px-3 py-2 ${aba === a ? 'border-primary font-medium text-primary' : 'border-transparent text-muted-foreground'}`}>
-                {a === 'projetos' ? 'Projetos' : 'Por gerente'}
+                {a === 'projetos' ? 'Projetos' : a === 'gerentes' ? 'Por gerente' : 'Histórico'}
               </button>
             ))}
           </div>
         )}
 
-        {aba === 'gerentes' && coplan ? (
+        {aba === 'historico' && coplan ? (
+          <div className="mt-4">
+            <div className="relative mb-3 w-72">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <input value={buscaLog} onChange={(e) => setBuscaLog(e.target.value)} placeholder="Buscar projeto, pessoa ou ação" className="w-full rounded-md border bg-card py-2 pl-8 pr-2" />
+            </div>
+            <div className="overflow-x-auto rounded-lg border bg-card">
+              <table className="w-full">
+                <thead className="bg-muted text-left text-xs text-muted-foreground">
+                  <tr><th className="p-2.5">Quando</th><th className="p-2.5">Quem</th><th className="p-2.5">Ação</th><th className="p-2.5">Projeto</th><th className="p-2.5">Detalhe</th></tr>
+                </thead>
+                <tbody>
+                  {(log ?? []).filter((r) => { const q = buscaLog.trim().toLowerCase(); return !q || `${r.usuario} ${r.acao} ${r.projeto} ${r.detalhe}`.toLowerCase().includes(q); }).map((r) => (
+                    <tr key={r.id} className="border-t align-top">
+                      <td className="whitespace-nowrap p-2.5">{new Date(r.em).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' })}</td>
+                      <td className="p-2.5">{r.usuario}<div className="text-xs text-muted-foreground">{r.perfil}</div></td>
+                      <td className="whitespace-nowrap p-2.5">{r.acao}</td>
+                      <td className="max-w-xs p-2.5">{r.projeto}</td>
+                      <td className="p-2.5 text-muted-foreground">{r.detalhe}</td>
+                    </tr>
+                  ))}
+                  {log && !log.length && <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">Nenhuma ação registrada ainda.</td></tr>}
+                  {!log && <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">Carregando...</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : aba === 'gerentes' && coplan ? (
           <div className="mt-4 overflow-x-auto rounded-lg border bg-card">
             <table className="w-full">
               <thead className="bg-muted text-left text-xs text-muted-foreground">

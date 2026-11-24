@@ -11,4 +11,6 @@ export interface Item {
   obs: string; id02: string; prazo: string;
 }
 
-export interface Eu { id: string; nome: string; email: string; coplan: boolean }
+export interface Registro { id: string; em: string; usuarioId: string; usuario: string; perfil: string; acao: string; itemId: string; projeto: string; detalhe: string }
+
+export interface Eu{ id: string; nome: string; email: string; coplan: boolean }
