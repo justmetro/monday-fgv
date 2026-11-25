@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { reqCtx, type ReqCtx } from './context';
 import type { ServerFn } from './serverFn';
-import { startJob } from './jobs';
+import { startJob, JOBS } from './jobs';
 import { pendentes, registrarResultado } from './relay';
 import { oauthStart, oauthCallback, oauthStatus, lembrarCliente } from './oauth';
 import { MODULES } from './registry';
@@ -93,7 +93,10 @@ const server = http.createServer(async (req, res) => {
       const job = p.split('/').filter(Boolean)[1] ?? '';
       if (p.startsWith('/cron/') && (!process.env.CRON_KEY || req.headers['x-cron-key'] !== process.env.CRON_KEY)) return send(res, 401, { ok: false });
       if (req.method === 'POST') await readBody(req, 1e6).catch(() => '');
-      const out = await reqCtx.run({ userId: '', accountId: '', isAdmin: false, isGuest: false, viaCron: true }, () => startJob(job)).catch((e) => ({ error: String(e?.message ?? e) }));
+      const arg = new URL(req.url ?? '/', 'http://x').searchParams.get('arg') ?? undefined;
+      // Com CRON_KEY e ?direto=1 roda na hora e devolve o resultado (usado para simular).
+      const direto = p.startsWith('/cron/') && new URL(req.url ?? '/', 'http://x').searchParams.get('direto') === '1';
+      const out = await reqCtx.run({ userId: '', accountId: '', isAdmin: false, isGuest: false, viaCron: true }, () => (direto ? JOBS[job]!(arg) : startJob(job, arg))).catch((e) => ({ error: String(e?.message ?? e) }));
       console.log(`[cron ${job}]`, JSON.stringify(out));
       return send(res, 200, { ok: true, result: out });
     }

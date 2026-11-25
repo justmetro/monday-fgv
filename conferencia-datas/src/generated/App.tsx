@@ -16,6 +16,16 @@ const COR: Record<string, string> = {
 };
 
 const respondido = (s: string) => s === 'Datas conferidas' || s === 'Datas corrigidas' || s === 'Atualizado no 02.01';
+// Dias até o último produto (corrigido, se houver). Gatilhos: 120 gerente, 90 e 60 CoPlan.
+const diasFim = (i: Item) => { const f = i.ultimoOk || i.ultimo; return f ? Math.round((Date.parse(f) - Date.parse(hojeISO())) / 86400_000) : null; };
+const faixaFim = (n: number | null) => (n === null ? '' : n <= 0 ? 'enc' : n <= 60 ? '60' : n <= 90 ? '90' : n <= 120 ? '120' : 'mais');
+const COR_FIM: Record<string, string> = { '60': 'text-bad', '90': 'text-warn', '120': 'text-primary', enc: 'text-muted-foreground', mais: 'text-muted-foreground' };
+function FimEm({ i }: { i: Item }) {
+  const n = diasFim(i);
+  if (n === null) return null;
+  return <div className={`text-xs ${COR_FIM[faixaFim(n)]}`}>{n <= 0 ? 'Encerrado' : `em ${n} dias`}</div>;
+}
+
 const vencido = (i: Item) => i.status === 'Revisar datas' && !!i.prazo && i.prazo < hojeISO();
 
 function Badge({ s }: { s: string }) {
@@ -176,6 +186,7 @@ export default function App() {
   const [busca, setBusca] = useState('');
   const [fStatus, setFStatus] = useState('');
   const [fGerente, setFGerente] = useState('');
+  const [fFim, setFFim] = useState('');
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [prazo, setPrazo] = useState('');
   const [aberto, setAberto] = useState<Item | null>(null);
@@ -198,15 +209,17 @@ export default function App() {
     const q = busca.trim().toLowerCase();
     const ordem = (i: Item) => (vencido(i) ? 0 : i.status === 'Revisar datas' ? 1 : i.status === 'Datas corrigidas' ? 2 : 3);
     return itens
-      .filter((i) => (!q || i.nome.toLowerCase().includes(q)) && (!fStatus || i.status === fStatus) && (!fGerente || (fGerente === '-' ? !i.gerentes.length : i.gerentes.some((g) => g.nome === fGerente))))
+      .filter((i) => (!q || i.nome.toLowerCase().includes(q)) && (!fStatus || i.status === fStatus) && (!fGerente || (fGerente === '-' ? !i.gerentes.length : i.gerentes.some((g) => g.nome === fGerente))) && (!fFim || (fFim === 'ate120' ? ['60', '90', '120'].includes(faixaFim(diasFim(i))) : faixaFim(diasFim(i)) === fFim)))
       .sort((a, b) => ordem(a) - ordem(b) || a.nome.localeCompare(b.nome));
-  }, [itens, busca, fStatus, fGerente]);
+  }, [itens, busca, fStatus, fGerente, fFim]);
 
   const k = useMemo(() => {
     const pedidos = itens.filter((i) => i.status !== 'Não iniciado').length;
     const resp = itens.filter((i) => respondido(i.status)).length;
     return {
       total: itens.length,
+      ate120: itens.filter((i) => ['60', '90', '120'].includes(faixaFim(diasFim(i)))).length,
+      ate60: itens.filter((i) => faixaFim(diasFim(i)) === '60').length,
       aguardando: itens.filter((i) => i.status === 'Revisar datas').length,
       vencidos: itens.filter(vencido).length,
       resp,
@@ -258,8 +271,9 @@ export default function App() {
         {erro && <div className="mt-4 rounded-md bg-bad/10 p-3 text-bad">{erro}</div>}
         {aviso && <div className="mt-4 rounded-md bg-ok/10 p-3 text-ok">{aviso}</div>}
 
-        <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-5">
+        <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-6">
           <Kpi rotulo="Projetos" valor={k.total} />
+          <Kpi rotulo="Fim em até 120 dias" valor={k.ate120} detalhe={`${k.ate60} em até 60 dias`} tom={k.ate60 ? 'text-warn' : ''} />
           <Kpi rotulo="Aguardando conferência" valor={k.aguardando} tom={k.aguardando ? 'text-bad' : ''} />
           <Kpi rotulo="Com prazo vencido" valor={k.vencidos} tom={k.vencidos ? 'text-bad' : ''} />
           <Kpi rotulo="Respondidos" valor={`${k.pct}%`} detalhe={`${k.resp} de ${k.pedidos} pedidos`} tom="text-ok" />
@@ -351,6 +365,15 @@ export default function App() {
                   {gerentes.map((g) => <option key={g}>{g}</option>)}
                 </select>
               )}
+              <select value={fFim} onChange={(e) => setFFim(e.target.value)} className="rounded-md border bg-card px-2 py-2">
+                <option value="">Qualquer data de fim</option>
+                <option value="ate120">Fim em até 120 dias</option>
+                <option value="120">De 91 a 120 dias</option>
+                <option value="90">De 61 a 90 dias</option>
+                <option value="60">Até 60 dias</option>
+                <option value="mais">Mais de 120 dias</option>
+                <option value="enc">Já encerrados</option>
+              </select>
               <span className="text-muted-foreground">{visiveis.length} projetos</span>
             </div>
 
@@ -395,7 +418,7 @@ export default function App() {
                         <td className="max-w-xs p-2.5">{i.nome}{i.obs && <div className="mt-0.5 line-clamp-2 text-xs text-muted-foreground" title={i.obs}>{i.obs.split('\n').pop()}</div>}</td>
                         {coplan && <td className="p-2.5">{i.gerentes.map((g) => g.nome).join(', ') || <span className="text-muted-foreground">Sem gerente</span>}</td>}
                         <td className="whitespace-nowrap p-2.5">{faixa(i.vigDe, i.vigAte) || <span className="text-muted-foreground">Sem data</span>}{corr && i.vigOkDe && <div className="text-xs text-warn">Correta: {faixa(i.vigOkDe, i.vigOkAte)}</div>}</td>
-                        <td className="whitespace-nowrap p-2.5">{br(i.ultimo) || <span className="text-muted-foreground">Sem data</span>}{corr && i.ultimoOk && <div className="text-xs text-warn">Correta: {br(i.ultimoOk)}</div>}</td>
+                        <td className="whitespace-nowrap p-2.5">{br(i.ultimo) || <span className="text-muted-foreground">Sem data</span>}{corr && i.ultimoOk && <div className="text-xs text-warn">Correta: {br(i.ultimoOk)}</div>}<FimEm i={i} /></td>
                         <td className={`whitespace-nowrap p-2.5 ${vencido(i) ? 'font-semibold text-bad' : ''}`}>{br(i.prazo)}</td>
                         <td className="p-2.5"><Badge s={i.status} />{i.desaloca === DESALOCA.parte && <div className="mt-1 text-xs text-warn">Parte da equipe sai antes</div>}</td>
                         <td className="p-2.5 text-right">

@@ -197,33 +197,38 @@ async function notificar(userId: string, texto: string) {
   await gqlApp('mutation ($u: ID!, $t: ID!, $x: String!) { create_notification(user_id: $u, target_id: $t, target_type: Project, text: $x) { text } }', { u: userId, t: ITEM_ACESSO, x: texto });
 }
 
+async function pedirConferencia(e: Eu, itens: Item[], prazo: string | undefined, acao: string) {
+  const porGerente = new Map<string, Item[]>();
+  let semGerente = 0;
+  for (const i of itens) {
+    const cv: Record<string, unknown> = { [C.status]: { label: 'Revisar datas' } };
+    if (prazo) cv[C.prazo] = { date: prazo };
+    await gqlApp('mutation ($b: ID!, $i: ID!, $v: JSON!) { change_multiple_column_values(board_id: $b, item_id: $i, column_values: $v) { id } }', { b: BOARD, i: i.id, v: JSON.stringify(cv) });
+    await registrar(e, acao, i, [i.gerentes.map((g) => g.nome).join(', ') || 'sem gerente', prazo ? `prazo ${br(prazo)}` : ''].filter(Boolean).join('; '));
+    if (!i.gerentes.length) semGerente++;
+    i.gerentes.forEach((g) => porGerente.set(g.id, [...(porGerente.get(g.id) ?? []), i]));
+  }
+  // Garante que todo gerente notificado consiga abrir o painel (assinante do quadro de acesso).
+  if (porGerente.size) {
+    await gqlApp('mutation ($b: ID!, $u: [ID!]!) { add_users_to_board(board_id: $b, user_ids: $u, kind: subscriber) { id } }', { b: BOARD_ACESSO, u: [...porGerente.keys()] }).catch((x) => console.error('[acesso]', x));
+  }
+  const prazoTxt = prazo ? ` até ${br(prazo)}` : '';
+  for (const [uid, lista] of porGerente) {
+    await notificar(uid, `A CoPlan pede que você confira${prazoTxt} as datas de fim de ${lista.length === 1 ? 'um projeto' : `${lista.length} projetos`}: ${resumo(lista)}. Abra a aba Painel neste quadro.`);
+  }
+  return { atualizados: itens.length, notificados: porGerente.size, semGerente };
+}
+
+const br = (d: string) => d.split('-').reverse().join('/');
+const resumo = (l: { nome: string }[]) => l.slice(0, 3).map((i) => i.nome).join('; ') + (l.length > 3 ? ` e mais ${l.length - 3}` : '');
+
 export const solicitar = createServerFn({ method: 'POST' })
   .validator(z.object({ itemIds: z.array(z.string()).min(1).max(200), prazo: data }))
   .handler(async ({ data: d }) => {
     const e = await eu();
     if (!e.coplan) throw new Error('Só a CoPlan pede conferência.');
     const itens = (await todos()).filter((i) => d.itemIds.includes(i.id));
-    const porGerente = new Map<string, Item[]>();
-    let semGerente = 0;
-    for (const i of itens) {
-      const cv: Record<string, unknown> = { [C.status]: { label: 'Revisar datas' } };
-      if (d.prazo) cv[C.prazo] = { date: d.prazo };
-      await gqlApp('mutation ($b: ID!, $i: ID!, $v: JSON!) { change_multiple_column_values(board_id: $b, item_id: $i, column_values: $v) { id } }', { b: BOARD, i: i.id, v: JSON.stringify(cv) });
-      await registrar(e, 'Pediu conferência', i, [i.gerentes.map((g) => g.nome).join(', ') || 'sem gerente', d.prazo ? `prazo ${d.prazo.split('-').reverse().join('/')}` : ''].filter(Boolean).join('; '));
-      if (!i.gerentes.length) semGerente++;
-      i.gerentes.forEach((g) => porGerente.set(g.id, [...(porGerente.get(g.id) ?? []), i]));
-    }
-    // Garante que todo gerente notificado consiga abrir o painel (assinante do quadro de acesso).
-    if (porGerente.size) {
-      await gqlApp('mutation ($b: ID!, $u: [ID!]!) { add_users_to_board(board_id: $b, user_ids: $u, kind: subscriber) { id } }', { b: BOARD_ACESSO, u: [...porGerente.keys()] }).catch((x) => console.error('[acesso]', x));
-    }
-    const prazoTxt = d.prazo ? ` até ${d.prazo.split('-').reverse().join('/')}` : '';
-    for (const [uid, lista] of porGerente) {
-      const nomes = lista.slice(0, 3).map((i) => i.nome).join('; ');
-      const mais = lista.length > 3 ? ` e mais ${lista.length - 3}` : '';
-      await notificar(uid, `A CoPlan pede que você confira${prazoTxt} as datas de fim de ${lista.length === 1 ? 'um projeto' : `${lista.length} projetos`}: ${nomes}${mais}. Abra a aba Painel neste quadro.`);
-    }
-    return { atualizados: itens.length, notificados: porGerente.size, semGerente };
+    return pedirConferencia(e, itens, d.prazo || undefined, 'Pediu conferência');
   });
 
 export const aplicarNo0201 = createServerFn({ method: 'POST' })
@@ -257,6 +262,103 @@ export const carregarLog = createServerFn({ method: 'POST' }).handler(async () =
 });
 
 /** Job diário: lembra cada gerente dos projetos ainda em "Revisar datas". */
+// ---------- Rotina diária (agendador, 09:00 de Brasília em dias úteis) ----------
+const ROTINA: Eu = { id: '0', nome: 'Rotina diária', email: '', coplan: true };
+const hojeBR = () => new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 10);
+const somaDias = (d: string, n: number) => new Date(Date.parse(d) + n * 86400_000).toISOString().slice(0, 10);
+const diasEntre = (de: string, ate: string) => Math.round((Date.parse(ate) - Date.parse(de)) / 86400_000);
+const fimDe = (i: Item) => i.ultimoOk || i.ultimo;
+
+const SGI = { foco: 'person', status: 'color_mm7y8hwt', envio: 'date_mm97q7ts' };
+
+/** IO2.1.1: avisa o Ponto Focal do 02.01 a cada dia útil nos 7 dias após o envio da equipe ao SGI. */
+async function lembreteSGI(hoje: string, simular: boolean) {
+  const q = `query ($b: [ID!], $c: String) { boards(ids: $b) { items_page(limit: 100, cursor: $c) { cursor items { id name column_values(ids: ["${SGI.foco}", "${SGI.status}", "${SGI.envio}"]) { id text value } } } } }`;
+  const enviados: { id: string; nome: string; foco: string[]; dia: number }[] = [];
+  let cursor: string | null = null;
+  do {
+    const d: any = await gql(q, { b: [BOARD_PLAN], c: cursor });
+    const pg = d.boards[0].items_page;
+    for (const it of pg.items) {
+      const cv = Object.fromEntries(it.column_values.map((c: any) => [c.id, c]));
+      const envio = (cv[SGI.envio]?.text ?? '').trim();
+      if ((cv[SGI.status]?.text ?? '') !== 'Enviada' || !envio) continue;
+      const foco = (JSON.parse(cv[SGI.foco]?.value || '{}').personsAndTeams ?? []).filter((p: any) => p.kind === 'person').map((p: any) => String(p.id));
+      enviados.push({ id: String(it.id), nome: it.name, foco, dia: diasEntre(envio, hoje) });
+    }
+    cursor = pg.cursor;
+  } while (cursor);
+  const avisar = enviados.filter((x) => x.dia >= 1 && x.dia <= 8 && x.foco.length);
+  if (!simular) {
+    for (const x of avisar) {
+      const texto = x.dia <= 7
+        ? `IO2.1.1: dia ${x.dia} de 7 desde o envio da equipe de ${x.nome} ao SGI. Confira no SGI se a equipe já foi aprovada e, se sim, marque Aprovada na coluna Equipe no SGI.`
+        : `IO2.1.1: a equipe de ${x.nome} passou de 7 dias no SGI sem aprovação registrada. Confira no SGI e atualize a coluna Equipe no SGI.`;
+      for (const u of x.foco) await gqlApp('mutation ($u: ID!, $t: ID!, $x: String!) { create_notification(user_id: $u, target_id: $t, target_type: Project, text: $x) { text } }', { u, t: x.id, x: texto }).catch((err) => console.error('[sgi]', err));
+    }
+  }
+  return { enviadas: enviados.length, avisados: avisar.map((x) => `${x.nome} (dia ${x.dia})`) };
+}
+
+export async function rotinaDiaria(arg?: string) {
+  const simular = arg === 'simular';
+  const hoje = hojeBR();
+  const itens = await todos();
+  const col = (await mongo()).collection<{ _id: string; em: string }>('alertas_coplan');
+
+  // 1) 120 dias: pede a conferência automaticamente aos gerentes.
+  const a120 = itens.filter((i) => { const f = fimDe(i); if (!f || i.status !== 'Não iniciado') return false; const n = diasEntre(hoje, f); return n > 0 && n <= 120; });
+  const pedido = simular ? null : await pedirConferencia(ROTINA, a120, somaDias(hoje, 7), 'Pedido automático (120 dias)');
+
+  // 2) 90 e 60 dias: avisa a CoPlan uma vez por marco, só para o que ainda não chegou ao 02.01.
+  const marcos: Record<'90' | '60', Item[]> = { '90': [], '60': [] };
+  for (const i of itens) {
+    const f = fimDe(i);
+    if (!f || i.status === 'Atualizado no 02.01') continue;
+    const n = diasEntre(hoje, f);
+    if (n <= 0) continue;
+    const marco = n <= 60 ? '60' : n <= 90 ? '90' : null;
+    if (!marco) continue;
+    const chave = `${i.id}:${marco}:${f}`;
+    if (await col.findOne({ _id: chave })) continue;
+    marcos[marco].push(i);
+    if (!simular) await col.insertOne({ _id: chave, em: new Date().toISOString() });
+  }
+  const coplan = [...(await donos())];
+  if (!simular) {
+    for (const m of ['90', '60'] as const) {
+      const l = marcos[m];
+      if (!l.length) continue;
+      const pend = l.filter((i) => i.status === 'Revisar datas' || i.status === 'Não iniciado').length;
+      const texto = `Conferência de datas: ${l.length === 1 ? 'um projeto chegou' : `${l.length} projetos chegaram`} a ${m} dias do último produto: ${resumo(l)}.${pend ? ` ${pend} ainda sem resposta do gerente.` : ''} Veja no Painel.`;
+      for (const u of coplan) await notificar(u, texto).catch((x) => console.error('[coplan]', x));
+    }
+  }
+
+  // 3) Lembrete aos gerentes com conferência pendente (sem repetir quem foi avisado agora).
+  const novos = new Set(a120.map((i) => i.id));
+  const pend = itens.filter((i) => i.status === 'Revisar datas' && !novos.has(i.id));
+  const porGerente = new Map<string, Item[]>();
+  pend.forEach((i) => i.gerentes.forEach((g) => porGerente.set(g.id, [...(porGerente.get(g.id) ?? []), i])));
+  if (!simular) {
+    for (const [uid, lista] of porGerente) {
+      const atrasados = lista.filter((i) => i.prazo && i.prazo < hoje).length;
+      await notificar(uid, `Lembrete da CoPlan: ${lista.length === 1 ? 'um projeto aguarda' : `${lista.length} projetos aguardam`} a conferência das datas de fim${atrasados ? ` (${atrasados} com prazo vencido)` : ''}: ${resumo(lista)}. Abra a aba Painel neste quadro.`).catch((x) => console.error('[lembrete]', x));
+    }
+  }
+
+  // 4) IO2.1.1 no 02.01.
+  const sgi = await lembreteSGI(hoje, simular);
+
+  return {
+    hoje, simular,
+    pedidos120: a120.map((i) => i.nome), pedido,
+    alerta90: marcos['90'].map((i) => i.nome), alerta60: marcos['60'].map((i) => i.nome),
+    lembretes: { gerentes: porGerente.size, projetos: pend.length },
+    sgi,
+  };
+}
+
 export async function lembretePendentes() {
   const pend = (await todos()).filter((i) => i.status === 'Revisar datas');
   const hoje = new Date().toISOString().slice(0, 10);

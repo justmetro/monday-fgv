@@ -1,9 +1,10 @@
 // Jobs em segundo plano chamados pelo agendador do monday code (/mndy-cronjob/<job>).
 import { mongo } from './mongo';
-import { lembretePendentes } from '../src/generated/server/conferencia';
+import { lembretePendentes, rotinaDiaria } from '../src/generated/server/conferencia';
 
 export const JOBS: Record<string, (arg?: string) => Promise<unknown>> = {
   lembrete: () => lembretePendentes(),
+  diario: (arg) => rotinaDiaria(arg),
 };
 
 export interface JobState { _id: string; kind: string; status: 'rodando' | 'concluido' | 'erro'; startedAt: string; finishedAt?: string; arg?: string; result?: unknown; error?: string }
