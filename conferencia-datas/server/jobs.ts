@@ -5,6 +5,14 @@ import { lembretePendentes, rotinaDiaria } from '../src/generated/server/confere
 export const JOBS: Record<string, (arg?: string) => Promise<unknown>> = {
   lembrete: () => lembretePendentes(),
   diario: (arg) => rotinaDiaria(arg),
+  // Apaga do banco o histórico e os alertas de um item (arg = id do item). Uso manual pela rota /cron.
+  limpar: async (arg) => {
+    if (!arg || !/^\d+$/.test(arg)) return { erro: 'informe o id do item' };
+    const db = await mongo();
+    const log = await db.collection('log_conferencia').deleteMany({ itemId: { $in: [arg, Number(arg)] } });
+    const alertas = await db.collection<{ _id: string }>('alertas_coplan').deleteMany({ _id: { $regex: `^${arg}:` } });
+    return { log: log.deletedCount, alertas: alertas.deletedCount };
+  },
 };
 
 export interface JobState { _id: string; kind: string; status: 'rodando' | 'concluido' | 'erro'; startedAt: string; finishedAt?: string; arg?: string; result?: unknown; error?: string }

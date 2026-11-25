@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { RefreshCw, Search, Send, CheckCircle2, PencilLine, X, Upload, ExternalLink } from 'lucide-react';
+import { RefreshCw, Search, X, ExternalLink } from 'lucide-react';
 import { carregar, responder, solicitar, aplicarNo0201, carregarLog } from '@generated/server/conferencia';
 import { STATUS, DESALOCA, type Item, type Eu, type Registro } from '@generated/tipos';
 
@@ -32,15 +32,24 @@ function Badge({ s }: { s: string }) {
   return <span className={`inline-flex whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ${COR[s] ?? 'bg-muted'}`}>{s}</span>;
 }
 
-function Kpi({ rotulo, valor, detalhe, tom }: { rotulo: string; valor: string | number; detalhe?: string; tom?: string }) {
+function Kpi({ rotulo, valor, detalhe, tom, ativo, onClick }: { rotulo: string; valor: string | number; detalhe?: string; tom?: string; ativo?: boolean; onClick: () => void }) {
   return (
-    <div className="rounded-lg border bg-card p-4">
+    <button type="button" onClick={onClick} aria-pressed={ativo} className={`rounded-lg border bg-card p-4 text-left transition-colors hover:border-primary/50 ${ativo ? 'border-primary ring-1 ring-primary' : ''}`}>
       <div className="text-xs text-muted-foreground">{rotulo}</div>
       <div className={`mt-1 text-2xl font-semibold ${tom ?? ''}`}>{valor}</div>
       {detalhe && <div className="mt-0.5 text-xs text-muted-foreground">{detalhe}</div>}
-    </div>
+    </button>
   );
 }
+
+type Grupo = '' | 'ate120' | 'aguardando' | 'vencidos' | 'respondidos' | 'correcoes';
+const GRUPO: Record<Exclude<Grupo, ''>, (i: Item) => boolean> = {
+  ate120: (i) => ['60', '90', '120'].includes(faixaFim(diasFim(i))),
+  aguardando: (i) => i.status === 'Revisar datas',
+  vencidos: (i) => vencido(i),
+  respondidos: (i) => respondido(i.status),
+  correcoes: (i) => i.status === 'Datas corrigidas' || i.status === 'Atualizado no 02.01',
+};
 
 function Conferir({ item, onFechar, onSalvo }: { item: Item; onFechar: () => void; onSalvo: () => void }) {
   const [modo, setModo] = useState<'escolha' | 'corrigir'>('escolha');
@@ -73,11 +82,8 @@ function Conferir({ item, onFechar, onSalvo }: { item: Item; onFechar: () => voi
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" onClick={onFechar}>
       <div className="w-full max-w-lg rounded-lg border bg-card p-5 shadow-lg" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start justify-between gap-4">
-          <div>
-            <div className="text-xs text-muted-foreground">Conferência de datas</div>
-            <div className="font-semibold">{item.nome}</div>
-          </div>
-          <button onClick={onFechar} className="rounded p-1 hover:bg-muted"><X className="h-4 w-4" /></button>
+          <div className="font-semibold">{item.nome}</div>
+          <button onClick={onFechar} aria-label="Fechar" className="rounded p-1 hover:bg-muted"><X className="h-4 w-4" /></button>
         </div>
         <div className="mt-4 grid grid-cols-2 gap-3 rounded-md bg-muted p-3 text-sm">
           <div><div className="text-xs text-muted-foreground">Vigência contratual</div>{faixa(item.vigDe, item.vigAte) || 'Sem data'}</div>
@@ -107,8 +113,8 @@ function Conferir({ item, onFechar, onSalvo }: { item: Item; onFechar: () => voi
         <div className="mt-4 flex flex-wrap justify-end gap-2">
           {modo === 'escolha' ? (
             <>
-              <button disabled={salvando} onClick={() => setModo('corrigir')} className="inline-flex items-center gap-1.5 rounded-md border px-3 py-2 text-sm hover:bg-muted"><PencilLine className="h-4 w-4" />Corrigir datas</button>
-              <button disabled={salvando} onClick={() => salvar(true)} className="inline-flex items-center gap-1.5 rounded-md bg-ok px-3 py-2 text-sm text-white hover:opacity-90"><CheckCircle2 className="h-4 w-4" />{salvando ? 'Salvando...' : 'As datas estão certas'}</button>
+              <button disabled={salvando} onClick={() => setModo('corrigir')} className="rounded-md border px-3 py-2 text-sm hover:bg-muted">Corrigir datas</button>
+              <button disabled={salvando} onClick={() => salvar(true)} className="rounded-md bg-ok px-3 py-2 text-sm text-white hover:opacity-90">{salvando ? 'Salvando...' : 'As datas estão certas'}</button>
             </>
           ) : (
             <>
@@ -136,7 +142,7 @@ function Lateral({ item, coplan, onFechar, onConferir }: { item: Item; coplan: b
       <aside className="h-full w-full max-w-md overflow-y-auto border-l bg-card p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start justify-between gap-3">
           <div className="font-semibold leading-snug">{item.nome}</div>
-          <button onClick={onFechar} className="rounded p-1 hover:bg-muted"><X className="h-4 w-4" /></button>
+          <button onClick={onFechar} aria-label="Fechar" className="rounded p-1 hover:bg-muted"><X className="h-4 w-4" /></button>
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-2"><Badge s={item.status} />{vencido(item) && <span className="text-xs font-medium text-bad">Prazo vencido</span>}</div>
 
@@ -187,6 +193,15 @@ export default function App() {
   const [fStatus, setFStatus] = useState('');
   const [fGerente, setFGerente] = useState('');
   const [fFim, setFFim] = useState('');
+  const [grupo, setGrupo] = useState<Grupo>('');
+  const filtrado = !!(busca || fStatus || fGerente || fFim || grupo);
+  function limparFiltros() { setBusca(''); setFStatus(''); setFGerente(''); setFFim(''); setGrupo(''); }
+  function clicarKpi(g: Grupo) {
+    const desligar = g === grupo || (!g && !filtrado);
+    limparFiltros();
+    setAba('projetos');
+    if (!desligar) setGrupo(g);
+  }
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [prazo, setPrazo] = useState('');
   const [aberto, setAberto] = useState<Item | null>(null);
@@ -209,9 +224,9 @@ export default function App() {
     const q = busca.trim().toLowerCase();
     const ordem = (i: Item) => (vencido(i) ? 0 : i.status === 'Revisar datas' ? 1 : i.status === 'Datas corrigidas' ? 2 : 3);
     return itens
-      .filter((i) => (!q || i.nome.toLowerCase().includes(q)) && (!fStatus || i.status === fStatus) && (!fGerente || (fGerente === '-' ? !i.gerentes.length : i.gerentes.some((g) => g.nome === fGerente))) && (!fFim || (fFim === 'ate120' ? ['60', '90', '120'].includes(faixaFim(diasFim(i))) : faixaFim(diasFim(i)) === fFim)))
+      .filter((i) => (!q || i.nome.toLowerCase().includes(q)) && (!fStatus || i.status === fStatus) && (!fGerente || (fGerente === '-' ? !i.gerentes.length : i.gerentes.some((g) => g.nome === fGerente))) && (!fFim || (fFim === 'ate120' ? GRUPO.ate120(i) : faixaFim(diasFim(i)) === fFim)) && (!grupo || GRUPO[grupo](i)))
       .sort((a, b) => ordem(a) - ordem(b) || a.nome.localeCompare(b.nome));
-  }, [itens, busca, fStatus, fGerente, fFim]);
+  }, [itens, busca, fStatus, fGerente, fFim, grupo]);
 
   const k = useMemo(() => {
     const pedidos = itens.filter((i) => i.status !== 'Não iniciado').length;
@@ -259,9 +274,7 @@ export default function App() {
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h1 className="text-xl font-semibold">Conferência de Datas de Fim</h1>
-            <p className="text-muted-foreground">
-              {eu ? (coplan ? 'Visão da CoPlan: todos os projetos.' : `Projetos sob gerência de ${eu.nome}.`) : 'Carregando...'}
-            </p>
+            {eu && !coplan && <p className="text-muted-foreground">Projetos de {eu.nome}</p>}
           </div>
           <button onClick={() => recarregar()} disabled={carregando} className="inline-flex items-center gap-1.5 rounded-md border bg-card px-3 py-2 hover:bg-muted">
             <RefreshCw className={`h-4 w-4 ${carregando ? 'animate-spin' : ''}`} />Atualizar
@@ -272,12 +285,12 @@ export default function App() {
         {aviso && <div className="mt-4 rounded-md bg-ok/10 p-3 text-ok">{aviso}</div>}
 
         <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-6">
-          <Kpi rotulo="Projetos" valor={k.total} />
-          <Kpi rotulo="Fim em até 120 dias" valor={k.ate120} detalhe={`${k.ate60} em até 60 dias`} tom={k.ate60 ? 'text-warn' : ''} />
-          <Kpi rotulo="Aguardando conferência" valor={k.aguardando} tom={k.aguardando ? 'text-bad' : ''} />
-          <Kpi rotulo="Com prazo vencido" valor={k.vencidos} tom={k.vencidos ? 'text-bad' : ''} />
-          <Kpi rotulo="Respondidos" valor={`${k.pct}%`} detalhe={`${k.resp} de ${k.pedidos} pedidos`} tom="text-ok" />
-          <Kpi rotulo="Correções" valor={k.corrigidas + k.atualizados} detalhe={`${k.atualizados} já no 02.01`} />
+          <Kpi rotulo="Projetos" valor={k.total} ativo={false} onClick={() => clicarKpi('')} />
+          <Kpi rotulo="Fim em até 120 dias" valor={k.ate120} detalhe={`${k.ate60} em até 60 dias`} tom={k.ate60 ? 'text-warn' : ''} ativo={grupo === 'ate120'} onClick={() => clicarKpi('ate120')} />
+          <Kpi rotulo="Aguardando conferência" valor={k.aguardando} tom={k.aguardando ? 'text-bad' : ''} ativo={grupo === 'aguardando'} onClick={() => clicarKpi('aguardando')} />
+          <Kpi rotulo="Prazo vencido" valor={k.vencidos} tom={k.vencidos ? 'text-bad' : ''} ativo={grupo === 'vencidos'} onClick={() => clicarKpi('vencidos')} />
+          <Kpi rotulo="Respondidos" valor={`${k.pct}%`} detalhe={`${k.resp} de ${k.pedidos} pedidos`} tom={k.pct === 100 ? 'text-ok' : ''} ativo={grupo === 'respondidos'} onClick={() => clicarKpi('respondidos')} />
+          <Kpi rotulo="Correções" valor={k.corrigidas + k.atualizados} detalhe={`${k.atualizados} já no 02.01`} ativo={grupo === 'correcoes'} onClick={() => clicarKpi('correcoes')} />
         </div>
 
         {coplan && (
@@ -354,7 +367,7 @@ export default function App() {
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar projeto" className="w-64 rounded-md border bg-card py-2 pl-8 pr-2" />
               </div>
-              <select value={fStatus} onChange={(e) => setFStatus(e.target.value)} className="rounded-md border bg-card px-2 py-2">
+              <select value={fStatus} onChange={(e) => { setFStatus(e.target.value); setGrupo(''); }} className="rounded-md border bg-card px-2 py-2">
                 <option value="">Todos os status</option>
                 {STATUS.map((s) => <option key={s}>{s}</option>)}
               </select>
@@ -365,7 +378,7 @@ export default function App() {
                   {gerentes.map((g) => <option key={g}>{g}</option>)}
                 </select>
               )}
-              <select value={fFim} onChange={(e) => setFFim(e.target.value)} className="rounded-md border bg-card px-2 py-2">
+              <select value={fFim} onChange={(e) => { setFFim(e.target.value); setGrupo(''); }} className="rounded-md border bg-card px-2 py-2">
                 <option value="">Qualquer data de fim</option>
                 <option value="ate120">Fim em até 120 dias</option>
                 <option value="120">De 91 a 120 dias</option>
@@ -375,6 +388,7 @@ export default function App() {
                 <option value="enc">Já encerrados</option>
               </select>
               <span className="text-muted-foreground">{visiveis.length} projetos</span>
+              {filtrado && <button onClick={limparFiltros} className="text-primary hover:underline">Limpar filtros</button>}
             </div>
 
             {coplan && sel.size > 0 && (
@@ -386,11 +400,11 @@ export default function App() {
                 <button disabled={ocupado} onClick={() => acao(async () => {
                   const r = (await solicitar({ data: { itemIds: [...sel], prazo } })) as { atualizados: number; notificados: number; semGerente: number };
                   return `${r.atualizados} projetos marcados como Revisar datas. ${r.notificados} gerentes notificados.${r.semGerente ? ` ${r.semGerente} sem gerente cadastrado.` : ''}`;
-                })} className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-primary-foreground hover:opacity-90"><Send className="h-4 w-4" />Pedir conferência</button>
+                })} className="rounded-md bg-primary px-3 py-1.5 text-primary-foreground hover:opacity-90">Pedir conferência</button>
                 <button disabled={ocupado || !corrigidosSel} onClick={() => acao(async () => {
                   const r = (await aplicarNo0201({ data: { itemIds: [...sel] } })) as { atualizados: number };
                   return `${r.atualizados} correções aplicadas no 02.01.`;
-                })} className="inline-flex items-center gap-1.5 rounded-md border bg-card px-3 py-1.5 hover:bg-muted disabled:opacity-50"><Upload className="h-4 w-4" />Aplicar {corrigidosSel || ''} correções no 02.01</button>
+                })} className="rounded-md border bg-card px-3 py-1.5 hover:bg-muted disabled:opacity-50">Aplicar {corrigidosSel || ''} correções no 02.01</button>
                 <button onClick={() => setSel(new Set())} className="ml-auto text-muted-foreground hover:underline">Limpar seleção</button>
               </div>
             )}
@@ -441,7 +455,7 @@ export default function App() {
         )}
       </div>
       {lateral && <Lateral item={lateral} coplan={coplan} onFechar={() => setLateral(null)} onConferir={() => { setAberto(lateral); setLateral(null); }} />}
-      {aberto && <Conferir item={aberto} onFechar={() => setAberto(null)} onSalvo={() => { setAberto(null); setAviso('Resposta registrada. Obrigado!'); void recarregar(); }} />}
+      {aberto && <Conferir item={aberto} onFechar={() => setAberto(null)} onSalvo={() => { setAberto(null); setAviso('Resposta registrada.'); void recarregar(); }} />}
     </div>
   );
 }
