@@ -1,0 +1,14 @@
+{
+  "version": "1.0.0",
+  "app": {
+    "name": "Hub de Planejamento",
+    "slug": "fgvdgpe-projetos_hub_planejamento",
+    "description": "Pré-preenche o quadro [PLAN] (TAP, Produtos, EAP e Cronograma, Riscos, Indicadores e Partes Interessadas) com IA a partir dos documentos de pactuação.",
+    "color": "#D6E4FF",
+    "oauth": { "scopes": ["boards:read", "boards:write", "me:read", "users:read", "workspaces:read", "docs:read", "docs:write"] },
+    "features": [
+      { "key": "hub_planejamento", "type": "AppFeatureBoardView", "name": "Hub de Planejamento", "schemaVersion": "18",
+        "data": { "name": "Hub de Planejamento", "mode": "iframe", "hideSidekick": false, "query_parmas": true, "hideBoardControls": false, "isMobileSupported": false } }
+    ]
+  }
+}

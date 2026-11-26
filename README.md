@@ -13,6 +13,7 @@ Cada pasta é um app do Developer Center (conta fgvdgpe-projetos, account 296697
 | reuniao-tatica | 12694561 | 20073495 | 129075138 | 18439872031 |
 | esteira-planejamento | 12703980 | 20376895 | 129159264 | 18412010674 / view 292153406 |
 | conferencia-datas | 12846014 | 20701222 | 130430932 | 18441325686 / view 293737785 |
+| hub-planejamento | 12877701 | 20831196 | 130718610 | 18441661190 / view 294170734 |
 
 Cada pasta tem um NOTAS.md com servidor, variáveis e o comando de build específico. Os comandos abaixo valem para as pastas com `deploy/`.
 
