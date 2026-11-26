@@ -1,9 +1,9 @@
 // Estado compartilhado do hub: projeto escolhido, execução (run) no servidor e helpers de etapa.
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
-import { obterExecucao, estadoEtapas, gerarEtapa, salvarEdicao, marcarGravada, atualizarExecucao } from '@generated/server/hub';
+import { estadoEtapas, gerarEtapa, salvarEdicao, atualizarExecucao } from '@generated/server/hub';
+import { gravarNoQuadro } from '@generated/server/gravacao';
 import type { Execucao, Etapa, EstadoEtapa } from '@generated/server/hub';
 import type { Projeto } from '@generated/lib/quadros';
-import { registrarNoHub } from '@generated/lib/quadros';
 import { errorMessage } from '@generated/lib/monday';
 
 interface Ctx {
@@ -16,19 +16,17 @@ interface Ctx {
   etapa: (e: Etapa) => EstadoEtapa;
   gerar: (e: Exclude<Etapa, 'tap'>, entrada?: unknown) => Promise<void>;
   editar: (e: Etapa, resultado: unknown) => void;
-  concluir: (e: Etapa, resumo: string) => Promise<void>;
+  /** Grava a prévia no quadro em segundo plano (servidor, no nome de quem clicou). */
+  gravarQuadro: (e: AcaoGravar) => Promise<void>;
 }
+
+export type AcaoGravar = 'produtos' | 'eap' | 'riscos' | 'partes' | 'indicadores' | 'complemento' | 'calculadora';
 
 const C = createContext<Ctx | null>(null);
 export const useHub = () => {
   const c = useContext(C);
   if (!c) throw new Error('useHub fora do provedor');
   return c;
-};
-
-export const ROTULO_ETAPA: Record<Etapa, string> = {
-  analise: 'Análise', tap: 'TAP', produtos: 'Produtos', eap: 'EAP e Cronograma', riscos: 'Riscos específicos', complemento: 'Riscos da calculadora',
-  indicadores: 'Indicadores', partes: 'Partes Interessadas', calculadora: 'Calculadora de Riscos',
 };
 
 export function HubProvider({ projeto, run, setRun, userId, children }: { projeto: Projeto | null; run: Execucao | null; setRun: (r: Execucao | null) => void; userId: string; children: ReactNode }) {
@@ -41,8 +39,8 @@ export function HubProvider({ projeto, run, setRun, userId, children }: { projet
     setRun((await estadoEtapas({ data: { runId: runRef.current._id } })) as Execucao);
   }, [setRun]);
 
-  // Enquanto alguma etapa estiver gerando, consulta o servidor a cada 4 s.
-  const gerando = !!run && Object.values(run.etapas ?? {}).some((x) => x?.status === 'gerando');
+  // Enquanto alguma etapa estiver gerando ou gravando, consulta o servidor a cada 4 s.
+  const gerando = !!run && Object.values(run.etapas ?? {}).some((x) => x?.status === 'gerando' || x?.gravando);
   useEffect(() => {
     if (!gerando) return;
     const t = window.setInterval(() => { recarregar().catch(() => null); }, 4000);
@@ -70,25 +68,21 @@ export function HubProvider({ projeto, run, setRun, userId, children }: { projet
     timers.current[e] = window.setTimeout(() => { salvarEdicao({ data: { runId: r._id, etapa: e, resultado } }).catch(() => null); }, 800);
   };
 
-  const concluir: Ctx['concluir'] = async (e, resumo) => {
+  const gravarQuadro: Ctx['gravarQuadro'] = async (e) => {
     const r = runRef.current;
     if (!r) return;
+    // Salva a edição pendente antes: o servidor grava o que está no banco.
     window.clearTimeout(timers.current[e]);
-    if (r.etapas[e]?.resultado !== undefined) await salvarEdicao({ data: { runId: r._id, etapa: e, resultado: r.etapas[e]!.resultado } }).catch(() => null);
-    await marcarGravada({ data: { runId: r._id, etapa: e, resumo } });
-    const atual = (await obterExecucao({ data: { runId: r._id } })) as Execucao;
-    setRun(atual);
-    // Registro da execução no 09.0 Hub de Planejamento (falha aqui não desfaz a gravação)
+    if (r.etapas[e]?.resultado !== undefined) await salvarEdicao({ data: { runId: r._id, etapa: e, resultado: r.etapas[e]!.resultado } });
+    setRun({ ...r, etapas: { ...r.etapas, [e]: { ...(r.etapas[e] ?? { status: 'nao_iniciada' }), gravando: true, erroGravacao: '', progressoGravacao: 'Começando a gravação…' } } });
     try {
-      const linhas = (Object.keys(ROTULO_ETAPA) as Etapa[])
-        .filter((k) => atual.etapas[k]?.status === 'gravada')
-        .map((k) => `${ROTULO_ETAPA[k]}: ${atual.etapas[k]?.resumoGravacao ?? ''} (${(atual.etapas[k]?.gravadaEm ?? '').slice(0, 10).split('-').reverse().join('/')})`);
-      const id = await registrarNoHub({ hubItemId: atual.hubItemId, nome: atual.nomeItem, itemId: atual.itemId, runId: atual._id, quadroUrl: atual.boardUrl, userId, etapas: linhas.join('\n') });
-      if (id !== atual.hubItemId) setRun((await atualizarExecucao({ data: { runId: atual._id, hubItemId: id } })) as Execucao);
+      await gravarNoQuadro({ data: { runId: r._id, acao: e } });
+      await recarregar();
     } catch (err) {
-      console.error('registro no 09.0', errorMessage(err));
+      const atual = runRef.current ?? r;
+      setRun({ ...atual, etapas: { ...atual.etapas, [e]: { ...(atual.etapas[e] ?? { status: 'nao_iniciada' }), gravando: false, progressoGravacao: '', erroGravacao: errorMessage(err) } } });
     }
   };
 
-  return <C.Provider value={{ projeto, run, userId, setRun, recarregar, atualizar, etapa, gerar, editar, concluir }}>{children}</C.Provider>;
+  return <C.Provider value={{ projeto, run, userId, setRun, recarregar, atualizar, etapa, gerar, editar, gravarQuadro }}>{children}</C.Provider>;
 }

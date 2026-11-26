@@ -138,10 +138,15 @@ export async function itensDosGrupos(boardId: string, grupos: string[], colunas:
 }
 
 /** Cria itens em lotes de 8 por mutation. Devolve os ids na mesma ordem. */
+// No servidor (token da pessoa, sem o vaivém do SDK) os lotes podem ser maiores e as pausas menores.
+const NO_SERVIDOR = typeof window === 'undefined';
+const LOTE = NO_SERVIDOR ? 20 : 8;
+const PAUSA = NO_SERVIDOR ? 150 : 400;
+
 export async function criarItens(boardId: string, grupo: string, itens: { nome: string; valores: Record<string, unknown> }[], onProgresso?: (n: number) => void, criarRotulos = false): Promise<string[]> {
   const ids: string[] = [];
-  for (let i = 0; i < itens.length; i += 8) {
-    const lote = itens.slice(i, i + 8);
+  for (let i = 0; i < itens.length; i += LOTE) {
+    const lote = itens.slice(i, i + LOTE);
     const defs: string[] = [], corpo: string[] = [];
     const vars: Record<string, unknown> = { b: String(boardId), g: grupo };
     lote.forEach((it, k) => {
@@ -153,14 +158,16 @@ export async function criarItens(boardId: string, grupo: string, itens: { nome: 
     const d = await gql(`mutation ($b: ID!, $g: String!, ${defs.join(', ')}) { ${corpo.join(' ')} }`, vars);
     lote.forEach((_, k) => ids.push(String(d[`c${k}`].id)));
     onProgresso?.(ids.length);
-    await sleep(400);
+    await sleep(PAUSA);
   }
   return ids;
 }
 
 export async function alterarItens(boardId: string, mudancas: { id: string; valores: Record<string, unknown> }[], onProgresso?: (n: number) => void, criarRotulos = false) {
-  for (let i = 0; i < mudancas.length; i += 8) {
-    const lote = mudancas.slice(i, i + 8);
+  const lotes: (typeof mudancas)[] = [];
+  for (let i = 0; i < mudancas.length; i += LOTE) lotes.push(mudancas.slice(i, i + LOTE));
+  let feitos = 0;
+  const um = async (lote: typeof mudancas) => {
     const defs: string[] = [], corpo: string[] = [];
     const vars: Record<string, unknown> = { b: String(boardId) };
     lote.forEach((m, k) => {
@@ -170,9 +177,16 @@ export async function alterarItens(boardId: string, mudancas: { id: string; valo
       vars[`v${k}`] = JSON.stringify(m.valores);
     });
     await gql(`mutation ($b: ID!, ${defs.join(', ')}) { ${corpo.join(' ')} }`, vars);
-    onProgresso?.(Math.min(i + 8, mudancas.length));
-    await sleep(400);
-  }
+    feitos += lote.length;
+    onProgresso?.(feitos);
+    await sleep(PAUSA);
+  };
+  // Alterar não depende de ordem: no servidor, até 3 lotes ao mesmo tempo.
+  const paralelos = NO_SERVIDOR ? 3 : 1;
+  let prox = 0;
+  await Promise.all(Array.from({ length: Math.min(paralelos, lotes.length) }, async () => {
+    while (prox < lotes.length) await um(lotes[prox++]);
+  }));
 }
 
 export async function arquivarItens(ids: string[]) {

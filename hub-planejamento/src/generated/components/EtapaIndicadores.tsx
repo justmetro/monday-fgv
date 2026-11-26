@@ -1,8 +1,6 @@
-import { useState } from 'react';
 import { Trash2 } from 'lucide-react';
 import { useHub } from '@generated/lib/estado';
-import { gravarIndicadores, type Objetivo, type Indicador } from '@generated/lib/gravar';
-import { errorMessage } from '@generated/lib/monday';
+import type { Objetivo, Indicador } from '@generated/lib/gravar';
 import { ROTULOS } from '@generated/lib/rotulos';
 import { resumoProdutos, type ResultadoProdutos } from '@generated/components/EtapaProdutos';
 import { Moldura, BarraGravar } from '@generated/components/Moldura';
@@ -32,11 +30,8 @@ function LinhaInd({ x, tipo, onMudar, onRemover }: { x: Indicador; tipo: 'KR' | 
 }
 
 export function EtapaIndicadores() {
-  const { run, etapa, gerar, editar, concluir } = useHub();
+  const { run, etapa, gerar, editar, gravarQuadro } = useHub();
   const st = etapa('indicadores');
-  const [busy, setBusy] = useState(false);
-  const [prog, setProg] = useState('');
-  const [erro, setErro] = useState('');
   if (!run) return null;
   const produtos = resumoProdutos(run.etapas.produtos?.resultado as ResultadoProdutos | undefined);
   const r = st.resultado as { objetivos: Objetivo[]; base?: { indicadores: number; projetos: number; usados: number; em: string } | null } | undefined;
@@ -49,14 +44,7 @@ export function EtapaIndicadores() {
     editar('indicadores', { ...r, objetivos: c });
   };
 
-  const gravar = async () => {
-    if (!r || !run.boardId) return;
-    setBusy(true); setErro('');
-    try {
-      const out = await gravarIndicadores(run.boardId, r.objetivos, inicio, setProg);
-      await concluir('indicadores', `${out.indicadores} indicadores (KRs e KPIs) e ${out.medicoes} medições criados`);
-    } catch (e) { setErro(errorMessage(e)); } finally { setBusy(false); setProg(''); }
-  };
+  const gravar = () => { if (r && run.boardId) gravarQuadro('indicadores'); };
 
   const nKr = r?.objetivos.reduce((s, o) => s + o.krs.length, 0) ?? 0;
   const nKpi = r?.objetivos.reduce((s, o) => s + o.krs.reduce((s2, k) => s2 + (k.kpis?.length ?? 0), 0), 0) ?? 0;
@@ -84,7 +72,7 @@ export function EtapaIndicadores() {
               ))}
             </div>
           ))}
-          <BarraGravar onGravar={gravar} gravando={busy} progresso={prog} erro={erro} rotulo="Gravar indicadores no quadro" desabilitado={!run.boardId}
+          <BarraGravar onGravar={gravar} gravando={!!st.gravando} progresso={st.progressoGravacao ?? ''} erro={st.erroGravacao ?? ''} rotulo="Gravar indicadores no quadro" desabilitado={!run.boardId}
             aviso={!inicio ? <Aviso>Sem data de início, as medições ficam sem prazo. Defina na aba Quadro.</Aviso> : undefined} />
         </div>
       )}

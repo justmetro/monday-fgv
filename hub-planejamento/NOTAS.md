@@ -11,13 +11,17 @@ Hub de IA do planejamento de projetos. Parte do item do projeto no 02.01 Projeto
 
 ## Como funciona
 
-- Leitura e gravação nos quadros: pelo navegador de quem usa (monday SDK), no nome dessa pessoa. Exceções que rodam no servidor com o token OAuth do app: chamadas à IA da monday (platform-ai-gateway), escrita do TAP (doc de aba do quadro, via MCP hospedado da monday, porque a API GraphQL pública não alcança docs de aba) e anexo dos arquivos na coluna Documentos de Pactuação (file_mm9f3wqj) do 02.01.
+- Autorização por pessoa: na primeira vez, o hub mostra "Autorize o hub a agir no seu nome". O botão pede ao servidor um link de uso único (`pedirAutorizacao`, válido 15 min), abre `/oauth/start?s=...` numa aba e a pessoa clica em Authorize. O retorno (`/oauth/callback`, sempre a URL live) confere que a conta que autorizou é a mesma da sessão e guarda o token em `app_oauth` com `_id: u:<userId>`. Sem autorização, o hub não gera nem grava.
+- Tudo o que roda no servidor usa o token de quem está no dash: IA da monday (platform-ai-gateway), escrita do TAP (MCP hospedado da monday, porque a API GraphQL pública não alcança docs de aba), anexos na coluna Documentos de Pactuação (file_mm9f3wqj) do 02.01 e as gravações nos quadros. O token geral do app (`_id: token`, autorizado por admin em `/oauth/start` sem parâmetro) ficou só como reserva para leituras sem sessão.
+- Gravação no quadro: `gravacao:gravarNoQuadro` (produtos, eap, riscos, partes, indicadores, complemento, calculadora) roda em segundo plano no servidor com o token da pessoa (`tokenAtual`, AsyncLocalStorage). A tela só dispara e acompanha `etapas.<x>.gravando / progressoGravacao / erroGravacao`; pode fechar a aba. Sem sinal de vida por 3 min, `estadoEtapas` marca a gravação como interrompida. Ao terminar, o servidor atualiza o registro no 09.0.
+- As bibliotecas `src/generated/lib` (gravar, quadros, calculadora v3) são as mesmas no navegador e no servidor: `lib/monday.js` recebe o executor por `definirExecutor` (SDK no navegador em `src/main.tsx`, fetch com token em `server/index.ts`). No servidor os lotes são de 20 itens e as alterações rodam 3 lotes em paralelo.
+- Calculadora no servidor: arquiva os exemplos, cadastra no 09.1, roda o motor, envia ao [PLAN] (rótulo de dropdown que falta no destino é criado) e dispara a geração do complemento. No SUFOTUR levou 51 s; aplicar o complemento em 73 riscos levou 17 s.
 - IA: gateway da monday, modelo padrão `monday-standard`. Também aceitos pelo gateway e listados no app: gpt-5 e gpt-5-mini. Cada etapa lê todos os documentos (cerca de 110 mil tokens no caso SUFOTUR) e custa entre US$ 0,30 e 0,45.
-- Etapas de IA rodam em segundo plano no servidor (`gerarEtapa`) e a tela consulta `estadoEtapas` a cada 4 s.
+- Etapas de IA rodam em segundo plano no servidor (`gerarEtapa` / `iniciarGeracao`) e a tela consulta `estadoEtapas` a cada 4 s enquanto algo gera ou grava.
 - Prompts em `src/generated/server/prompts.ts`, base de conhecimento da metodologia em `conhecimento.ts` (Guia de Bolso, Eixos, Tipologias, Tipos de Riscos, Partes Interessadas e responsabilidades dos três modelos de TAP: padrão, CNCA e GA).
-- Calculadora de Riscos v3: o hub reaproveita `engineData`, `engineRun`, `engineReconcile`, `sendData` e `sendRun` da pasta calculadora-riscos-v3 (copiados em `src/generated/lib`). Cadastra o projeto no 09.1, roda o motor e envia os riscos ao grupo Riscos do [PLAN].
-- Colunas do quadro [PLAN] v6 em `src/generated/lib/quadros.ts` (CP). São iguais em todos os quadros criados pelo modelo.
-- Cronograma: `X.Y. ENTREGÁVEL | ...` (EAP Nível 2), `X.Y.Z. MARCO | ...` (Nível 3) e `X.Y.Z.W. Verbo ...` (Nível 4, rótulo criado na primeira gravação), ligados ao produto pela coluna Produto - Cronograma.
+- Colunas do quadro [PLAN] v6 em `src/generated/lib/quadros.ts` (CP). São iguais em todos os quadros criados pelo modelo (quadro modelo 18430945750, área "Projeto - Planejamento v2").
+- Cronograma: `X.Y. ENTREGÁVEL | ...` (EAP Nível 2), `X.Y.Z. MARCO | ...` (Nível 3) e `X.Y.Z.W. Verbo ...` (Nível 4, rótulo criado na primeira gravação), ligados ao produto pela coluna Produto - Cronograma. A aba 8. CRONOGRAMA passa a filtrar Níveis 3 e 4.
+- TAP: necessidades além das 5 do modelo viram itens numerados novos na mesma célula (`create_block` com `parent_block_id`, em ordem inversa logo após o último item).
 
 ## Build e publicação
 
@@ -34,6 +38,5 @@ Quadro [PLAN] 18441667419, execução 36ed1237-8f90-4edb-ae84-2a8377977081, iní
 
 Pontos conhecidos:
 - O settings_str da coluna EAP demora a mostrar o rótulo Nível 4 criado na hora; `ajustarAbaCronograma` completa os ids pelos itens gravados.
-- A gravação pelo navegador é lenta em volume (cerca de 1,3 item por segundo); a aba precisa ficar aberta. Se o monday recarregar a aba no meio, basta clicar de novo: produtos e complemento atualizam, EAP e riscos específicos criam de novo.
-- No TAP, as necessidades além da quinta entram como linhas no último item da lista numerada do modelo.
-- A calculadora v3 não cria rótulo que falta no destino (aviso "'Público final' não existe em Impactado").
+- O modelo 18430945750 não deixou alterar colunas pela API (Forbidden). Os rótulos "Nível 4" (EAP) e "Público final" (Impactado) são criados em cada quadro na gravação.
+- Gravar EAP e riscos específicos de novo cria os itens outra vez; produtos e complemento atualizam.

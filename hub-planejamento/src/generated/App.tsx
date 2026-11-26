@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Moon, Sun, Search, RefreshCw, Plus, ExternalLink, Check, CircleDashed, Loader2, AlertTriangle } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Moon, Sun, Search, RefreshCw, Plus, ExternalLink, Check, CircleDashed, Loader2, AlertTriangle, KeyRound } from 'lucide-react';
 import { mondayClient } from '@/context/MondayContextProvider';
 import { listarProjetos, ehAtivo, type Projeto } from '@generated/lib/quadros';
 import { errorMessage } from '@generated/lib/monday';
-import { criarExecucao, listarExecucoes, estadoEtapas, statusIA, atualizarExecucao, type Execucao, type Etapa } from '@generated/server/hub';
-import { HubProvider, ROTULO_ETAPA } from '@generated/lib/estado';
+import { criarExecucao, listarExecucoes, estadoEtapas, statusIA, pedirAutorizacao, atualizarExecucao, type Execucao, type Etapa } from '@generated/server/hub';
+import { HubProvider } from '@generated/lib/estado';
+import { ROTULO_ETAPA } from '@generated/lib/rotulos';
 import { Botao, Cartao, Selo, Campo, Aviso, cx, dataBR } from '@generated/components/ui';
 import { EtapaQuadro } from '@generated/components/EtapaQuadro';
 import { EtapaDocumentos } from '@generated/components/EtapaDocumentos';
@@ -43,6 +44,9 @@ export default function App() {
   const [aba, setAba] = useState<Aba>('quadro');
   const [userId, setUserId] = useState('');
   const [iaOk, setIaOk] = useState<boolean | null>(null);
+  const [autor, setAutor] = useState('');
+  const [autorizando, setAutorizando] = useState(false);
+  const espera = useRef<number | undefined>(undefined);
   const [abrindo, setAbrindo] = useState(false);
 
   useEffect(() => {
@@ -57,8 +61,35 @@ export default function App() {
   useEffect(() => {
     carregar();
     mondayClient.api('query { me { id } }').then((r: any) => setUserId(String(r?.data?.me?.id ?? ''))).catch(() => null);
-    statusIA({}).then((r: any) => setIaOk(!!r?.autorizado)).catch(() => setIaOk(false));
+    conferirAutorizacao();
+    // Ao voltar para a aba do monday depois de autorizar, confere de novo.
+    const aoFocar = () => { conferirAutorizacao(); };
+    window.addEventListener('focus', aoFocar);
+    return () => { window.clearInterval(espera.current); window.removeEventListener('focus', aoFocar); };
   }, []);
+
+  const conferirAutorizacao = async () => {
+    try {
+      const r: any = await statusIA({});
+      setIaOk(!!r?.autorizado); setAutor(r?.nome ?? '');
+      return !!r?.autorizado;
+    } catch { setIaOk(false); return false; }
+  };
+
+  // Cada pessoa autoriza o hub uma vez; a partir daí IA, TAP, anexos e gravações saem no nome dela.
+  const autorizar = async () => {
+    setAutorizando(true); setErro('');
+    try {
+      const { url } = (await pedirAutorizacao({})) as { url: string };
+      // O SDK nem sempre responde ao abrir a aba: não espera por ele para começar a conferir.
+      mondayClient.execute('openLinkInTab', { url }).catch(() => window.open(url, '_blank'));
+      const ate = Date.now() + 10 * 60_000;
+      window.clearInterval(espera.current);
+      espera.current = window.setInterval(async () => {
+        if ((await conferirAutorizacao()) || Date.now() > ate) { window.clearInterval(espera.current); setAutorizando(false); }
+      }, 3000);
+    } catch (e) { setErro(errorMessage(e)); setAutorizando(false); }
+  };
 
   const lista = useMemo(() => {
     const q = busca.trim().toLowerCase();
@@ -97,7 +128,7 @@ export default function App() {
     const sts = a.etapas.map((e) => run.etapas?.[e]?.status);
     if (a.id === 'quadro') return run.boardId ? <Check className="h-3.5 w-3.5 text-[hsl(var(--ok))]" /> : null;
     if (a.id === 'documentos') return run.docs?.length ? <Check className="h-3.5 w-3.5 text-[hsl(var(--ok))]" /> : null;
-    if (sts.includes('gerando')) return <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />;
+    if (sts.includes('gerando') || a.etapas.some((e) => run.etapas?.[e]?.gravando)) return <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />;
     if (sts.includes('erro')) return <AlertTriangle className="h-3.5 w-3.5 text-destructive" />;
     if (sts.length && sts.every((s) => s === 'gravada')) return <Check className="h-3.5 w-3.5 text-[hsl(var(--ok))]" />;
     if (sts.some((s) => s === 'pronta' || s === 'gravada')) return <CircleDashed className="h-3.5 w-3.5 text-primary" />;
@@ -114,7 +145,8 @@ export default function App() {
             <div className="text-[11.5px] text-muted-foreground">Pré-preenchimento do quadro [PLAN] com IA a partir dos documentos de pactuação</div>
           </div>
           <div className="flex-1" />
-          {iaOk === false && <Selo tom="erro">IA sem autorização do app</Selo>}
+          {iaOk === false && <Selo tom="erro">Hub sem a sua autorização</Selo>}
+          {iaOk && autor && <Selo tom="ok">Agindo no nome de {autor}</Selo>}
           <Botao variante="fantasma" onClick={() => setTema(tema === 'escuro' ? 'claro' : 'escuro')} aria-label="Alternar tema">
             {tema === 'escuro' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Botao>
@@ -156,6 +188,16 @@ export default function App() {
 
         <main className="min-w-0 space-y-4">
           {erro && <Aviso tom="erro">{erro}</Aviso>}
+          {iaOk === false && (
+            <Cartao className="p-5 flex items-start gap-4">
+              <KeyRound className="h-5 w-5 mt-0.5 text-primary" />
+              <div className="flex-1">
+                <div className="text-[15px] font-semibold">Autorize o hub a agir no seu nome</div>
+                <p className="mt-1 text-[13px] text-muted-foreground">É uma vez só. Depois disso a IA, o TAP, os anexos e as gravações nos quadros saem com a sua conta da monday e respeitam as suas permissões. Abre uma aba da monday: clique em Authorize e volte para cá.</p>
+              </div>
+              <Botao variante="primario" onClick={autorizar} carregando={autorizando}>{autorizando ? 'Aguardando…' : 'Autorizar'}</Botao>
+            </Cartao>
+          )}
           {!projeto && (
             <Cartao className="p-8 text-center">
               <div className="text-[17px] font-semibold">Escolha um projeto do 02.01</div>
@@ -209,7 +251,7 @@ export default function App() {
             <Aviso tom="info">Este projeto ainda não tem execução no hub. Clique em Nova execução para começar.</Aviso>
           )}
 
-          {projeto && run && (
+          {projeto && run && iaOk !== false && (
             <HubProvider projeto={projeto} run={run} setRun={setRun} userId={userId}>
               {aba === 'quadro' && <EtapaQuadro onPronto={() => setAba('documentos')} onProjeto={(p) => { setProjeto(p); setProjetos((xs) => xs?.map((x) => (x.id === p.id ? p : x)) ?? xs); }} />}
               {aba === 'documentos' && <EtapaDocumentos onPronto={() => setAba('analise')} />}

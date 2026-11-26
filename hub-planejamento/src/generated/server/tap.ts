@@ -163,14 +163,25 @@ export async function escreverTap(boardId: string, tap: DadosTap, autor: string,
   const necess = textos.filter((x) => x.t.startsWith('[Inserir necessidades]'));
   const itens = tap.necessidades.length ? tap.necessidades : ['Não identificado nos documentos'];
   necess.forEach((x, k) => {
-    if (k < itens.length) {
-      const texto = k === necess.length - 1 && itens.length > necess.length ? itens.slice(k).join('\n') : itens[k];
-      atualizar(x.b, simples(texto));
-    } else apagar.push(x.b.id);
+    if (k < itens.length) atualizar(x.b, simples(itens[k]));
+    else apagar.push(x.b.id);
   });
+  // Necessidades além das do modelo: um item numerado novo para cada uma, na mesma célula.
+  // Todos entram logo depois do último item do modelo, em ordem inversa, para ficarem na ordem certa.
+  const extras: Record<string, unknown>[] = [];
+  const ultimo = necess[necess.length - 1]?.b;
+  if (ultimo && itens.length > necess.length) {
+    for (const t of itens.slice(necess.length).reverse()) {
+      extras.push({
+        operation_type: 'create_block', after_block_id: ultimo.id, ...(ultimo.parent_block_id ? { parent_block_id: ultimo.parent_block_id } : {}),
+        block: { block_type: 'list_item', list_block_type: 'NUMBERED_LIST', delta_format: simples(t) },
+      });
+    }
+  }
   if (!necess.length) naoAchei.push('[Inserir necessidades]');
 
   if (!ops.length) throw new Error('O doc do TAP não está no formato do modelo (nenhum campo para preencher). Ele já pode ter sido preenchido.');
+  ops.push(...extras);
   if (apagar.length) ops.push({ operation_type: 'delete_blocks', block_ids: apagar.slice(0, 100) });
 
   for (let i = 0; i < ops.length; i += 20) {

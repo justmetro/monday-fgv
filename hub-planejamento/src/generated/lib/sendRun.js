@@ -32,7 +32,9 @@ function buildValues(r, base, map, warnings) {
     values.forEach((x) => {
       let hit = findLabel(col.labels, x);
       if (!hit && alias) hit = alias(x, col.labels);
-      if (hit) { if (!found.includes(hit)) found.push(hit); } else warnings.push(`${code}: '${x}' não existe em ${col.title} no destino`);
+      // Rótulo de dropdown que falta no destino é criado na gravação (create_labels_if_missing).
+      const v = hit || String(x).trim();
+      if (v && !found.includes(v)) found.push(v);
     });
     if (found.length) cv[col.id] = { labels: found };
   };
@@ -77,7 +79,7 @@ async function createMany(boardId, groupId, batch) {
   const vars = { b: String(boardId), g: String(groupId) };
   batch.forEach((it, i) => {
     defs.push(`$n${i}: String!, $v${i}: JSON!`);
-    body.push(`c${i}: create_item(board_id: $b, group_id: $g, item_name: $n${i}, column_values: $v${i}, create_labels_if_missing: false) { id }`);
+    body.push(`c${i}: create_item(board_id: $b, group_id: $g, item_name: $n${i}, column_values: $v${i}, create_labels_if_missing: true) { id }`);
     vars[`n${i}`] = it.name;
     vars[`v${i}`] = JSON.stringify(it.cv);
   });

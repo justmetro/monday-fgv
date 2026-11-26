@@ -1,8 +1,6 @@
-import { useState } from 'react';
 import { Trash2, Plus } from 'lucide-react';
 import { useHub } from '@generated/lib/estado';
-import { gravarProdutos, diasDoProduto, type Produto } from '@generated/lib/gravar';
-import { errorMessage } from '@generated/lib/monday';
+import { diasDoProduto, type Produto } from '@generated/lib/gravar';
 import { ROTULOS } from '@generated/lib/rotulos';
 import { diaParaData } from '@generated/lib/quadros';
 import { Moldura, BarraGravar } from '@generated/components/Moldura';
@@ -16,11 +14,8 @@ export function resumoProdutos(r: ResultadoProdutos | undefined) {
 }
 
 export function EtapaProdutos() {
-  const { run, etapa, gerar, editar, concluir } = useHub();
+  const { run, etapa, gerar, editar, gravarQuadro } = useHub();
   const st = etapa('produtos');
-  const [busy, setBusy] = useState(false);
-  const [prog, setProg] = useState('');
-  const [erro, setErro] = useState('');
   if (!run) return null;
   const r = st.resultado as ResultadoProdutos | undefined;
   const inicio = run.contexto.inicioExecucao ?? null;
@@ -29,14 +24,7 @@ export function EtapaProdutos() {
   const remover = (i: number) => r && editar('produtos', { ...r, produtos: r.produtos.filter((_, j) => j !== i) });
   const adicionar = () => r && editar('produtos', { ...r, produtos: [...r.produtos, { codigo: `P${String(r.produtos.length + 1).padStart(2, '0')}`, nome: '', descricao: '', objetivo: '', mes_inicio: 1, mes_fim: 1, dia_inicio: null, dia_fim: null, valor: 0, fase: 'Fase 1', tipologia: '', tipo_entrega: '', fonte: 'Incluído manualmente' }] });
 
-  const gravar = async () => {
-    if (!r || !run.boardId) return;
-    setBusy(true); setErro('');
-    try {
-      const out = await gravarProdutos(run.boardId, r.produtos, inicio, setProg);
-      await concluir('produtos', `${out.criados} produtos criados e ${out.atualizados} atualizados no grupo Produtos`);
-    } catch (e) { setErro(errorMessage(e)); } finally { setBusy(false); setProg(''); }
-  };
+  const gravar = () => { if (r && run.boardId) gravarQuadro('produtos'); };
 
   const soma = r?.produtos.reduce((s, p) => s + (Number(p.valor) || 0), 0) ?? 0;
 
@@ -81,7 +69,7 @@ export function EtapaProdutos() {
             })}
             <Botao variante="fantasma" onClick={adicionar}><Plus className="h-4 w-4" /> Adicionar produto</Botao>
           </div>
-          <BarraGravar onGravar={gravar} gravando={busy} progresso={prog} erro={erro} rotulo="Gravar produtos no quadro" desabilitado={!run.boardId}
+          <BarraGravar onGravar={gravar} gravando={!!st.gravando} progresso={st.progressoGravacao ?? ''} erro={st.erroGravacao ?? ''} rotulo="Gravar produtos no quadro" desabilitado={!run.boardId}
             aviso={!inicio ? <Aviso>Sem data de início da execução, a coluna Contratual Início - Entrega fica vazia. Defina na aba Quadro.</Aviso> : undefined} />
         </div>
       )}

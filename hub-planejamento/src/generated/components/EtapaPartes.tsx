@@ -1,7 +1,5 @@
-import { useState } from 'react';
 import { useHub } from '@generated/lib/estado';
-import { gravarPartes, type Parte, type Risco } from '@generated/lib/gravar';
-import { errorMessage } from '@generated/lib/monday';
+import type { Parte, Risco } from '@generated/lib/gravar';
 import { ROTULOS } from '@generated/lib/rotulos';
 import { Moldura, BarraGravar } from '@generated/components/Moldura';
 import { Campo, Texto, Escolha, Selo, Aviso } from '@generated/components/ui';
@@ -16,24 +14,14 @@ export function estrategia(poder: string, interesse: string) {
 }
 
 export function EtapaPartes() {
-  const { run, etapa, gerar, editar, concluir } = useHub();
+  const { run, etapa, gerar, editar, gravarQuadro } = useHub();
   const st = etapa('partes');
-  const [busy, setBusy] = useState(false);
-  const [prog, setProg] = useState('');
-  const [erro, setErro] = useState('');
   if (!run) return null;
   const riscos = ((run.etapas.riscos?.resultado as { riscos: Risco[] } | undefined)?.riscos ?? []).filter((x) => x.incluir !== false).map((x) => ({ id: x.id, titulo: x.titulo }));
   const r = st.resultado as { partes: Parte[] } | undefined;
   const mudar = (i: number, k: keyof Parte, v: unknown) => r && editar('partes', { partes: r.partes.map((x, j) => (j === i ? { ...x, [k]: v } : x)) });
 
-  const gravar = async () => {
-    if (!r || !run.boardId) return;
-    setBusy(true); setErro('');
-    try {
-      const n = await gravarPartes(run.boardId, r.partes, setProg);
-      await concluir('partes', `${n} partes interessadas (institucionais) criadas`);
-    } catch (e) { setErro(errorMessage(e)); } finally { setBusy(false); setProg(''); }
-  };
+  const gravar = () => { if (r && run.boardId) gravarQuadro('partes'); };
 
   return (
     <Moldura titulo="8. Partes Interessadas" st={st} onGerar={() => gerar('partes', { riscos })} podeGerar={!!run.docs.length}
@@ -65,7 +53,7 @@ export function EtapaPartes() {
               </div>
             </div>
           ))}
-          <BarraGravar onGravar={gravar} gravando={busy} progresso={prog} erro={erro} rotulo="Gravar partes interessadas" desabilitado={!run.boardId} />
+          <BarraGravar onGravar={gravar} gravando={!!st.gravando} progresso={st.progressoGravacao ?? ''} erro={st.erroGravacao ?? ''} rotulo="Gravar partes interessadas" desabilitado={!run.boardId} />
         </div>
       )}
     </Moldura>

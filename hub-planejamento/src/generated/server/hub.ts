@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { randomUUID } from 'node:crypto';
 import { mongo } from '../../../server/mongo';
 import { currentCtx } from '../../../server/context';
-import { tokenOAuth } from '../../../server/oauth';
+import { tokenDoUsuario, autorizacaoDoUsuario, linkAutorizacao } from '../../../server/oauth';
 import { gql } from '../../../server/monday';
 import { chamarIA, MODELOS } from './iaCore';
 import {
@@ -22,6 +22,8 @@ export interface EstadoEtapa {
   inicio?: string; fim?: string; erro?: string; progresso?: string;
   custo?: number; modelo?: string; tokens?: number;
   resultado?: unknown; gravadaEm?: string; gravadaPor?: string; resumoGravacao?: string;
+  // Gravação no quadro em segundo plano (servidor)
+  gravando?: boolean; progressoGravacao?: string; erroGravacao?: string; batidaGravacao?: string;
 }
 
 export interface Execucao {
@@ -33,23 +35,27 @@ export interface Execucao {
   hubItemId?: string;
 }
 
-const colRuns = async () => (await mongo()).collection<Execucao>('hub_runs');
+export const colRuns = async () => (await mongo()).collection<Execucao>('hub_runs');
 const colDocs = async () => (await mongo()).collection<{ _id: string; docs: DocTexto[] }>('hub_docs');
-const agora = () => new Date().toISOString();
+export const agora = () => new Date().toISOString();
 
-function ctxOuErro() {
+export function ctxOuErro() {
   const c = currentCtx();
   if (!c) throw new Error('Sessão inválida.');
   return c;
 }
 
-async function tokenIA(): Promise<string> {
-  const t = await tokenOAuth();
-  if (!t) throw new Error('O app ainda não foi autorizado na monday (OAuth). Peça a um admin para abrir /oauth/start.');
+export const SEM_AUTORIZACAO = 'Você ainda não autorizou o hub a agir no seu nome. Clique em Autorizar no topo do hub.';
+
+/** Token da pessoa que está usando o hub (cada um autoriza uma vez). */
+export async function tokenIA(): Promise<string> {
+  const c = ctxOuErro();
+  const t = await tokenDoUsuario(c.userId);
+  if (!t) throw new Error(SEM_AUTORIZACAO);
   return t;
 }
 
-async function nomeUsuario(id: string): Promise<string> {
+export async function nomeUsuario(id: string): Promise<string> {
   try {
     const d = await gql<{ users: { name: string }[] }>('query ($ids: [ID!]) { users(ids: $ids) { name } }', { ids: [id] });
     return d.users?.[0]?.name ?? '';
@@ -142,9 +148,9 @@ export const marcarGravada = createServerFn()
 
 // ---------- Etapas de IA em segundo plano ----------
 
-const rodando = new Map<string, Promise<void>>();
+export const rodando = new Map<string, Promise<void>>();
 
-async function setEtapa(runId: string, etapa: Etapa, patch: Partial<EstadoEtapa>) {
+export async function setEtapa(runId: string, etapa: Etapa, patch: Partial<EstadoEtapa>) {
   const set: Record<string, unknown> = { atualizadoEm: agora() };
   for (const [k, v] of Object.entries(patch)) set[`etapas.${etapa}.${k}`] = v;
   await (await colRuns()).updateOne({ _id: runId }, { $set: set });
@@ -163,7 +169,7 @@ async function emParalelo<T, R>(xs: T[], n: number, fn: (x: T, i: number) => Pro
   return out;
 }
 
-const Entrada = z.object({
+export const Entrada = z.object({
   produtos: z.array(z.object({ codigo: z.string(), nome: z.string(), descricao: z.string(), dia_inicio: z.number().nullable().optional(), dia_fim: z.number().nullable().optional(), mes_inicio: z.number().optional(), mes_fim: z.number().optional(), valor: z.number().optional(), ordem: z.number() })).optional(),
   riscos: z.array(z.object({ id: z.string(), titulo: z.string() })).optional(),
   riscosQuadro: z.array(z.object({ id: z.string(), nome: z.string(), causa: z.string(), efeito: z.string(), categoria: z.string(), estrategia: z.string(), resposta: z.string() })).optional(),
@@ -238,19 +244,24 @@ export const gerarEtapa = createServerFn()
   .handler(async ({ data }) => {
     const run = await (await colRuns()).findOne({ _id: data.runId });
     if (!run) throw new Error('Execução não encontrada.');
-    const chave = `${data.runId}:${data.etapa}`;
-    if (rodando.has(chave)) return { iniciada: false, motivo: 'Já está gerando.' };
     await tokenIA();
-    await setEtapa(run._id, data.etapa, { status: 'gerando', inicio: agora(), erro: '', progresso: 'Lendo os documentos…', resultado: null });
-    const job = executarEtapa(run, data.etapa, data.entrada)
-      .catch(async (e) => {
-        console.error(`[etapa ${data.etapa}]`, e);
-        await setEtapa(run._id, data.etapa, { status: 'erro', fim: agora(), erro: e instanceof Error ? e.message : String(e), progresso: '' });
-      })
-      .finally(() => rodando.delete(chave));
-    rodando.set(chave, job);
-    return { iniciada: true };
+    return iniciarGeracao(run, data.etapa, data.entrada);
   });
+
+/** Começa a geração de uma etapa de IA em segundo plano (também usada depois da calculadora). */
+export async function iniciarGeracao(run: Execucao, etapa: Etapa, entrada: z.infer<typeof Entrada>) {
+  const chave = `${run._id}:${etapa}`;
+  if (rodando.has(chave)) return { iniciada: false, motivo: 'Já está gerando.' };
+  await setEtapa(run._id, etapa, { status: 'gerando', inicio: agora(), erro: '', progresso: 'Lendo os documentos…', resultado: null });
+  const job = executarEtapa(run, etapa, entrada)
+    .catch(async (e) => {
+      console.error(`[etapa ${etapa}]`, e);
+      await setEtapa(run._id, etapa, { status: 'erro', fim: agora(), erro: e instanceof Error ? e.message : String(e), progresso: '' });
+    })
+    .finally(() => rodando.delete(chave));
+  rodando.set(chave, job);
+  return { iniciada: true };
+}
 
 /** Se o servidor reiniciou no meio de uma geração, marca a etapa como interrompida para poder gerar de novo. */
 export const estadoEtapas = createServerFn()
@@ -263,6 +274,12 @@ export const estadoEtapas = createServerFn()
       if (st?.status === 'gerando' && !rodando.has(`${run._id}:${e}`) && Date.now() - Date.parse(st.inicio ?? agora()) > 90_000) {
         await setEtapa(run._id, e, { status: 'erro', erro: 'A geração foi interrompida (o servidor reiniciou). Gere de novo.', progresso: '' });
         st.status = 'erro'; st.erro = 'A geração foi interrompida (o servidor reiniciou). Gere de novo.';
+      }
+      // Gravação sem sinal de vida há 3 minutos: o servidor reiniciou no meio.
+      if (st?.gravando && !rodando.has(`${run._id}:grav:${e}`) && Date.now() - Date.parse(st.batidaGravacao ?? agora()) > 180_000) {
+        const msg = 'A gravação foi interrompida (o servidor reiniciou). Clique em gravar de novo.';
+        await setEtapa(run._id, e, { gravando: false, erroGravacao: msg, progressoGravacao: '' });
+        st.gravando = false; st.erroGravacao = msg;
       }
     }
     return run;
@@ -378,6 +395,11 @@ export const anexarDocumento = createServerFn()
   });
 
 export const statusIA = createServerFn().handler(async () => {
-  const t = await tokenOAuth();
-  return { autorizado: !!t };
+  const c = ctxOuErro();
+  return autorizacaoDoUsuario(c.userId);
+});
+
+export const pedirAutorizacao = createServerFn().handler(async () => {
+  const c = ctxOuErro();
+  return { url: await linkAutorizacao(c.userId) };
 });

@@ -27,3 +27,9 @@ export const ROTULOS = {
     c8_equipe: ['Até 10 membros na equipe', 'Entre 11 e 30 membros na equipe', 'Entre 31 e 99 membros na equipe', 'A partir de 100 membros na equipe'],
   },
 } as const;
+
+/** Nome de cada etapa no registro do 09.0 e na tela. */
+export const ROTULO_ETAPA = {
+  analise: 'Análise', tap: 'TAP', produtos: 'Produtos', eap: 'EAP e Cronograma', riscos: 'Riscos específicos', complemento: 'Riscos da calculadora',
+  indicadores: 'Indicadores', partes: 'Partes Interessadas', calculadora: 'Calculadora de Riscos',
+} as const;

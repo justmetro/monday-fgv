@@ -1,10 +1,14 @@
-import { mondayClient } from '@/context/MondayContextProvider';
+// Quem executa a chamada é definido por quem carrega o módulo: no navegador, o monday SDK (login de quem usa
+// o app); no servidor, fetch com o token OAuth da pessoa que pediu a gravação.
+let executor = null;
+export function definirExecutor(fn) { executor = fn; }
 
-/** Chamada GraphQL com o login de quem usa o app (monday SDK). Erros viram Error com cause.errors. */
+/** Chamada GraphQL. Erros viram Error com cause.errors. */
 async function execGql(query, variables) {
+  if (!executor) throw new Error('Cliente da API do monday não configurado.');
   let res;
   try {
-    res = await mondayClient.api(query, { variables, apiVersion: '2026-10' });
+    res = await executor(query, variables);
   } catch (e) {
     const errs = e?.data?.errors || e?.errors || (e?.data?.error_message ? [{ message: e.data.error_message }] : null);
     throw Object.assign(new Error(errs ? errs.map((x) => x.message).join('; ') : String(e?.message || e)), { cause: { errors: errs || [] } });

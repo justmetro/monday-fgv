@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useHub } from '@generated/lib/estado';
-import { gravarRiscosIA, limparModelo, type Risco } from '@generated/lib/gravar';
-import { CP } from '@generated/lib/quadros';
-import { prepararProjetoCalc, rodarCalculadora, enviarAoPlanejamento, riscosDoQuadro, aplicarComplemento, type Complemento, type RiscoNoQuadro } from '@generated/lib/calc';
+import type { Risco } from '@generated/lib/gravar';
+import { riscosDoQuadro, type Complemento, type RiscoNoQuadro } from '@generated/lib/calc';
 import { errorMessage } from '@generated/lib/monday';
 import { ROTULOS } from '@generated/lib/rotulos';
 import { resumoProdutos, type ResultadoProdutos } from '@generated/components/EtapaProdutos';
@@ -11,60 +10,30 @@ import { Moldura, BarraGravar } from '@generated/components/Moldura';
 import { Cartao, Campo, Texto, Escolha, Aviso, Botao, Progresso, Selo } from '@generated/components/ui';
 
 export function EtapaRiscos() {
-  const { run, etapa, gerar, editar, concluir, userId } = useHub();
+  const { run, etapa, gerar, editar, gravarQuadro } = useHub();
   const st = etapa('riscos');
   const stC = etapa('complemento');
-  const [busy, setBusy] = useState(false);
-  const [prog, setProg] = useState('');
-  const [erro, setErro] = useState('');
-  const [calcMsg, setCalcMsg] = useState('');
-  const [calcErro, setCalcErro] = useState('');
-  const [calcBusy, setCalcBusy] = useState(false);
-  const [calcProg, setCalcProg] = useState('');
+  const stCalc = etapa('calculadora');
+  const [lendo, setLendo] = useState(false);
+  const [lerErro, setLerErro] = useState('');
   const [doQuadro, setDoQuadro] = useState<RiscoNoQuadro[] | null>(null);
   const autoFeito = useRef(false);
-  const stCalc = etapa('calculadora');
   const produtos = resumoProdutos(run?.etapas.produtos?.resultado as ResultadoProdutos | undefined);
   const analise = run?.etapas.analise?.resultado as Analise | undefined;
   const r = st.resultado as { riscos: Risco[] } | undefined;
   const comp = stC.resultado as { riscos: Complemento[] } | undefined;
-  const inicio = run?.contexto.inicioExecucao ?? null;
 
   const mudar = (i: number, k: keyof Risco, v: unknown) => r && editar('riscos', { riscos: r.riscos.map((x, j) => (j === i ? { ...x, [k]: v } : x)) });
 
-  const gravar = async () => {
-    if (!r || !run?.boardId) return;
-    setBusy(true); setErro('');
-    try {
-      const n = await gravarRiscosIA(run.boardId, r.riscos, inicio, setProg);
-      await concluir('riscos', `${n} riscos específicos criados no grupo Riscos`);
-    } catch (e) { setErro(errorMessage(e)); } finally { setBusy(false); setProg(''); }
-  };
+  const gravar = () => { if (r && run?.boardId) gravarQuadro('riscos'); };
 
-  /** Calculadora automática: cadastra no 09.1, roda o motor, envia ao [PLAN] e pede à IA o complemento dos riscos. */
-  const rodarCalc = async () => {
-    if (!run?.boardId || !run.boardUrl || !analise?.calculadora) return;
-    const c = { ...analise.calculadora, c8_equipe: analise.calculadora.c8_equipe || 'Até 10 membros na equipe' };
-    setCalcBusy(true); setCalcErro(''); setCalcMsg('');
-    try {
-      setCalcProg('Arquivando os riscos de exemplo do modelo…');
-      await limparModelo(run.boardId, CP.grupos.riscos);
-      setCalcProg('Cadastrando o projeto no 09.1 com as 8 características…');
-      const id = await prepararProjetoCalc(run.nomeItem, run.boardUrl, run.boardId, c, userId);
-      const res: any = await rodarCalculadora(id, setCalcProg);
-      setCalcProg('Enviando os riscos ao quadro [PLAN]…');
-      const env: any = await enviarAoPlanejamento(id, run.nomeItem, run.boardUrl, run.boardId, setCalcProg);
-      const resumo = `Calculadora: ${res.nTot} riscos (${res.nEsp} dos grupos de risco e ${res.nTr} transversais); ${env.copied} enviados ao grupo Riscos, ${env.skipped} já estavam lá${env.warnings?.length ? `. Avisos: ${env.warnings.slice(0, 3).join('; ')}` : ''}`;
-      setCalcMsg(resumo);
-      await concluir('calculadora', resumo);
-      const lidos = await riscosDoQuadro(run.boardId);
-      setDoQuadro(lidos);
-      const alvo = lidos.filter((x) => !x.daIA);
-      if (alvo.length) {
-        const resumoProj = `${analise.tap.justificativa}\n${analise.tap.resultado_principal}\n${analise.tap.como_chega}`;
-        await gerar('complemento', { produtos, resumo: resumoProj, riscosQuadro: alvo.map((x) => ({ id: x.id, nome: x.nome, causa: x.causa, efeito: x.efeito, categoria: x.categoria, estrategia: x.estrategia, resposta: x.resposta })) });
-      }
-    } catch (e) { setCalcErro(errorMessage(e)); } finally { setCalcBusy(false); setCalcProg(''); }
+  /** Calculadora automática no servidor: cadastra no 09.1, roda o motor, envia ao [PLAN] e pede à IA o complemento. */
+  const rodarCalc = () => { if (run?.boardId && run.boardUrl && analise?.calculadora) gravarQuadro('calculadora'); };
+
+  const lerQuadro = async () => {
+    if (!run?.boardId) return;
+    setLendo(true); setLerErro('');
+    try { setDoQuadro(await riscosDoQuadro(run.boardId)); } catch (e) { setLerErro(errorMessage(e)); } finally { setLendo(false); }
   };
 
   // Ao abrir a aba: gera os riscos específicos e roda a calculadora sozinhos, se ainda não rodaram.
@@ -73,18 +42,21 @@ export function EtapaRiscos() {
     if (!run.boardId || !analise?.calculadora || !produtos.length) return;
     autoFeito.current = true;
     if (st.status === 'nao_iniciada' && run.docs.length) gerar('riscos', { produtos }).catch(() => null);
-    if (stCalc.status !== 'gravada') rodarCalc();
-    else riscosDoQuadro(run.boardId).then(setDoQuadro).catch(() => null);
+    if (stCalc.status !== 'gravada' && !stCalc.gravando) rodarCalc();
+    else lerQuadro();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [run?._id, run?.boardId, !!analise, produtos.length]);
 
-  if (!run) return null;
+  // Quando a calculadora termina, relê os riscos do quadro para a lista do complemento.
+  const calcRodando = !!stCalc.gravando;
+  const antes = useRef(calcRodando);
+  useEffect(() => {
+    if (antes.current && !calcRodando) lerQuadro();
+    antes.current = calcRodando;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [calcRodando]);
 
-  const lerQuadro = async () => {
-    if (!run.boardId) return;
-    setCalcBusy(true); setCalcErro('');
-    try { setDoQuadro(await riscosDoQuadro(run.boardId)); } catch (e) { setCalcErro(errorMessage(e)); } finally { setCalcBusy(false); }
-  };
+  if (!run) return null;
 
   const alvos = (doQuadro ?? []).filter((x) => !x.daIA);
   const gerarComplemento = () => {
@@ -92,14 +64,7 @@ export function EtapaRiscos() {
     return gerar('complemento', { produtos, resumo, riscosQuadro: alvos.map((x) => ({ id: x.id, nome: x.nome, causa: x.causa, efeito: x.efeito, categoria: x.categoria, estrategia: x.estrategia, resposta: x.resposta })) });
   };
 
-  const aplicar = async () => {
-    if (!comp || !run.boardId) return;
-    setBusy(true); setErro('');
-    try {
-      const n = await aplicarComplemento(run.boardId, comp.riscos, inicio, setProg);
-      await concluir('complemento', `${n} riscos da calculadora completados (período, frente, estratégia e resposta)`);
-    } catch (e) { setErro(errorMessage(e)); } finally { setBusy(false); setProg(''); }
-  };
+  const aplicar = () => { if (comp && run.boardId) gravarQuadro('complemento'); };
   const nomeDe = (id: string) => (doQuadro ?? []).find((x) => x.id === id)?.nome ?? id;
 
   return (
@@ -130,7 +95,7 @@ export function EtapaRiscos() {
                 </div>
               </div>
             ))}
-            <BarraGravar onGravar={gravar} gravando={busy && !comp} progresso={prog} erro={erro} rotulo="Gravar riscos específicos" desabilitado={!run.boardId} />
+            <BarraGravar onGravar={gravar} gravando={!!st.gravando} progresso={st.progressoGravacao ?? ''} erro={st.erroGravacao ?? ''} rotulo="Gravar riscos específicos" desabilitado={!run.boardId} />
           </div>
         )}
       </Moldura>
@@ -138,7 +103,7 @@ export function EtapaRiscos() {
       <Cartao className="p-4 space-y-3">
         <div className="flex items-center gap-2"><h2 className="text-[15px] font-semibold">6b. Calculadora de Riscos (automática)</h2>{stCalc.status === 'gravada' && <Selo tom="ok">Rodada</Selo>}</div>
         <p className="text-[13px] text-muted-foreground">Roda sozinha ao abrir esta aba, depois da análise e dos produtos: cadastra o projeto no 09.1 com as 8 características, roda o motor da metodologia (09.2 Base e 09.3 Metodologia), envia os riscos do 09.4 ao grupo Riscos do [PLAN] e pede à IA o complemento (período, frente, estratégia e resposta).</p>
-        {stCalc.status === 'gravada' && stCalc.resumoGravacao && !calcMsg && <Aviso tom="ok">{stCalc.resumoGravacao}</Aviso>}
+        {stCalc.status === 'gravada' && stCalc.resumoGravacao && !stCalc.gravando && <Aviso tom="ok">{stCalc.resumoGravacao}</Aviso>}
         {(!run.boardId || !analise || !produtos.length) && <Aviso tom="info">A calculadora roda quando houver quadro vinculado, análise gerada e produtos gerados.</Aviso>}
         {analise?.calculadora && (
           <div className="flex flex-wrap gap-1.5">
@@ -147,13 +112,13 @@ export function EtapaRiscos() {
           </div>
         )}
         {!analise && <Aviso tom="info">Gere a análise primeiro.</Aviso>}
-        {calcErro && <Aviso tom="erro">{calcErro}</Aviso>}
-        {calcMsg && <Aviso tom="ok">{calcMsg}</Aviso>}
+        {stCalc.erroGravacao && <Aviso tom="erro">{stCalc.erroGravacao}</Aviso>}
+        {lerErro && <Aviso tom="erro">{lerErro}</Aviso>}
         <div className="flex items-center gap-2">
-          {calcBusy && <Progresso texto={calcProg || 'Lendo…'} />}
+          {(calcRodando || lendo) && <Progresso texto={calcRodando ? stCalc.progressoGravacao || 'Rodando a calculadora…' : 'Lendo os riscos do quadro…'} />}
           <div className="flex-1" />
-          <Botao onClick={lerQuadro} disabled={!run.boardId || calcBusy}>Ler riscos do quadro</Botao>
-          <Botao variante={stCalc.status === 'gravada' ? 'secundario' : 'primario'} onClick={rodarCalc} carregando={calcBusy} disabled={!analise || !run.boardId}>{stCalc.status === 'gravada' ? 'Rodar de novo' : 'Rodar agora'}</Botao>
+          <Botao onClick={lerQuadro} disabled={!run.boardId || calcRodando || lendo}>Ler riscos do quadro</Botao>
+          <Botao variante={stCalc.status === 'gravada' ? 'secundario' : 'primario'} onClick={rodarCalc} carregando={calcRodando} disabled={!analise || !run.boardId}>{stCalc.status === 'gravada' ? 'Rodar de novo' : 'Rodar agora'}</Botao>
         </div>
       </Cartao>
 
@@ -173,7 +138,7 @@ export function EtapaRiscos() {
                 <Texto rows={2} value={x.resposta} onChange={(e) => editar('complemento', { riscos: comp.riscos.map((y, j) => (j === i ? { ...y, resposta: e.target.value } : y)) })} />
               </div>
             ))}
-            <BarraGravar onGravar={aplicar} gravando={busy && !!comp} progresso={prog} erro={erro} rotulo="Aplicar nos riscos do quadro" desabilitado={!run.boardId} />
+            <BarraGravar onGravar={aplicar} gravando={!!stC.gravando} progresso={stC.progressoGravacao ?? ''} erro={stC.erroGravacao ?? ''} rotulo="Aplicar nos riscos do quadro" desabilitado={!run.boardId} />
           </div>
         )}
       </Moldura>

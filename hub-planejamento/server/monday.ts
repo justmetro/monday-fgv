@@ -1,6 +1,8 @@
-// Chamadas à API do monday. Leituras usam o token OAuth do app (ou MONDAY_API_TOKEN como reserva);
-// mutations feitas a pedido de alguém são executadas pelo navegador dessa pessoa (ver relay.ts).
-import { tokenOAuth } from './oauth';
+// Chamadas à API do monday. Ordem do token: o informado na chamada, o da rotina em segundo plano (tokenAtual),
+// o da pessoa da sessão (autorização própria) e, por último, o token geral do app. Sem token da pessoa,
+// mutations pedidas pela tela ainda podem ir pelo navegador dela (relay.ts).
+import { tokenOAuth, tokenDoUsuario } from './oauth';
+import { currentCtx, tokenAtual } from './context';
 import { viaNavegador, SEM_NAVEGADOR } from './relay';
 
 const API = 'https://api.monday.com/v2';
@@ -13,11 +15,13 @@ export const ehMutacao = (query: string) => /^\s*mutation\b/.test(query);
 
 /** Resposta crua do monday ({ data, errors, error_message }) e o status HTTP (200 quando veio do navegador). */
 export async function respostaMonday(query: string, variables: Record<string, unknown> = {}, opts: { tokenFixo?: string; versao?: string; signal?: AbortSignal } = {}): Promise<{ status: number; json: any }> {
-  if (!opts.tokenFixo && ehMutacao(query)) {
+  const ctx = currentCtx();
+  const pessoal = opts.tokenFixo ?? tokenAtual.getStore() ?? (ctx?.userId ? await tokenDoUsuario(ctx.userId) : null);
+  if (!pessoal && ehMutacao(query)) {
     const r = await viaNavegador(query, variables);
     if (r !== SEM_NAVEGADOR) return { status: 200, json: r };
   }
-  const token = opts.tokenFixo ?? (await tokenOAuth()) ?? serviceToken();
+  const token = pessoal ?? (await tokenOAuth()) ?? serviceToken();
   if (!token) throw new Error('App sem autorização OAuth e sem token de serviço configurado.');
   const res = await fetch(API, {
     method: 'POST',

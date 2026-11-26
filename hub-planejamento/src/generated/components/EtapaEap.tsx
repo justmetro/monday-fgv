@@ -1,8 +1,6 @@
-import { useState } from 'react';
 import { Trash2, ChevronRight } from 'lucide-react';
 import { useHub } from '@generated/lib/estado';
-import { gravarEap, mapaProdutos, type EapProduto } from '@generated/lib/gravar';
-import { errorMessage } from '@generated/lib/monday';
+import type { EapProduto } from '@generated/lib/gravar';
 import { ROTULOS } from '@generated/lib/rotulos';
 import { diaParaData } from '@generated/lib/quadros';
 import { resumoProdutos, type ResultadoProdutos } from '@generated/components/EtapaProdutos';
@@ -21,11 +19,8 @@ function Dias({ a, b, onA, onB, inicio }: { a: number; b: number; onA: (n: numbe
 }
 
 export function EtapaEap() {
-  const { run, etapa, gerar, editar, concluir } = useHub();
+  const { run, etapa, gerar, editar, gravarQuadro } = useHub();
   const st = etapa('eap');
-  const [busy, setBusy] = useState(false);
-  const [prog, setProg] = useState('');
-  const [erro, setErro] = useState('');
   if (!run) return null;
   const prod = run.etapas.produtos?.resultado as ResultadoProdutos | undefined;
   const produtos = resumoProdutos(prod);
@@ -40,16 +35,7 @@ export function EtapaEap() {
     editar('eap', { produtos: c });
   };
 
-  const gravar = async () => {
-    if (!r || !run.boardId || !inicio) return;
-    setBusy(true); setErro('');
-    try {
-      setProg('Lendo os produtos do quadro…');
-      const mapa = await mapaProdutos(run.boardId);
-      const out = await gravarEap(run.boardId, r.produtos, produtos.map((p) => p.codigo), mapa, inicio, setProg);
-      await concluir('eap', `${out.itens} itens criados no grupo Cronograma (Níveis 2, 3 e 4)${out.semProduto.length ? `; sem produto no quadro: ${out.semProduto.join(', ')}` : ''}`);
-    } catch (e) { setErro(errorMessage(e)); } finally { setBusy(false); setProg(''); }
-  };
+  const gravar = () => { if (r && run.boardId && inicio) gravarQuadro('eap'); };
 
   const total = r?.produtos.reduce((s, p) => s + p.entregaveis.reduce((s2, e) => s2 + 1 + e.marcos.reduce((s3, m) => s3 + 1 + m.atividades.length, 0), 0), 0) ?? 0;
   const semVerbo = r?.produtos.flatMap((p) => p.entregaveis.flatMap((e) => e.marcos.flatMap((m) => m.atividades.filter((a) => VERBO.test(a.nome) || !/^[A-ZÁÉÍÓÚÂÊÔÃÕ][a-záéíóúâêôãõç]+(r|r-se)\b/.test(a.nome))))) ?? [];
@@ -101,7 +87,7 @@ export function EtapaEap() {
               </details>
             );
           })}
-          <BarraGravar onGravar={gravar} gravando={busy} progresso={prog} erro={erro} rotulo="Gravar EAP e cronograma no quadro" desabilitado={!run.boardId || !inicio || !prodGravados}
+          <BarraGravar onGravar={gravar} gravando={!!st.gravando} progresso={st.progressoGravacao ?? ''} erro={st.erroGravacao ?? ''} rotulo="Gravar EAP e cronograma no quadro" desabilitado={!run.boardId || !inicio || !prodGravados}
             aviso={<>
               {!prodGravados && <Aviso>Grave os produtos primeiro: cada item do cronograma é ligado ao seu produto.</Aviso>}
               {!inicio && <Aviso>Defina a data de início da execução na aba Quadro para calcular as datas.</Aviso>}

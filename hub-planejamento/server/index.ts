@@ -8,6 +8,16 @@ import { startJob } from './jobs';
 import { pendentes, registrarResultado } from './relay';
 import { oauthStart, oauthCallback, oauthStatus, lembrarCliente } from './oauth';
 import { MODULES } from './registry';
+import { respostaMonday } from './monday';
+import { definirExecutor } from '@generated/lib/monday';
+
+// As bibliotecas do hub (gravar, quadros, calculadora) rodam também no servidor, com o token de quem pediu.
+definirExecutor(async (query: string, variables: Record<string, unknown>) => {
+  const { status, json } = await respostaMonday(query, variables ?? {});
+  if (!json) return { errors: [{ message: `HTTP ${status}` }] };
+  if (status === 429 && !json.errors) return { ...json, errors: [{ message: 'rate limit (429)' }] };
+  return json;
+});
 
 const FNS = new Map<string, ServerFn>();
 for (const [mod, exp] of Object.entries(MODULES)) {
@@ -101,7 +111,7 @@ const server = http.createServer(async (req, res) => {
       console.log(`[cron ${job}]`, JSON.stringify(out));
       return send(res, 200, { ok: true, result: out });
     }
-    if (req.method === 'GET' && p === '/oauth/start') return await oauthStart(req, res);
+    if (req.method === 'GET' && p === '/oauth/start') return await oauthStart(req, res, url);
     if (req.method === 'GET' && p === '/oauth/callback') return await oauthCallback(req, res, url);
     if (req.method === 'GET' && p === '/oauth/status') return await oauthStatus(res);
     if (p === '/health') return send(res, 200, { ok: true });
