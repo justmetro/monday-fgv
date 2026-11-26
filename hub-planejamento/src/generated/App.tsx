@@ -3,7 +3,7 @@ import { Moon, Sun, Search, RefreshCw, Plus, ExternalLink, Check, CircleDashed, 
 import { mondayClient } from '@/context/MondayContextProvider';
 import { listarProjetos, ehAtivo, type Projeto } from '@generated/lib/quadros';
 import { errorMessage } from '@generated/lib/monday';
-import { criarExecucao, listarExecucoes, estadoEtapas, statusIA, type Execucao, type Etapa } from '@generated/server/hub';
+import { criarExecucao, listarExecucoes, estadoEtapas, statusIA, atualizarExecucao, type Execucao, type Etapa } from '@generated/server/hub';
 import { HubProvider, ROTULO_ETAPA } from '@generated/lib/estado';
 import { Botao, Cartao, Selo, Campo, Aviso, cx, dataBR } from '@generated/components/ui';
 import { EtapaQuadro } from '@generated/components/EtapaQuadro';
@@ -179,6 +179,14 @@ export default function App() {
                   {runs.length > 1 && (
                     <select className="rounded-lg border border-input bg-background/60 px-2 h-8 text-[12.5px]" value={run?._id ?? ''} onChange={(e) => abrirRun(e.target.value)}>
                       {runs.map((r) => <option key={r._id} value={r._id}>Execução de {dataBR(r.criadoEm)} {r.criadoPorNome ? `(${r.criadoPorNome})` : ''}</option>)}
+                    </select>
+                  )}
+                  {run && (
+                    <select title="Modelo de IA usado nas próximas gerações" className="rounded-lg border border-input bg-background/60 px-2 h-8 text-[12.5px]" value={run.modelo}
+                      onChange={async (e) => setRun((await atualizarExecucao({ data: { runId: run._id, modelo: e.target.value } })) as Execucao)}>
+                      <option value="monday-standard">IA: padrão da monday</option>
+                      <option value="gpt-5">IA: GPT-5</option>
+                      <option value="gpt-5-mini">IA: GPT-5 mini</option>
                     </select>
                   )}
                   <Botao variante={run ? 'secundario' : 'primario'} onClick={nova} carregando={abrindo}><Plus className="h-4 w-4" /> Nova execução</Botao>
