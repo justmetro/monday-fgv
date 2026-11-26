@@ -2,9 +2,10 @@
 
 Hub de IA do planejamento de projetos. Parte do item do projeto no 02.01 Projetos em Planejamento, vincula o quadro [PLAN] criado pelo botão "Criar quadro de planejamento" e pré-preenche, com prévia editável por etapa: TAP (doc "0. TAP" do quadro), Produtos, EAP e Cronograma (Níveis 2, 3 e 4), Riscos específicos, Calculadora de Riscos v3 e complemento dos riscos, Indicadores (OKRs) e Partes Interessadas.
 
-- App 12877701, versão v1 20831196, feature 130718610 (Board View).
+- App 12877701, versão live v3 20832427, feature 130721424 (Board View). Versões anteriores: v1 20831196 e v2 (feature 130718610).
 - Aba no quadro 09.0 Hub de Planejamento (18441661190), view 294170734, pasta 09. Ferramentas de Planejamento.
-- Servidor: https://c9016-service-29669755-a2a4a63b.us.monday.app (live: https://live1-service-29669755-a2a4a63b.us.monday.app depois de promovida).
+- Servidor: https://live1-service-29669755-a2a4a63b.us.monday.app (versão v3: https://ce14b-service-29669755-a2a4a63b.us.monday.app). OAuth em /oauth/start, retorno em /oauth/callback (cadastrado no manifest como redirectUri).
+- Escopos: boards:read/write, boards:update, me:read, users:read, workspaces:read/write, docs:read/write, ai:consume, assets:read. Mudança de escopo ou de URL de OAuth exige versão nova (`mapps manifest:import -a 12877701`).
 - Variáveis do monday code: CLIENT_SECRET, CRON_KEY. Sem MONDAY_API_TOKEN.
 - Banco (Document DB): hub_runs (execuções e resultados por etapa), hub_docs (texto dos documentos), app_oauth, app_mutacoes, app_jobs.
 
@@ -24,5 +25,15 @@ Hub de IA do planejamento de projetos. Parte do item do projeto no 02.01 Projeto
 npm i --legacy-peer-deps
 npm run build
 cd deploy && npm i --package-lock-only && cd ..
-mapps code:push -a 12877701 -i 20831196 -d deploy   # depois de promovida, usar -f
+mapps code:push -a 12877701 -i 20832427 -d deploy -f
 ```
+
+## Teste com SUFOTUR (26/11/2026)
+
+Quadro [PLAN] 18441667419, execução 36ed1237-8f90-4edb-ae84-2a8377977081, início previsto 01/12/2026 e 180 dias. Gravados: TAP, 10 produtos, 282 itens de cronograma, 19 riscos específicos, 73 riscos da calculadora com complemento, 16 indicadores e 41 medições, 12 partes interessadas. Custo de IA da execução: cerca de US$ 3,80.
+
+Pontos conhecidos:
+- O settings_str da coluna EAP demora a mostrar o rótulo Nível 4 criado na hora; `ajustarAbaCronograma` completa os ids pelos itens gravados.
+- A gravação pelo navegador é lenta em volume (cerca de 1,3 item por segundo); a aba precisa ficar aberta. Se o monday recarregar a aba no meio, basta clicar de novo: produtos e complemento atualizam, EAP e riscos específicos criam de novo.
+- No TAP, as necessidades além da quinta entram como linhas no último item da lista numerada do modelo.
+- A calculadora v3 não cria rótulo que falta no destino (aviso "'Público final' não existe em Impactado").

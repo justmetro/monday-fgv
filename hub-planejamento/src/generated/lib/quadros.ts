@@ -73,7 +73,7 @@ export async function candidatosQuadro(codigo: string, desdeISO: string): Promis
   const cod = codigo.trim().toLowerCase();
   return (d?.boards ?? [])
     .filter((x: any) => x.type === 'board' && !/^subelementos/i.test(x.name) && Date.parse(x.created_at) >= desde && !/^(wf |workflow|teste conex|plan -> |sal[aá]rios|planejamento financeiro|cria[cç][aã]o quadro|quadro planejamento <>)/i.test(x.name))
-    .map((x: any) => ({ id: String(x.id), name: x.name, url: x.url, criado: x.created_at, codigoBate: x.name.toLowerCase().includes(cod), pastaId: x.board_folder_id ? String(x.board_folder_id) : null }))
+    .map((x: any) => ({ id: String(x.id), name: x.name, url: x.url, criado: x.created_at, codigoBate: x.name.toLowerCase().includes(cod) || /c[oó]digo nome projeto/i.test(x.name), pastaId: x.board_folder_id ? String(x.board_folder_id) : null }))
     .sort((a: Candidato, b: Candidato) => Number(b.codigoBate) - Number(a.codigoBate) || Date.parse(b.criado) - Date.parse(a.criado));
 }
 
@@ -84,7 +84,7 @@ export async function organizarQuadro(boardId: string, nomeProjeto: string, codi
     await gql('mutation ($b: ID!, $v: String!) { update_board(board_id: $b, board_attribute: name, new_value: $v) }', { b: boardId, v: `[PLAN] ${nomeProjeto}`.slice(0, 255) });
     feito.push('quadro renomeado');
   }
-  if (mover) {
+  if (mover) try {
     const b = await gql('query ($b: [ID!]) { boards(ids: $b) { board_folder_id } }', { b: [boardId] });
     let pasta = b?.boards?.[0]?.board_folder_id ? String(b.boards[0].board_folder_id) : null;
     if (pasta) {
@@ -103,6 +103,8 @@ export async function organizarQuadro(boardId: string, nomeProjeto: string, codi
         feito.push('pasta movida para 06. Planejamentos Ativos');
       }
     }
+  } catch (e) {
+    feito.push(`pasta não movida (${String((e as Error)?.message ?? e).slice(0, 120)})`);
   }
   return feito;
 }
@@ -127,7 +129,7 @@ export async function itensDosGrupos(boardId: string, grupos: string[], colunas:
   do {
     const d: any = cursor
       ? await gql(`query ($c: String!) { next_items_page(limit: 200, cursor: $c) { cursor items { id name group { id } column_values(ids: ${cols}) { id text value } } } }`, { c: cursor })
-      : await gql(`query ($b: [ID!], $g: [CompareValue!]!) { boards(ids: $b) { items_page(limit: 200, query_params: { rules: [{ column_id: "group", compare_value: $g, operator: any_of }] }) { cursor items { id name group { id } column_values(ids: ${cols}) { id text value } } } } }`, { b: [boardId], g: grupos });
+      : await gql(`query ($b: [ID!], $g: CompareValue!) { boards(ids: $b) { items_page(limit: 200, query_params: { rules: [{ column_id: "group", compare_value: $g, operator: any_of }] }) { cursor items { id name group { id } column_values(ids: ${cols}) { id text value } } } } }`, { b: [boardId], g: grupos });
     const page: any = cursor ? d.next_items_page : d.boards[0].items_page;
     for (const it of page.items) out.push({ id: String(it.id), name: it.name, group: it.group.id, cols: Object.fromEntries(it.column_values.map((c: any) => [c.id, c])) });
     cursor = page.cursor;

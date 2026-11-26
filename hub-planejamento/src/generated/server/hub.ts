@@ -14,8 +14,8 @@ import {
 } from './prompts';
 import { escreverTap, type DadosTap } from './tap';
 
-export type Etapa = 'analise' | 'produtos' | 'eap' | 'riscos' | 'partes' | 'indicadores' | 'complemento' | 'tap';
-const ETAPAS: Etapa[] = ['analise', 'produtos', 'eap', 'riscos', 'partes', 'indicadores', 'complemento', 'tap'];
+export type Etapa = 'analise' | 'produtos' | 'eap' | 'riscos' | 'partes' | 'indicadores' | 'complemento' | 'tap' | 'calculadora';
+const ETAPAS: Etapa[] = ['analise', 'produtos', 'eap', 'riscos', 'partes', 'indicadores', 'complemento', 'tap', 'calculadora'];
 
 export interface EstadoEtapa {
   status: 'nao_iniciada' | 'gerando' | 'pronta' | 'erro' | 'gravada';
@@ -176,7 +176,12 @@ async function executarEtapa(run: Execucao, etapa: Etapa, entrada: z.infer<typeo
   if (!docs.length && etapa !== 'complemento') throw new Error('Envie os documentos antes de gerar.');
   const p = run.contexto;
   const m = run.modelo || 'monday-standard';
-  const produtos = (entrada?.produtos ?? []) as ProdutoResumo[];
+  // Sem lista vinda da tela, usa os produtos já gerados nesta execução.
+  const salvos = ((run.etapas?.produtos?.resultado as any)?.produtos ?? []) as any[];
+  const produtos = (entrada?.produtos?.length ? entrada.produtos : salvos.map((x, i) => ({
+    codigo: x.codigo, nome: x.nome, descricao: x.descricao, dia_inicio: x.dia_inicio, dia_fim: x.dia_fim,
+    mes_inicio: x.mes_inicio, mes_fim: x.mes_fim, valor: x.valor, ordem: i + 1,
+  }))) as ProdutoResumo[];
   let custo = 0, tokens = 0, modelo = m;
   const somar = (r: { custo: number | null; tokensEntrada: number; tokensSaida: number; modelo: string }) => { custo += r.custo ?? 0; tokens += r.tokensEntrada + r.tokensSaida; modelo = r.modelo; };
 
@@ -203,7 +208,12 @@ async function executarEtapa(run: Execucao, etapa: Etapa, entrada: z.infer<typeo
   } else if (etapa === 'partes') {
     const r = await rodarIA(promptPartes(p, docs, entrada?.riscos ?? []), m); somar(r); resultado = r.data;
   } else if (etapa === 'indicadores') {
-    const r = await rodarIA(promptIndicadores(p, docs, produtos), m); somar(r); resultado = r.data;
+    await setEtapa(run._id, etapa, { progresso: 'Lendo indicadores de planejamentos anteriores…' });
+    const base = await baseIndicadores().catch((e) => { console.error('[base indicadores]', e); return null; });
+    const refs = base ? referenciasIndicadores(base.itens, p.eixo02 ?? '') : { texto: '', usados: 0 };
+    await setEtapa(run._id, etapa, { progresso: `Gerando OKRs com ${refs.usados} indicadores de referência…` });
+    const r = await rodarIA(promptIndicadores(p, docs, produtos, refs.texto), m); somar(r);
+    resultado = { ...(r.data as object), base: base ? { indicadores: base.itens.length, projetos: base.projetos, usados: refs.usados, em: base.em } : null };
   } else if (etapa === 'complemento') {
     const rq = (entrada?.riscosQuadro ?? []) as RiscoQuadro[];
     if (!rq.length) throw new Error('Nenhum risco da calculadora para completar.');
@@ -257,6 +267,72 @@ export const estadoEtapas = createServerFn()
     }
     return run;
   });
+
+// ---------- Base de indicadores de planejamentos anteriores ----------
+
+interface IndBase { projeto: string; eixo: string; tipo: string; nome: string; descricao: string; formula: string; meta: string; unidade: string; temporalidade: string; coleta: string; polaridade: string }
+const COLS_IND = ['18370004806__color_mm07qht8', 'long_text_mm1gn28m', '18370004806__text_mm0qr7n2', '18370004806__numeric_mm07cbq5', '18370004806__dropdown_mm078vv2', '18370004806__dropdown_mm077dhe', '18370004806__dropdown_mm0791cx', 'color_mm1hzeyh'];
+
+async function baseIndicadores(): Promise<{ itens: IndBase[]; projetos: number; em: string }> {
+  const col = (await mongo()).collection<{ _id: string; itens: IndBase[]; projetos: number; em: string }>('hub_base_indicadores');
+  const atual = await col.findOne({ _id: 'base' });
+  if (atual && Date.now() - Date.parse(atual.em) < 12 * 3600_000) return atual;
+  // Eixo de cada quadro [PLAN] pelo link no 02.01
+  const eixoPorQuadro = new Map<string, string>();
+  let cursor: string | null = null;
+  do {
+    const d: any = cursor
+      ? await gql('query ($c: String!) { next_items_page(limit: 500, cursor: $c) { cursor items { column_values(ids: ["link_mm383m1p", "dropdown_mm38v0xw"]) { id text value } } } }', { c: cursor })
+      : await gql('query { boards(ids: [18412010674]) { items_page(limit: 500) { cursor items { column_values(ids: ["link_mm383m1p", "dropdown_mm38v0xw"]) { id text value } } } } }');
+    const pg: any = cursor ? d.next_items_page : d.boards[0].items_page;
+    for (const it of pg.items) {
+      const link = it.column_values.find((c: any) => c.id === 'link_mm383m1p');
+      const eixo = it.column_values.find((c: any) => c.id === 'dropdown_mm38v0xw')?.text ?? '';
+      let url = '';
+      try { url = JSON.parse(link?.value || 'null')?.url ?? ''; } catch { url = ''; }
+      const id = url.match(/\/boards\/(\d+)/)?.[1];
+      if (id) eixoPorQuadro.set(id, eixo);
+    }
+    cursor = pg.cursor;
+  } while (cursor);
+  const quadros = [...eixoPorQuadro.keys()];
+  const itens: IndBase[] = [];
+  let projetos = 0;
+  for (let i = 0; i < quadros.length; i += 8) {
+    const d: any = await gql(`query ($b: [ID!], $c: [String!]) { boards(ids: $b) { id name groups { id } items_page(limit: 200, query_params: { rules: [{ column_id: "group", compare_value: ["group_mm0gtzbd"], operator: any_of }] }) { items { name column_values(ids: $c) { id text } } } } }`, { b: quadros.slice(i, i + 8), c: COLS_IND }).catch(() => null);
+    for (const b of d?.boards ?? []) {
+      if (!b.groups?.some((g: any) => g.id === 'group_mm0gtzbd')) continue;
+      const validos = (b.items_page?.items ?? []).filter((it: any) => !/^INDICADOR (KR|KPI) \d+$/i.test(it.name.trim()));
+      if (!validos.length) continue;
+      projetos++;
+      for (const it of validos) {
+        const v = (id: string) => it.column_values.find((c: any) => c.id === id)?.text ?? '';
+        const desc = v('long_text_mm1gn28m'), formula = v('18370004806__text_mm0qr7n2');
+        if (!desc && !formula) continue;
+        itens.push({ projeto: String(b.name).replace(/^\[PLAN\]\s*/, '').slice(0, 80), eixo: eixoPorQuadro.get(String(b.id)) ?? '', tipo: v('18370004806__color_mm07qht8'), nome: it.name, descricao: desc, formula, meta: v('18370004806__numeric_mm07cbq5'), unidade: v('18370004806__dropdown_mm078vv2'), temporalidade: v('18370004806__dropdown_mm077dhe'), coleta: v('18370004806__dropdown_mm0791cx'), polaridade: v('color_mm1hzeyh') });
+      }
+    }
+  }
+  const doc = { _id: 'base', itens, projetos, em: agora() };
+  await col.replaceOne({ _id: 'base' }, doc, { upsert: true });
+  return doc;
+}
+
+function referenciasIndicadores(itens: IndBase[], eixo: string) {
+  const e = eixo.trim().toLowerCase();
+  const mesmo = itens.filter((x) => e && x.eixo.toLowerCase() === e);
+  const outros = itens.filter((x) => !(e && x.eixo.toLowerCase() === e));
+  const sel = [...mesmo.slice(0, 30), ...outros.filter((_, i) => i % Math.max(1, Math.floor(outros.length / 20)) === 0).slice(0, 20)];
+  const texto = sel.map((x) => `[${x.eixo || 'sem eixo'} | ${x.projeto}] ${x.tipo || 'Indicador'} | ${x.nome} | ${x.descricao.replace(/\s+/g, ' ').slice(0, 220)} | cálculo: ${x.formula.slice(0, 160)} | meta ${x.meta} ${x.unidade} | ${x.temporalidade} | ${x.coleta} | ${x.polaridade}`).join('\n');
+  return { texto, usados: sel.length };
+}
+
+export const infoBaseIndicadores = createServerFn().handler(async () => {
+  const b = await baseIndicadores();
+  const porEixo: Record<string, number> = {};
+  for (const x of b.itens) porEixo[x.eixo || 'sem eixo'] = (porEixo[x.eixo || 'sem eixo'] ?? 0) + 1;
+  return { indicadores: b.itens.length, projetos: b.projetos, em: b.em, porEixo };
+});
 
 // ---------- TAP no doc "0. TAP" do quadro ----------
 

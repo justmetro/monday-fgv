@@ -1,5 +1,6 @@
 // Gravação de cada etapa no quadro [PLAN], pelo login de quem usa o hub.
-import { CP, criarItens, alterarItens, itensDosGrupos, faixa, diaParaData } from '@generated/lib/quadros';
+import { CP, criarItens, alterarItens, itensDosGrupos, arquivarItens, faixa, diaParaData } from '@generated/lib/quadros';
+import { gql } from '@generated/lib/monday';
 import { txt } from '@generated/lib/monday';
 
 export interface Produto {
@@ -19,7 +20,7 @@ export interface Parte {
   nome: string; cargo_cliente: string; area: string; classe: string; papel: string[]; interesse: string; poder: string; expectativas: string; riscos_associados: string; incluir?: boolean;
 }
 export interface Indicador {
-  nome: string; descricao: string; formula: string; meta: number; unidade: string; polaridade: string; temporalidade: string; coleta: string; medicoes: number[]; produtos: string[];
+  nome: string; descricao: string; formula: string; meta: number; unidade: string; polaridade: string; temporalidade: string; coleta: string; medicoes: number[]; produtos: string[]; referencia?: string;
 }
 export interface Kr extends Indicador { kpis: Indicador[] }
 export interface Objetivo { objetivo: string; krs: Kr[] }
@@ -31,10 +32,57 @@ export function diasDoProduto(p: Pick<Produto, 'dia_inicio' | 'dia_fim' | 'mes_i
   return { ini, fim: Math.max(ini, fim) };
 }
 
+// Itens de exemplo que o modelo v6 traz em cada grupo (são arquivados antes da primeira gravação)
+const MODELO: Record<string, RegExp> = {
+  [CP.grupos.produtos]: /^PRODUTO \d+$/i,
+  [CP.grupos.cronograma]: /^(Criar item|\d+(\.\d+)*\.?\s*(COMPONENTE|PACOTE DE ENTREGAS)|hghghg)$/i,
+  [CP.grupos.riscos]: /^RISCO \d+$/i,
+  [CP.grupos.indicador]: /^INDICADOR (KR|KPI) \d+$/i,
+  [CP.grupos.partes]: /^GRUPO \/ INSTITUI[ÇC][ÃA]O \d+$/i,
+};
+
+export async function limparModelo(boardId: string, grupo: string): Promise<number> {
+  const rx = MODELO[grupo];
+  if (!rx) return 0;
+  const its = await itensDosGrupos(boardId, [grupo], ['name']);
+  const ids = its.filter((it) => rx.test(it.name.trim())).map((it) => it.id);
+  if (ids.length) await arquivarItens(ids);
+  return ids.length;
+}
+
+/** Mostra os níveis 3 (marcos) e 4 (atividades) na aba "8. CRONOGRAMA" do quadro. */
+export async function ajustarAbaCronograma(boardId: string) {
+  const d = await gql(`query ($b: [ID!]) { boards(ids: $b) { columns(ids: ["${CP.eap}"]) { settings_str } views { id name } } }`, { b: [boardId] });
+  const b = d?.boards?.[0];
+  const labels: { id: number; name?: string; label?: string }[] = JSON.parse(b?.columns?.[0]?.settings_str || '{}').labels ?? [];
+  const ids = labels.filter((l) => /n[ií]vel\s*[34]/i.test(l.name ?? l.label ?? '')).map((l) => l.id);
+  // O settings_str demora a refletir rótulo criado na hora (Nível 4): completa com os ids gravados nos itens.
+  if (ids.length < 2) {
+    const itens = await itensDosGrupos(boardId, [CP.grupos.cronograma], [CP.eap]).catch(() => []);
+    for (const it of itens) {
+      const c = it.cols[CP.eap];
+      if (!/n[ií]vel\s*[34]/i.test(c?.text ?? '')) continue;
+      for (const id of (JSON.parse(c?.value || '{}').ids ?? []) as number[]) if (!ids.includes(id)) ids.push(id);
+    }
+  }
+  const vista = (b?.views ?? []).find((v: any) => /cronograma/i.test(v.name) && !/gantt/i.test(v.name));
+  if (!vista || !ids.length) return false;
+  await gql(`mutation ($b: ID!, $v: ID!, $f: ItemsQueryGroup) { update_view(board_id: $b, view_id: $v, type: TABLE, filter: $f) { id } }`, {
+    b: boardId, v: String(vista.id),
+    f: { operator: 'and', groups: [
+      { operator: 'and', rules: [{ column_id: 'group', compare_value: [CP.grupos.cronograma], operator: 'any_of' }] },
+      { operator: 'and', rules: [{ column_id: CP.eap, compare_value: ids, operator: 'any_of' }] },
+    ] },
+  });
+  return true;
+}
+
 const cortar = (s: string, n = 1900) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
 
 // ---------- Produtos ----------
 export async function gravarProdutos(boardId: string, produtos: Produto[], inicio: string | null, progresso: (m: string) => void): Promise<{ mapa: Record<string, string>; criados: number; atualizados: number }> {
+  progresso('Arquivando os produtos de exemplo do modelo…');
+  await limparModelo(boardId, CP.grupos.produtos);
   progresso('Conferindo produtos já existentes…');
   const existentes = await itensDosGrupos(boardId, [CP.grupos.produtos], [CP.codigo]);
   const porCodigo = new Map<string, string>();
@@ -98,8 +146,12 @@ export async function gravarEap(boardId: string, eap: EapProduto[], ordem: strin
       });
     });
   }
+  progresso('Arquivando os itens de exemplo do modelo…');
+  await limparModelo(boardId, CP.grupos.cronograma);
   await criarItens(boardId, CP.grupos.cronograma, linhas, (n) => progresso(`Criando itens do cronograma ${n}/${linhas.length}…`), true);
-  return { itens: linhas.length, semProduto };
+  progresso('Ajustando a aba 8. CRONOGRAMA para mostrar marcos e atividades…');
+  const aba = await ajustarAbaCronograma(boardId).catch(() => false);
+  return { itens: linhas.length, semProduto, aba };
 }
 
 // ---------- Riscos específicos (IA) ----------
@@ -118,6 +170,7 @@ export function valoresRisco(r: Risco, inicio: string | null): Record<string, un
 
 export async function gravarRiscosIA(boardId: string, riscos: Risco[], inicio: string | null, progresso: (m: string) => void) {
   const sel = riscos.filter((r) => r.incluir !== false);
+  await limparModelo(boardId, CP.grupos.riscos);
   await criarItens(boardId, CP.grupos.riscos, sel.map((r) => ({ nome: `${r.id} | ${r.titulo}`, valores: valoresRisco(r, inicio) })), (n) => progresso(`Criando riscos ${n}/${sel.length}…`));
   return sel.length;
 }
@@ -125,6 +178,7 @@ export async function gravarRiscosIA(boardId: string, riscos: Risco[], inicio: s
 // ---------- Partes interessadas ----------
 export async function gravarPartes(boardId: string, partes: Parte[], progresso: (m: string) => void) {
   const sel = partes.filter((p) => p.incluir !== false);
+  await limparModelo(boardId, CP.grupos.partes);
   await criarItens(boardId, CP.grupos.partes, sel.map((p) => ({
     nome: p.nome,
     valores: {
@@ -156,6 +210,7 @@ export async function gravarIndicadores(boardId: string, objetivos: Objetivo[], 
       medicoes.push({ nome: `Medição ${k + 1} - ${ind.nome}`, valores: v });
     });
   };
+  await limparModelo(boardId, CP.grupos.indicador);
   for (const o of objetivos) {
     const krIds = await criarItens(boardId, CP.grupos.indicador, o.krs.map((kr) => ({ nome: kr.nome, valores: valoresIndicador(kr, 'KR - Resultado Chave', o.objetivo) })));
     nInd += krIds.length;

@@ -26,7 +26,7 @@ function LinhaInd({ x, tipo, onMudar, onRemover }: { x: Indicador; tipo: 'KR' | 
         <Escolha opcoes={ROTULOS.coleta} valor={x.coleta} onMudar={(v) => onMudar('coleta', v)} />
         <Campo value={(x.medicoes ?? []).join(', ')} onChange={(e) => onMudar('medicoes', e.target.value.split(/[,; ]+/).map(Number).filter((n) => n > 0))} title="Dias das medições" />
       </div>
-      <div className="text-[12px] text-muted-foreground">Medições nos dias {(x.medicoes ?? []).join(', ') || '—'} · Produtos: {(x.produtos ?? []).join(', ') || '—'}</div>
+      <div className="text-[12px] text-muted-foreground">Medições nos dias {(x.medicoes ?? []).join(', ') || '—'} · Produtos: {(x.produtos ?? []).join(', ') || '—'}{x.referencia ? ` · Referência: ${x.referencia}` : ''}</div>
     </div>
   );
 }
@@ -39,14 +39,14 @@ export function EtapaIndicadores() {
   const [erro, setErro] = useState('');
   if (!run) return null;
   const produtos = resumoProdutos(run.etapas.produtos?.resultado as ResultadoProdutos | undefined);
-  const r = st.resultado as { objetivos: Objetivo[] } | undefined;
+  const r = st.resultado as { objetivos: Objetivo[]; base?: { indicadores: number; projetos: number; usados: number; em: string } | null } | undefined;
   const inicio = run.contexto.inicioExecucao ?? null;
 
   const set = (fn: (x: Objetivo[]) => void) => {
     if (!r) return;
     const c: Objetivo[] = JSON.parse(JSON.stringify(r.objetivos));
     fn(c);
-    editar('indicadores', { objetivos: c });
+    editar('indicadores', { ...r, objetivos: c });
   };
 
   const gravar = async () => {
@@ -63,10 +63,10 @@ export function EtapaIndicadores() {
 
   return (
     <Moldura titulo="7. Painel de Indicadores (OKRs)" st={st} onGerar={() => gerar('indicadores', { produtos })} podeGerar={!!produtos.length} motivo="Gere os produtos antes."
-      descricao="Objetivos qualitativos (até 3), Resultados-Chave mensuráveis (até 5 por objetivo) e KPIs de processo (até 3 por KR), pelo Guia. Grava nos grupos Indicador e Medição do indicador, com KPIs ligados ao KR e medições ligadas ao indicador.">
+      descricao="Calculadora de indicadores do hub: lê os indicadores dos planejamentos anteriores (grupo Indicador dos quadros [PLAN] ligados no 02.01), prioriza os do mesmo eixo e propõe Objetivos (até 3), Resultados-Chave (até 5 por objetivo) e KPIs de processo (até 3 por KR), pelo Guia. Grava nos grupos Indicador e Medição do indicador, com KPIs ligados ao KR e medições ligadas ao indicador.">
       {r && (
         <div className="space-y-3">
-          <div className="text-[12.5px] text-muted-foreground">{r.objetivos.length} objetivos, {nKr} KRs, {nKpi} KPIs.</div>
+          <div className="text-[12.5px] text-muted-foreground">{r.objetivos.length} objetivos, {nKr} KRs, {nKpi} KPIs.{r.base ? ` Base de referência: ${r.base.indicadores} indicadores de ${r.base.projetos} planejamentos anteriores (${r.base.usados} usados, priorizando o mesmo eixo).` : ''}</div>
           {r.objetivos.map((o, io) => (
             <div key={io} className="rounded-xl border border-border/60 p-3 space-y-2">
               <div className="flex items-start gap-2">

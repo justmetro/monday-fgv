@@ -5,10 +5,39 @@
     "slug": "fgvdgpe-projetos_hub_planejamento",
     "description": "Pré-preenche o quadro [PLAN] (TAP, Produtos, EAP e Cronograma, Riscos, Indicadores e Partes Interessadas) com IA a partir dos documentos de pactuação.",
     "color": "#D6E4FF",
-    "oauth": { "scopes": ["boards:read", "boards:write", "me:read", "users:read", "workspaces:read", "docs:read", "docs:write"] },
+    "oauth": {
+      "scopes": [
+        "boards:read",
+        "boards:write",
+        "me:read",
+        "users:read",
+        "workspaces:read",
+        "docs:read",
+        "docs:write",
+        "ai:consume",
+        "assets:read",
+        "workspaces:write",
+        "boards:update"
+      ],
+      "redirectUri": [
+        "https://live1-service-29669755-a2a4a63b.us.monday.app/oauth/callback"
+      ]
+    },
     "features": [
-      { "key": "hub_planejamento", "type": "AppFeatureBoardView", "name": "Hub de Planejamento", "schemaVersion": "18",
-        "data": { "name": "Hub de Planejamento", "mode": "iframe", "hideSidekick": false, "query_parmas": true, "hideBoardControls": false, "isMobileSupported": false } }
+      {
+        "key": "hub_planejamento",
+        "type": "AppFeatureBoardView",
+        "name": "Hub de Planejamento",
+        "schemaVersion": "18",
+        "data": {
+          "name": "Hub de Planejamento",
+          "mode": "iframe",
+          "hideSidekick": false,
+          "query_parmas": true,
+          "hideBoardControls": false,
+          "isMobileSupported": false
+        }
+      }
     ]
   }
 }

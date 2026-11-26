@@ -28,7 +28,7 @@ export const useHub = () => {
 
 export const ROTULO_ETAPA: Record<Etapa, string> = {
   analise: 'Análise', tap: 'TAP', produtos: 'Produtos', eap: 'EAP e Cronograma', riscos: 'Riscos específicos', complemento: 'Riscos da calculadora',
-  indicadores: 'Indicadores', partes: 'Partes Interessadas',
+  indicadores: 'Indicadores', partes: 'Partes Interessadas', calculadora: 'Calculadora de Riscos',
 };
 
 export function HubProvider({ projeto, run, setRun, userId, children }: { projeto: Projeto | null; run: Execucao | null; setRun: (r: Execucao | null) => void; userId: string; children: ReactNode }) {

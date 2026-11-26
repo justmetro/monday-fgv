@@ -72,7 +72,7 @@ export function promptAnalise(p: ContextoProjeto, docs: DocTexto[]): Prompt {
   "c5_mod": um de [${lista(ROTULOS.calc.c5_mod)}],
   "c6_prod": um de [${lista(ROTULOS.calc.c6_prod)}] (pico de produtos entregues no mesmo mês),
   "c7_tipo": [um ou mais de ${lista(ROTULOS.calc.c7_tipo)}],
-  "c8_equipe": um de [${lista(ROTULOS.calc.c8_equipe)}] ou null se os documentos não indicarem o tamanho da equipe,
+  "c8_equipe": um de [${lista(ROTULOS.calc.c8_equipe)}] (nunca null: se os documentos não trouxerem o tamanho da equipe, estime pelos perfis, horas, produtos e valor, e comece a justificativa com "Estimado:"),
   "c8_gr85": boolean (outros vínculos como RPA ou temporários superam os efetivos),
   "justificativas": {"c1_fat": string, "c2_tipofat": string, "c3_vig": string, "c4_cli": string, "c5_mod": string, "c6_prod": string, "c7_tipo": string, "c8_equipe": string} (uma linha com a fonte)
  },
@@ -206,7 +206,7 @@ Antes de fechar, releia o TR e a proposta procurando toda instituição citada; 
 }
 
 // 6. Painel de indicadores (OKRs)
-export function promptIndicadores(p: ContextoProjeto, docs: DocTexto[], produtos: ProdutoResumo[]): Prompt {
+export function promptIndicadores(p: ContextoProjeto, docs: DocTexto[], produtos: ProdutoResumo[], referencias = ''): Prompt {
   const formato = `FORMATO DA RESPOSTA:
 {
  "objetivos": [{
@@ -219,14 +219,16 @@ export function promptIndicadores(p: ContextoProjeto, docs: DocTexto[], produtos
    "temporalidade": um de [${lista(ROTULOS.temporalidade)}], "coleta": um de [${lista(ROTULOS.coleta)}],
    "medicoes": [number] (dias, desde o início da execução, em que cada medição acontece; coerente com a temporalidade e a vigência),
    "produtos": [string] (códigos),
+   "referencia": string (indicador parecido da base de projetos anteriores que inspirou este, no formato "Projeto: nome do indicador"; vazio se não houver),
    "kpis": [{"nome": string, "descricao": string, "formula": string, "meta": number, "unidade": um de [${lista(ROTULOS.unidade)}], "polaridade": um de [${lista(ROTULOS.polaridade)}], "temporalidade": um de [${lista(ROTULOS.temporalidade)}], "coleta": um de [${lista(ROTULOS.coleta)}], "medicoes": [number], "produtos": [string]}]
   }]
  }]
 }
-Até 3 objetivos, até 5 KRs por objetivo e até 3 KPIs por KR, proporcional ao escopo. Indicadores de medição de resultado exigidos pelo TR ou contrato entram obrigatoriamente.`;
+Até 3 objetivos, até 5 KRs por objetivo e até 3 KPIs por KR, proporcional ao escopo. Indicadores de medição de resultado exigidos pelo TR ou contrato entram obrigatoriamente.
+BASE DE PROJETOS ANTERIORES: a mensagem traz indicadores já usados em outros planejamentos da FGV DGPE, primeiro os do mesmo eixo. Use-os como referência de redação, forma de cálculo, unidade, temporalidade, coleta e ordem de grandeza de metas. Adapte ao escopo deste projeto: nunca copie nomes de clientes, públicos, quantidades ou datas de outros projetos.`;
   return {
     system: base([OKR, formato].join('\n\n')),
-    user: `${cabecalho(p)}\n\nPRODUTOS:\n${fmtProdutos(produtos)}\n\n${blocoDocumentos(docs)}`,
+    user: `${cabecalho(p)}\n\nPRODUTOS:\n${fmtProdutos(produtos)}\n\n${referencias ? `INDICADORES DE PROJETOS ANTERIORES (referência):\n${referencias}\n\n` : ''}${blocoDocumentos(docs)}`,
     maxTokens: 12000,
   };
 }
