@@ -143,14 +143,13 @@ export function ApusSection({ data, loading, error, onReload, filter, messagesBy
         />
       </CollapsibleCard>
 
-      <div className="grid gap-5 lg:grid-cols-2">
-        <CollapsibleCard title="Comunicação geral · semana a semana" subtitle={`Total de atualizações ${scopeText} em cada semana; a linha mostra o aumento sobre a semana anterior`}>
-          <WeeklyTrendChart data={general} barName="Atualizações (acumulado)" lineName="Novas na semana" height={260} />
-        </CollapsibleCard>
-        <CollapsibleCard title="Nº de atualizações por usuário" subtitle={`${perUserPick.text} · atualizações ÷ usuários`} actions={perUserPick.picker}>
-          <ProjectBarChart data={perUserChart.data} series={perUserChart.series} decimals={2} height={300} />
-        </CollapsibleCard>
-      </div>
+      <CollapsibleCard title="Comunicação geral · semana a semana" subtitle={`Total de atualizações ${scopeText} em cada semana; a linha mostra o aumento sobre a semana anterior`}>
+        <WeeklyTrendChart data={general} barName="Atualizações (acumulado)" lineName="Novas na semana" height={260} />
+      </CollapsibleCard>
+
+      <CollapsibleCard title="Nº de atualizações por usuário" subtitle={`${perUserPick.text} · atualizações ÷ usuários`} actions={perUserPick.picker}>
+        <ProjectBarChart data={perUserChart.data} series={perUserChart.series} decimals={2} />
+      </CollapsibleCard>
 
       <CollapsibleCard title="Total de atualizações do projeto" subtitle={`${totalPick.text} · acumulado desde a entrada na plataforma`} actions={totalPick.picker}>
         <ProjectBarChart data={totalChart.data} series={totalChart.series} />
