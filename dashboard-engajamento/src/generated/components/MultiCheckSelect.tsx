@@ -33,7 +33,9 @@ export function MultiCheckSelect({ options, selected, onChange, noun, searchable
   const text = all ? `Todos (${options.length} ${noun[1]})` : selected.length === 1
     ? options.find((o) => o.value === selected[0])?.label ?? `1 ${noun[0]}`
     : `${selected.length} ${selected.length === 1 ? noun[0] : noun[1]}`;
-  const toggle = (v: string) => onChange(sel.has(v) ? selected.filter((x) => x !== v) : [...selected, v]);
+  // Com tudo marcado, clicar num item deixa só ele
+  const toggle = (v: string) => onChange(all ? [v] : sel.has(v) ? selected.filter((x) => x !== v) : [...selected, v]);
+  const searching = q.trim().length > 0;
   const box = (on: boolean) => (
     <span className={`grid h-4 w-4 shrink-0 place-items-center rounded border ${on ? 'border-primary bg-primary text-primary-foreground' : 'border-input bg-background'}`}>
       {on && <Check className="h-3 w-3" />}
@@ -57,11 +59,12 @@ export function MultiCheckSelect({ options, selected, onChange, noun, searchable
             </div>
           )}
           <div className="flex gap-1 border-b border-border pb-1.5">
-            <button type="button" onClick={() => onChange([...new Set([...selected, ...list.map((o) => o.value)])])}
-              className="flex flex-1 items-center gap-2 rounded-md px-2 py-1.5 text-xs hover:bg-muted">{box(all)} Marcar todas</button>
+            <button type="button" onClick={() => onChange(searching ? list.map((o) => o.value) : options.map((o) => o.value))}
+              className="flex flex-1 items-center gap-2 rounded-md px-2 py-1.5 text-xs hover:bg-muted">{box(searching ? false : all)} {searching ? 'Marcar só estes' : 'Marcar todas'}</button>
             <button type="button" onClick={() => onChange(q ? selected.filter((v) => !list.some((o) => o.value === v)) : [])}
               className="flex flex-1 items-center gap-2 rounded-md px-2 py-1.5 text-xs hover:bg-muted">{box(selected.length === 0)} Desmarcar todas</button>
           </div>
+          {all && <p className="px-2 pt-1 text-[10px] text-muted-foreground">Clique num item para ver só ele.</p>}
           <div className="mt-1 max-h-72 overflow-y-auto">
             {list.map((o) => (
               <button key={o.value} type="button" onClick={() => toggle(o.value)}

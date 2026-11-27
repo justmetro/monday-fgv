@@ -16,6 +16,14 @@ const COLORS = ['hsl(var(--chart-3))', 'hsl(var(--chart-1))', 'hsl(var(--chart-4
 const fmt = (v: number, d: number) => v.toLocaleString('pt-BR', { minimumFractionDigits: d, maximumFractionDigits: d });
 /** Rótulo curto em cima da barra: menos casas decimais quanto maior o número. */
 const short = (v: number, d: number) => fmt(v, d === 0 || v >= 10 ? 0 : v >= 1 ? 1 : d);
+/** Marcas regulares do eixo Y (0; 0,5; 1... ou 0; 50; 100...). */
+function niceTicks(max: number): number[] {
+  const raw = (max || 1) / 4;
+  const pow = 10 ** Math.floor(Math.log10(raw));
+  const step = [1, 2, 2.5, 5, 10].map((m) => m * pow).find((x) => x >= raw) ?? 10 * pow;
+  const top = Math.ceil((max * 1.05) / step) * step;
+  return Array.from({ length: Math.round(top / step) + 1 }, (_, i) => Math.round(i * step * 1000) / 1000);
+}
 /** Nome curto no eixo; o nome inteiro fica no tooltip. */
 const abbr = (s: string, n = 18) => (s.length > n ? `${s.slice(0, n - 1).trimEnd()}…` : s);
 
@@ -38,6 +46,9 @@ export function ProjectBarChart({ data: rawData, series: rawSeries, decimals = 0
   const multi = ser.length > 1;
   const values = data.flatMap((d) => ser.map((s) => Number(d[s.key] ?? 0)));
   const max = Math.max(...values, ...refLines.map((r) => r.y));
+  const ticks = niceTicks(max);
+  // Mais de 3 projetos e várias semanas: tabela de calor (barras agrupadas ficam ilegíveis)
+  if (multi && data.length > 3) return <HeatTable data={data} series={ser} decimals={decimals} refLines={refLines} />;
   // Muitas semanas: mesma cor, mais clara na mais antiga; o gráfico ganha largura e rola na horizontal
   const many = ser.length > COLORS.length;
   const colorOf = (i: number) => (many ? `hsl(var(--chart-3) / ${(0.2 + (0.8 * (i + 1)) / ser.length).toFixed(2)})` : COLORS[i % COLORS.length]);
@@ -59,7 +70,7 @@ export function ProjectBarChart({ data: rawData, series: rawSeries, decimals = 0
           <CartesianGrid vertical={false} stroke="hsl(var(--border))" />
           <XAxis dataKey="label" tickLine={false} axisLine={false} interval={0} angle={-45} textAnchor="end" height={96}
             tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} tickFormatter={(v: string) => abbr(v)} />
-          <YAxis tickLine={false} axisLine={false} width={44} domain={[0, Math.ceil(max * 1.1) || 1]} allowDecimals={max <= 5}
+          <YAxis tickLine={false} axisLine={false} width={44} ticks={ticks} domain={[0, ticks[ticks.length - 1]]} interval={0}
             tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} tickFormatter={(v: number) => v.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} />
           <Tooltip
             cursor={{ fill: 'hsl(var(--muted) / 0.5)' }}
@@ -95,6 +106,63 @@ export function ProjectBarChart({ data: rawData, series: rawSeries, decimals = 0
         </BarChart>
       </ResponsiveContainer>
     </div>
+      </div>
+    </div>
+  );
+}
+
+/** Linhas = projetos, colunas = semanas; cor pela faixa esperada (com linhas de referência) ou pela intensidade. */
+function HeatTable({ data, series, decimals, refLines }: { data: ProjectBar[]; series: BarSeries[]; decimals: number; refLines: { y: number; label: string }[] }) {
+  const ys = refLines.map((r) => r.y).sort((a, b) => a - b);
+  const latest = series[series.length - 1].key;
+  const rows = [...data].sort((a, b) => Number(b[latest] ?? -1) - Number(a[latest] ?? -1));
+  const max = Math.max(1, ...rows.flatMap((r) => series.map((s) => Number(r[s.key] ?? 0))));
+  const bg = (v: number) => {
+    if (ys.length >= 2) {
+      if (v < ys[0]) return `rgba(223, 47, 74, ${0.12 + 0.35 * (1 - v / ys[0])})`;
+      if (v <= ys[ys.length - 1]) return 'rgba(0, 200, 117, 0.35)';
+      return 'rgba(0, 200, 117, 0.6)';
+    }
+    return `hsl(var(--chart-3) / ${(0.08 + 0.72 * (v / max)).toFixed(2)})`;
+  };
+  return (
+    <div className="space-y-2">
+      {ys.length >= 2 && (
+        <div className="flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5"><span className="h-3 w-4 rounded-sm" style={{ background: 'rgba(223,47,74,0.4)' }} />Abaixo de {fmt(ys[0], 0)}</span>
+          <span className="inline-flex items-center gap-1.5"><span className="h-3 w-4 rounded-sm" style={{ background: 'rgba(0,200,117,0.35)' }} />Entre {fmt(ys[0], 0)} e {fmt(ys[ys.length - 1], 0)}</span>
+          <span className="inline-flex items-center gap-1.5"><span className="h-3 w-4 rounded-sm" style={{ background: 'rgba(0,200,117,0.6)' }} />Acima de {fmt(ys[ys.length - 1], 0)}</span>
+        </div>
+      )}
+      <div className="max-h-[520px] overflow-auto rounded-lg border border-border">
+        <table className="w-full border-collapse text-[11px] tabular-nums">
+          <thead className="sticky top-0 z-10 bg-card">
+            <tr>
+              <th className="sticky left-0 z-20 bg-card px-2 py-1.5 text-left font-medium text-muted-foreground">Projeto</th>
+              {series.map((s) => (
+                <th key={s.key} className="px-1 py-1.5 text-center font-medium text-muted-foreground whitespace-nowrap">{s.name.replace('Semana ', 'S')}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.label} className="border-t border-border/60">
+                <td className="sticky left-0 z-10 max-w-[200px] truncate bg-card px-2 py-1 text-foreground" title={r.full}>{r.label}</td>
+                {series.map((s) => {
+                  const v = r[s.key];
+                  return (
+                    <td key={s.key} className="px-0.5 py-0.5">
+                      <div className="min-w-[38px] rounded px-1 py-1 text-center text-foreground" title={`${r.full} · ${s.name}`}
+                        style={{ background: v === undefined ? 'transparent' : bg(Number(v)) }}>
+                        {v === undefined ? <span className="text-muted-foreground">·</span> : short(Number(v), decimals)}
+                      </div>
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
