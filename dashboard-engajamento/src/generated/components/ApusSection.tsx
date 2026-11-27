@@ -127,6 +127,12 @@ export function ApusSection({ data, loading, error, onReload, filter, messagesBy
     <div className="space-y-5">
       {toolbar}
 
+      {scoped.length > 0 && scoped.every((r) => r.updates === 0) && (
+        <p className="rounded-lg border border-border bg-muted/50 px-3 py-2 text-xs text-foreground">
+          {projectOptions.length && projects?.length === 1 ? projects[0] : 'Os projetos marcados'} não {projects?.length === 1 ? 'tem' : 'têm'} nenhuma atualização registrada no quadro Relatórios dos projetos em nenhuma semana{projects?.length === 1 ? ` (${scoped[0].users} usuários)` : ''}. Por isso os gráficos aparecem zerados.
+        </p>
+      )}
+
       <CollapsibleCard
         title="Nº de atualizações por usuário por semana (APUS)"
         subtitle={`${apusPick.text} · (atualizações ÷ usuários) ÷ semanas na plataforma · ${belowMin} de ${weekRows.length} projetos abaixo do mínimo em ${tableLabel}`}
@@ -143,8 +149,8 @@ export function ApusSection({ data, loading, error, onReload, filter, messagesBy
         />
       </CollapsibleCard>
 
-      <CollapsibleCard title="Comunicação geral · semana a semana" subtitle={`Total de atualizações ${scopeText} em cada semana; a linha mostra o aumento sobre a semana anterior`}>
-        <WeeklyTrendChart data={general} barName="Atualizações (acumulado)" lineName="Novas na semana" height={260} />
+      <CollapsibleCard title="Comunicação geral · semana a semana" subtitle={`Total acumulado de atualizações ${scopeText} em cada semana`}>
+        <WeeklyTrendChart data={general} barName="Atualizações (acumulado)" lineName="" height={260} hideLine />
       </CollapsibleCard>
 
       <CollapsibleCard title="Nº de atualizações por usuário" subtitle={`${perUserPick.text} · atualizações ÷ usuários`} actions={perUserPick.picker}>

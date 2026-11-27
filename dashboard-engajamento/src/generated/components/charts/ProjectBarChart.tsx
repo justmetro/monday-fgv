@@ -21,7 +21,7 @@ function niceTicks(max: number): number[] {
   const raw = (max || 1) / 4;
   const pow = 10 ** Math.floor(Math.log10(raw));
   const step = [1, 2, 2.5, 5, 10].map((m) => m * pow).find((x) => x >= raw) ?? 10 * pow;
-  const top = Math.ceil((max * 1.05) / step) * step;
+  const top = Math.max(step * 4, Math.ceil((max * 1.05) / step) * step);
   return Array.from({ length: Math.round(top / step) + 1 }, (_, i) => Math.round(i * step * 1000) / 1000);
 }
 /** Nome curto no eixo; o nome inteiro fica no tooltip. */
@@ -47,6 +47,8 @@ export function ProjectBarChart({ data: rawData, series: rawSeries, decimals = 0
   const values = data.flatMap((d) => ser.map((s) => Number(d[s.key] ?? 0)));
   const max = Math.max(...values, ...refLines.map((r) => r.y));
   const ticks = niceTicks(max);
+  // Poucas barras: gráfico estreito e nomes na horizontal
+  const few = !multi && data.length <= 4;
   // Mais de 3 projetos e várias semanas: tabela de calor (barras agrupadas ficam ilegíveis)
   if (multi && data.length > 3) return <HeatTable data={data} series={ser} decimals={decimals} refLines={refLines} />;
   // Muitas semanas: mesma cor, mais clara na mais antiga; o gráfico ganha largura e rola na horizontal
@@ -64,11 +66,11 @@ export function ProjectBarChart({ data: rawData, series: rawSeries, decimals = 0
         </div>
       )}
       <div className="w-full overflow-x-auto">
-    <div style={{ height: multi && !many ? height + 24 : height, minWidth }} className="w-full [&_*:focus]:outline-none">
+    <div style={{ height: multi && !many ? height + 24 : height, minWidth, maxWidth: few ? data.length * 180 + 120 : undefined }} className="w-full mx-auto [&_*:focus]:outline-none">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 18, right: 8, bottom: 0, left: -8 }} barGap={1} accessibilityLayer={false}>
           <CartesianGrid vertical={false} stroke="hsl(var(--border))" />
-          <XAxis dataKey="label" tickLine={false} axisLine={false} interval={0} angle={-45} textAnchor="end" height={96}
+          <XAxis dataKey="label" tickLine={false} axisLine={false} interval={0} angle={few ? 0 : -45} textAnchor={few ? 'middle' : 'end'} height={few ? 30 : 96}
             tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} tickFormatter={(v: string) => abbr(v)} />
           <YAxis tickLine={false} axisLine={false} width={44} ticks={ticks} domain={[0, ticks[ticks.length - 1]]} interval={0}
             tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} tickFormatter={(v: number) => v.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} />
@@ -99,7 +101,7 @@ export function ProjectBarChart({ data: rawData, series: rawSeries, decimals = 0
           ))}
           {ser.map((s, i) => (
             <Bar key={s.key} dataKey={s.key} name={s.name} fill={multi ? colorOf(i) : 'hsl(var(--chart-3) / 0.55)'}
-              fillOpacity={multi && !many ? 0.8 : 1} stroke={multi ? undefined : 'hsl(var(--chart-3))'} radius={[3, 3, 0, 0]} maxBarSize={multi ? (many ? 8 : 14) : 28}>
+              fillOpacity={multi && !many ? 0.8 : 1} stroke={multi ? undefined : 'hsl(var(--chart-3))'} radius={[3, 3, 0, 0]} maxBarSize={multi ? (many ? 8 : 14) : 28} minPointSize={2}>
               {!multi && <LabelList dataKey={s.key} position="top" fontSize={9} fill="hsl(var(--foreground))" formatter={(v: unknown) => short(Number(v), decimals)} />}
             </Bar>
           ))}
