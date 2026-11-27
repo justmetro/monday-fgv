@@ -5,6 +5,8 @@ Origem: Vibe 10555564. Servidor: https://fe29b-service-29669755-e1dd88e7.us.mond
 Variáveis no monday code: CLIENT_SECRET, MONDAY_API_TOKEN, CRON_KEY.
 Agendamentos: consolidacaosemanal (segunda 14h10 de Brasília, cron 10 17 * * 1, /mndy-cronjob/weekly) e acessosdiarios (sem efeito desde 13/11/2026).
 
+Visualização (aba do app): "Dashboard de Engajamento", view 294294344 no quadro Relatórios dos projetos - Monday (18420326098), feature 128993330. Desde 27/11/2026; antes ficava no quadro 18439727709.
+
 Abas: Engajamento (só pessoas em equipe de projeto), DGPE (todos, por departamento), Painel do Gerente, Comunicação, Meu Perfil, Base, Atualizar Painel.
 
 Nomenclatura semanal: Engajado (acesso na semana), Desengajado (mais de 7 dias sem acesso), Inativo (mais de 30 dias ou nunca acessou), Afastado. Dia padrão da análise: segunda à tarde, sobre a semana anterior (domingo a sábado).
