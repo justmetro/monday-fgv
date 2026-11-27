@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { WeekSummary, PersonWeek } from '@generated/lib/engagementMetrics';
 import type { StoredProjectItem, AbsenceDoc } from '@generated/models';
 import { applyFilter } from '@generated/lib/engagementMetrics';
@@ -16,6 +16,7 @@ import type { PeriodView } from '@generated/hooks/useStoredEngagement';
 import { WeeklyTrendChart } from './charts/WeeklyTrendChart';
 import { CollapsibleCard } from './charts/CollapsibleCard';
 import { StatusBarChart } from './charts/StatusCharts';
+import { ManagerEngagementChart } from './charts/ManagerEngagementChart';
 import { engagementSeries } from '@generated/lib/weeklySeries';
 
 interface Props {
@@ -144,6 +145,11 @@ export function EngagementDashboard({
     return set;
   }, [weeks, project, manager]);
 
+  const managerScope = useCallback(
+    (p: PersonWeek) => (project === 'all' ? p.activeProjects.length > 0 : p.activeProjects.includes(project)) && (dept === 'all' || p.departments.includes(dept)),
+    [project, dept]
+  );
+
   const counts = useMemo(() => countBands(filteredPeople, weekly), [filteredPeople, weekly]);
 
   // Faixa clicada afeta só a tabela / Score do usuário
@@ -228,15 +234,11 @@ export function EngagementDashboard({
         <ProjectBarsCard projects={segmented.projects} selected={project} onSelect={setProject} />
       </div>
 
-      <ProjectBarsCard
-        projects={unmanaged?.managers ?? []}
+      <ManagerEngagementChart
+        weeks={weeks}
+        inScope={managerScope}
         selected={manager}
         onSelect={setManager}
-        kicker="Por gerente"
-        title="Engajamento consolidado por gerente"
-        hint="Média das pessoas dos projetos de cada gerente · clique para segmentar"
-        unit="gerentes"
-        rawNames
       />
 
       <PeopleScoreTable
