@@ -70,6 +70,8 @@ function buildValues(r, base, map, warnings) {
     try { people = JSON.parse(r.cols.responsavel?.value || 'null')?.personsAndTeams || []; } catch { people = []; }
     if (people.length) cv[map.responsavel.id] = { personsAndTeams: people.map((p) => ({ id: Number(p.id), kind: p.kind || 'person' })) };
   }
+  // Todo item do planejamento leva a equipe Planejamento como responsável.
+  cv.person = { personsAndTeams: [{ id: 1359388, kind: 'team' }] };
   return cv;
 }
 

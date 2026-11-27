@@ -4,7 +4,7 @@ import { ROTULOS } from '@generated/lib/rotulos';
 import { Moldura, BarraGravar } from '@generated/components/Moldura';
 import { Campo, Texto, Escolha, Selo, Aviso, Numero, BarraLista, ItemRecolhivel, useRecolher, naoAlterna } from '@generated/components/ui';
 
-const CLASSES = ['Contratante e decisão', 'Execução e validação técnica', 'Público beneficiário', 'Controle e conformidade', 'Parceiros e rede', 'Fornecedores críticos', 'FGV DGPE'];
+const CLASSES = ['Contratante e decisão', 'Execução e validação técnica', 'Público beneficiário', 'Controle e conformidade', 'Parceiros e rede', 'Fornecedores críticos'];
 
 export function estrategia(poder: string, interesse: string) {
   if (poder === 'Alto' && interesse === 'Alto') return 'Gerenciar de perto';

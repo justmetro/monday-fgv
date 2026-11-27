@@ -94,11 +94,10 @@ export function EtapaAnalise() {
             <div className="col-span-3"><Rotulo>1. Justificativa</Rotulo><Texto rows={6} value={a.tap.justificativa} onChange={(e) => mudarTap('justificativa', e.target.value)} /></div>
             <div className="col-span-3"><Rotulo>2. Resultado esperado</Rotulo><Texto rows={3} value={a.tap.resultado_principal} onChange={(e) => mudarTap('resultado_principal', e.target.value)} /></div>
             <div className="col-span-3"><Rotulo>Como o projeto chega ao resultado</Rotulo><Texto rows={3} value={a.tap.como_chega} onChange={(e) => mudarTap('como_chega', e.target.value)} /></div>
-            <div className="col-span-3"><Rotulo>Resultados quantitativos (um por linha)</Rotulo><Texto rows={4} value={linhas(a.tap.resultados_quantitativos)} onChange={(e) => mudarTap('resultados_quantitativos', deLinhas(e.target.value))} /></div>
+            <div className="col-span-3"><Rotulo>Resultados esperados (um por linha)</Rotulo><Texto rows={4} value={linhas(a.tap.resultados_quantitativos)} onChange={(e) => mudarTap('resultados_quantitativos', deLinhas(e.target.value))} /></div>
             <div><Rotulo>3.1 Total de produtos</Rotulo><Campo type="number" value={a.tap.total_produtos} onChange={(e) => mudarTap('total_produtos', Number(e.target.value))} /></div>
-            <div className="col-span-2"><Rotulo>3.2 Tipos de entrega (um por linha)</Rotulo><Texto rows={2} value={linhas(a.tap.tipos_entrega)} onChange={(e) => mudarTap('tipos_entrega', deLinhas(e.target.value))} /></div>
+            <div className="col-span-2"><Rotulo>3.2 Tipos de entrega (códigos do Manual, um por linha)</Rotulo><Texto rows={2} value={linhas(a.tap.tipos_entrega)} onChange={(e) => mudarTap('tipos_entrega', deLinhas(e.target.value))} /></div>
             <div className="col-span-3"><Rotulo>4. Processo de entrega de produtos (um por linha)</Rotulo><Texto rows={5} value={linhas(a.tap.processo_entrega)} onChange={(e) => mudarTap('processo_entrega', deLinhas(e.target.value))} /></div>
-            <div className="col-span-3"><Rotulo>5. Perfis da equipe indicados</Rotulo><Texto rows={2} value={a.tap.perfis_equipe} onChange={(e) => mudarTap('perfis_equipe', e.target.value)} /></div>
             <div className="col-span-3"><Rotulo>7. Fora do escopo (um por linha)</Rotulo><Texto rows={5} value={linhas(a.tap.fora_escopo)} onChange={(e) => mudarTap('fora_escopo', deLinhas(e.target.value))} /></div>
             <div className="col-span-3"><Rotulo>8. Necessidades e funcionalidades (um por linha, em ordem de prioridade)</Rotulo><Texto rows={5} value={linhas(a.tap.necessidades)} onChange={(e) => mudarTap('necessidades', deLinhas(e.target.value))} /></div>
           </div>

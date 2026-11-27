@@ -22,7 +22,11 @@ Hub de IA do planejamento de projetos. Parte do item do projeto no 02.01 Projeto
 - Etapas de IA rodam em segundo plano no servidor (`gerarEtapa` / `iniciarGeracao`) e a tela consulta `estadoEtapas` a cada 4 s enquanto algo gera ou grava.
 - Prompts em `src/generated/server/prompts.ts`, base de conhecimento da metodologia em `conhecimento.ts` (Guia de Bolso, Eixos, Tipologias, Tipos de Riscos, Partes Interessadas e responsabilidades dos três modelos de TAP: padrão, CNCA e GA).
 - Colunas do quadro [PLAN] v6 em `src/generated/lib/quadros.ts` (CP). São iguais em todos os quadros criados pelo modelo (quadro modelo 18430945750, área "Projeto - Planejamento v2").
-- Cronograma: `X.Y. ENTREGÁVEL | ...` (EAP Nível 2), `X.Y.Z. MARCO | ...` (Nível 3) e `X.Y.Z.W. Verbo ...` (Nível 4, rótulo criado na primeira gravação), ligados ao produto pela coluna Produto - Cronograma. A aba 8. CRONOGRAMA passa a filtrar Níveis 3 e 4.
+- Cronograma: `X.Y. nome` (EAP Nível 2) e `X.Y.Z. nome` (Nível 3), sem as palavras ENTREGÁVEL e MARCO, ligados ao produto pela coluna Produto - Cronograma. Cada atividade `X.Y.Z.W. Verbo ...` (Nível 4) é subitem do seu marco (colunas do subitem: Status color_mm48hram, Cronograma planejado timerange_mm489r9r, Frentes color_mm48sa6t). A aba 8. CRONOGRAMA filtra os marcos (Nível 3), que mostram as atividades como subitens.
+- Responsável: todo item que o hub cria no [PLAN] (produtos, cronograma e subitens, riscos, riscos da calculadora, indicadores, medições e partes) recebe a equipe Planejamento (team 1359388) na coluna Responsável (person).
+- TAP: tipos de entrega pelos códigos do Manual de Tipologias de Serviço (`TIPOLOGIAS_MANUAL` em conhecimento.ts, gravados como "Categoria: Modalidade (código)"); "Resultados esperados" sem prazo de execução, fases, lote, item ou "1 X"; justificativa sem lei de criação do cliente nem artigos de lei; equipe gestora só com "a definir" (sem perfis sugeridos).
+- Partes interessadas: a FGV DGPE nunca entra (prompt e filtro na gravação).
+- Indicadores: padrão de redação, unidades (Percentual, Média, Pontuação ou escala, Binário, Unidade, criadas no quadro na gravação) e metas padrão da revisão de indicadores (nov/2026) em `INDICADORES_PADRAO`; cardápio de 211 indicadores por tipologia em `server/cardapio.ts` (aba Cardápio da Planilha de Revisão dos Indicadores, sem o eixo GA).
 - TAP: necessidades além das 5 do modelo viram itens numerados novos na mesma célula (`create_block` com `parent_block_id`, em ordem inversa logo após o último item).
 
 ## Build e publicação

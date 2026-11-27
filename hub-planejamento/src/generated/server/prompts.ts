@@ -1,5 +1,6 @@
 // Prompts e formatos de saída de cada etapa do Hub de Planejamento.
-import { EIXOS, TIPOLOGIAS, TIPOS_RISCO, PARTES_INTERESSADAS, OKR, EAP, REGRAS_GERAIS } from './conhecimento';
+import { EIXOS, TIPOLOGIAS, TIPOLOGIAS_MANUAL, TIPOS_RISCO, PARTES_INTERESSADAS, OKR, INDICADORES_PADRAO, EAP, REGRAS_GERAIS } from './conhecimento';
+import { CARDAPIO } from './cardapio';
 
 export interface DocTexto { nome: string; tipo: string; texto: string }
 
@@ -41,25 +42,24 @@ export function promptAnalise(p: ContextoProjeto, docs: DocTexto[]): Prompt {
   "prazo_execucao": string, "valor_global": number|null, "modalidade": um de [${lista(ROTULOS.modalidade)}],
   "eixo": um de [${lista(ROTULOS.eixo)}] (compare o objeto com o que cada eixo faz; não invente; não deixe vazio),
   "eixo_justificativa": string (uma frase),
-  "tipologias": [string] (código e nome do Manual, ex.: "7C Normativo e Regulatório"),
+  "tipologias": [string] (código e modalidade do Manual, ex.: "7D-AE Normativo e Regulatório"),
   "documentos": [{"nome": string, "data": string}]
  },
  "tap": {
   "nome_projeto": string (exatamente o nome do projeto no 02.01),
   "data_inicio_contrato": string (data dd/mm/aaaa ou a regra, ex.: "A contar da assinatura do contrato (não assinado até a análise)"),
-  "vigencia_contratual": string (ex.: "180 dias (6 meses), prorrogável nos termos do art. 111 da Lei 14.133/2021"),
+  "vigencia_contratual": string (ex.: "180 dias a contar da assinatura do contrato"; sem citar leis ou artigos),
   "valor_total": number|null,
   "natureza_cliente": um de [${lista(ROTULOS.natureza)}],
   "modalidade": um de [${lista(ROTULOS.modalidade)}],
   "experiencia_institucional": string (experiência anterior da FGV DGPE com este cliente ou objeto citada nos documentos; se não houver, "Não identificado nos documentos"),
-  "justificativa": string (1 ou 2 parágrafos corridos: quem contratou e com que finalidade pública; problema ou contexto evidenciado; síntese do escopo. Sem tópicos),
+  "justificativa": string (1 ou 2 parágrafos corridos: quem contratou e com que finalidade pública; problema ou contexto evidenciado; síntese do escopo. Sem tópicos. Não diga por qual lei ou decreto o cliente foi criado nem cite leis, artigos ou a modalidade de contratação; sem prazo de execução e sem contagem de produtos),
   "resultado_principal": string (começa com "O resultado principal esperado é"),
-  "como_chega": string (parágrafo curto: arranjo de ações, produtos e governança),
-  "resultados_quantitativos": [string] (um por quantidade evidenciada, números exatamente como nos documentos),
+  "como_chega": string (parágrafo curto: arranjo de ações, produtos e governança; sem contagem de produtos, fases ou dias),
+  "resultados_quantitativos": [string] (resultados esperados, um por linha, começando por substantivo de ação: "Construção do Regimento Interno", "Diagnóstico do sistema de gestão", "Formação da equipe interna da SUFOTUR para o monitoramento". Número só quando for meta real de público ou cobertura dos documentos (ex.: "Formação de até 10 servidores"). Nunca prazo ou dias de execução, fases, contagem de produtos ou frentes, lote, item, quantitativo de licitação, nem "1 X". Se não houver resultado assim, lista vazia),
   "total_produtos": number,
-  "tipos_entrega": [string] (rótulos entre [${lista(ROTULOS.tipoEntrega)}]),
+  "tipos_entrega": [string] (códigos das modalidades do Manual de Tipologias de Serviço presentes nos produtos, entre [${lista(TIPOLOGIAS_MANUAL.map((t) => t.codigo))}], ex.: ["6A-DE", "7A-AE", "7D-AE"]),
   "processo_entrega": [string] (linhas: quem recebe, recebimento provisório e definitivo com prazos, OS e NE, garantia, condições de pagamento, documentos para faturamento; cada linha termina com a fonte entre parênteses),
-  "perfis_equipe": string (perfis de especialista ou coordenador indicados na proposta, sem nomes; ou "Não identificado nos documentos"),
   "fora_escopo": [string] (cada item começa com "Não contempla" e termina com a fonte entre parênteses; só limites explícitos ou claramente implícitos),
   "necessidades": [string] (requisitos e condicionantes críticos priorizados: qualidade, critérios de aceite, normas, premissas, dependências do cliente, indicadores de medição de resultado),
   "modelo_tap": "cnca" se for projeto do Compromisso Nacional Criança Alfabetizada; "ga" se o eixo for Gestão para a Aprendizagem; senão "padrao"
@@ -101,7 +101,7 @@ FORMATO DA RESPOSTA:
   "dia_inicio": number|null, "dia_fim": number|null (quando o TR trouxer prazos em dias a partir do início, use-os; senão null),
   "valor": number (0 se não tiver valor próprio),
   "fase": "Fase 1" | "Fase 2" | "Fase 3" | "Fase 4" (fase ou etapa do TR à qual o produto pertence; se o TR não tiver fases, agrupe em ordem cronológica em até 4),
-  "tipologia": string (código e modalidade do Manual, ex.: "6A Diagnóstico Operacional e Situacional"),
+  "tipologia": string (código e modalidade do Manual, ex.: "6A-DE Diagnóstico Operacional e Situacional"),
   "tipo_entrega": um de [${lista(ROTULOS.tipoEntrega)}],
   "fonte": string (documento e item)
  }],
@@ -130,12 +130,12 @@ export function promptEap(p: ContextoProjeto, docs: DocTexto[], lote: ProdutoRes
  "produtos": [{
   "codigo": string (igual ao da lista),
   "entregaveis": [{
-   "nome": string (Nível 2, substantivo curto, ex.: "Diagnóstico institucional"),
+   "nome": string (Nível 2, substantivo curto, sem a palavra "Entregável", ex.: "Diagnóstico institucional"),
    "dia_inicio": number, "dia_fim": number,
    "marcos": [{
-    "nome": string (Nível 3, resultado verificável no particípio, ex.: "Diagnóstico validado pela SUFOTUR (até o dia 45)"),
+    "nome": string (Nível 3, resultado verificável no particípio, sem a palavra "Marco", ex.: "Diagnóstico validado pela SUFOTUR (até o dia 45)"),
     "dia_inicio": number, "dia_fim": number,
-    "atividades": [{"nome": string (Nível 4, começa com verbo no infinitivo), "dia_inicio": number, "dia_fim": number, "frente": um de [${lista(ROTULOS.frentes)}]}]
+    "atividades": [{"nome": string (Nível 4, subitem do marco, começa com verbo no infinitivo), "dia_inicio": number, "dia_fim": number, "frente": um de [${lista(ROTULOS.frentes)}]}]
    }]
   }]
  }]
@@ -188,8 +188,8 @@ export function promptPartes(p: ContextoProjeto, docs: DocTexto[], riscos: { id:
  "partes": [{
   "nome": string ("SIGLA – Nome da instituição ou área", ex.: "CEE/RJ – Conselho Estadual de Educação"),
   "cargo_cliente": string (cargo ou função de quem representa a parte, sem nomes),
-  "area": string (posição no arranjo: "Órgão Contratante", "Área Requisitante", "Financiador", "Órgão de controle", "Público beneficiário direto", "Cadeia de fornecimento", "Contratada"...),
-  "classe": "Contratante e decisão" | "Execução e validação técnica" | "Público beneficiário" | "Controle e conformidade" | "Parceiros e rede" | "Fornecedores críticos" | "FGV DGPE",
+  "area": string (posição no arranjo: "Órgão Contratante", "Área Requisitante", "Financiador", "Órgão de controle", "Público beneficiário direto", "Cadeia de fornecimento"...),
+  "classe": "Contratante e decisão" | "Execução e validação técnica" | "Público beneficiário" | "Controle e conformidade" | "Parceiros e rede" | "Fornecedores críticos",
   "papel": [um ou mais de ${lista(ROTULOS.papel)}],
   "interesse": um de [${lista(ROTULOS.nivel)}],
   "poder": um de [${lista(ROTULOS.nivel)}],
@@ -197,7 +197,7 @@ export function promptPartes(p: ContextoProjeto, docs: DocTexto[], riscos: { id:
   "riscos_associados": string (IDs da lista de riscos ligados a essa parte, ex.: "RISCO 03; RISCO 05", seguidos de uma frase sobre como a atuação ou omissão dela pode afetar o projeto)
  }]
 }
-Antes de fechar, releia o TR e a proposta procurando toda instituição citada; cada uma entra ou é descartada por falta de influência real.`;
+Antes de fechar, releia o TR e a proposta procurando toda instituição citada; cada uma entra ou é descartada por falta de influência real. A FGV DGPE e qualquer área dela nunca entram.`;
   return {
     system: base([PARTES_INTERESSADAS, formato].join('\n\n')),
     user: `${cabecalho(p)}\n\nRISCOS JÁ MAPEADOS:\n${riscos.map((r) => `${r.id} - ${r.titulo}`).join('\n') || '(nenhum)'}\n\n${blocoDocumentos(docs)}`,
@@ -212,26 +212,29 @@ export function promptIndicadores(p: ContextoProjeto, docs: DocTexto[], produtos
  "objetivos": [{
   "objetivo": string (qualitativo; começa com "O projeto será bem-sucedido se"),
   "krs": [{
-   "nome": string (nome curto do indicador, ex.: "Percentual de processos redesenhados validados"),
+   "nome": string (nome no padrão de redação, de preferência um indicador do cardápio, ex.: "Percentual de processos mapeados"),
    "descricao": string ("Ao final, [resultado] comprovado por [critério], até [prazo]"),
    "formula": string (forma de cálculo),
-   "meta": number, "unidade": um de [${lista(ROTULOS.unidade)}], "polaridade": um de [${lista(ROTULOS.polaridade)}],
+   "meta": number (meta padrão do tipo, salvo meta fixada nos documentos), "unidade": um de [${lista(ROTULOS.unidade)}], "polaridade": um de [${lista(ROTULOS.polaridade)}],
    "temporalidade": um de [${lista(ROTULOS.temporalidade)}], "coleta": um de [${lista(ROTULOS.coleta)}],
    "medicoes": [number] (dias, desde o início da execução, em que cada medição acontece; coerente com a temporalidade e a vigência),
    "produtos": [string] (códigos),
-   "referencia": string (indicador parecido da base de projetos anteriores que inspirou este, no formato "Projeto: nome do indicador"; vazio se não houver),
+   "referencia": string (indicador do cardápio usado, no formato "Cardápio: nome", ou da base de projetos anteriores, no formato "Projeto: nome do indicador"; vazio se não houver),
    "kpis": [{"nome": string, "descricao": string, "formula": string, "meta": number, "unidade": um de [${lista(ROTULOS.unidade)}], "polaridade": um de [${lista(ROTULOS.polaridade)}], "temporalidade": um de [${lista(ROTULOS.temporalidade)}], "coleta": um de [${lista(ROTULOS.coleta)}], "medicoes": [number], "produtos": [string]}]
   }]
  }]
 }
 Até 3 objetivos, até 5 KRs por objetivo e até 3 KPIs por KR, proporcional ao escopo. Indicadores de medição de resultado exigidos pelo TR ou contrato entram obrigatoriamente.
+CARDÁPIO: para cada KR e KPI, procure primeiro no cardápio da tipologia do produto um indicador que meça a mesma coisa e use o nome dele sem mudar. Só crie um nome novo quando nenhum couber, seguindo o padrão de redação.
 BASE DE PROJETOS ANTERIORES: a mensagem traz indicadores já usados em outros planejamentos da FGV DGPE, primeiro os do mesmo eixo. Use-os como referência de redação, forma de cálculo, unidade, temporalidade, coleta e ordem de grandeza de metas. Adapte ao escopo deste projeto: nunca copie nomes de clientes, públicos, quantidades ou datas de outros projetos.`;
   return {
-    system: base([OKR, formato].join('\n\n')),
+    system: base([OKR, INDICADORES_PADRAO, CARDAPIO_TXT, formato].join('\n\n')),
     user: `${cabecalho(p)}\n\nPRODUTOS:\n${fmtProdutos(produtos)}\n\n${referencias ? `INDICADORES DE PROJETOS ANTERIORES (referência):\n${referencias}\n\n` : ''}${blocoDocumentos(docs)}`,
     maxTokens: 12000,
   };
 }
+
+const CARDAPIO_TXT = `CARDÁPIO DE INDICADORES POR TIPOLOGIA DE SERVIÇO (nomes padronizados, do mais usado para o menos usado):\n${Object.entries(CARDAPIO).map(([t, xs]) => `${t}:\n${xs.map((x) => `- ${x}`).join('\n')}`).join('\n')}`;
 
 export interface RiscoQuadro { id: string; nome: string; causa: string; efeito: string; categoria: string; estrategia: string; resposta: string }
 

@@ -42,7 +42,7 @@ export function EtapaEap() {
 
   return (
     <Moldura titulo="5. EAP e Cronograma" st={st} onGerar={() => gerar('eap', { produtos })} podeGerar={!!produtos.length} motivo="Gere e revise os produtos antes."
-      descricao={<>Nível 1 é o produto (grupo Produtos). Nível 2 Entregável, Nível 3 Marco e Nível 4 atividade iniciando com verbo, ligados ao produto pela coluna Produto - Cronograma, com datas a partir do início da execução. A IA gera em lotes de 3 produtos.</>}>
+      descricao={<>Nível 1 é o produto (grupo Produtos). Nível 2 Entregável, Nível 3 Marco e Nível 4 atividade iniciando com verbo (subitem do marco), com os Níveis 2 e 3 ligados ao produto pela coluna Produto - Cronograma, com datas a partir do início da execução. A IA gera em lotes de 3 produtos.</>}>
       {r && (
         <div className="space-y-3">
           <div className="text-[12.5px] text-muted-foreground">{total} itens no total.</div>
@@ -57,7 +57,7 @@ export function EtapaEap() {
                   {p.entregaveis.map((e, ie) => (
                     <div key={ie} className="rounded-lg bg-muted/40 p-2 space-y-1.5">
                       <div className="flex items-center gap-2">
-                        <span className="text-[12px] font-semibold w-24 shrink-0">{k}.{ie + 1}. ENTREGÁVEL</span>
+                        <span className="text-[12px] font-semibold w-24 shrink-0">{k}.{ie + 1}. Nível 2</span>
                         <Campo value={e.nome} onChange={(ev) => set((x) => { x[ip].entregaveis[ie].nome = ev.target.value; })} />
                         <Dias inicio={inicio} a={e.dia_inicio} b={e.dia_fim} onA={(n) => set((x) => { x[ip].entregaveis[ie].dia_inicio = n; })} onB={(n) => set((x) => { x[ip].entregaveis[ie].dia_fim = n; })} />
                         <button onClick={() => set((x) => { x[ip].entregaveis.splice(ie, 1); })} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
@@ -65,7 +65,7 @@ export function EtapaEap() {
                       {e.marcos.map((m, im) => (
                         <div key={im} className="ml-6 space-y-1">
                           <div className="flex items-center gap-2">
-                            <span className="text-[12px] font-semibold w-24 shrink-0">{k}.{ie + 1}.{im + 1}. MARCO</span>
+                            <span className="text-[12px] font-semibold w-24 shrink-0">{k}.{ie + 1}.{im + 1}. Nível 3</span>
                             <Campo value={m.nome} onChange={(ev) => set((x) => { x[ip].entregaveis[ie].marcos[im].nome = ev.target.value; })} />
                             <Dias inicio={inicio} a={m.dia_inicio} b={m.dia_fim} onA={(n) => set((x) => { x[ip].entregaveis[ie].marcos[im].dia_inicio = n; })} onB={(n) => set((x) => { x[ip].entregaveis[ie].marcos[im].dia_fim = n; })} />
                             <button onClick={() => set((x) => { x[ip].entregaveis[ie].marcos.splice(im, 1); })} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>

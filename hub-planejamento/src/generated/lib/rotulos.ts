@@ -9,7 +9,8 @@ export const ROTULOS = {
   estrategia: ['Prevenir', 'Mitigar', 'Transferir', 'Escalar', 'Aceitar'],
   papel: ['Decisor', 'Influenciador', 'Executor', 'Técnico', 'Administrativo', 'Validação'],
   nivel: ['Alto', 'Médio', 'Baixo'],
-  unidade: ['%', 'Unidade', 'Pessoa', 'Projeto', 'Dia', 'Hora', 'Professor', 'Estudante', 'NPS'],
+  // Unidades revisadas na padronização dos indicadores (nov/2026); criadas no quadro na gravação se faltarem.
+  unidade: ['Percentual', 'Média', 'Pontuação ou escala', 'Binário', 'Unidade'],
   temporalidade: ['Mensal', 'Bimestral', 'Trimestral', 'Semestral', 'Anual'],
   coleta: ['Relatório', 'Formulário', 'Registro em ata', 'Análise documental', 'Grupo focal'],
   polaridade: ['Quanto mais, melhor', 'Quanto menos, melhor'],

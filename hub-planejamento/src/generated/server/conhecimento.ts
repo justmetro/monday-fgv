@@ -13,30 +13,44 @@ export const EIXOS = `EIXOS DE PROJETO (use exatamente um destes nomes):
 - Gestão para a Aprendizagem: melhorar resultados educacionais e fluxo escolar com projetos integrados. Faz: avaliações de aprendizagem, materiais didáticos, acompanhamento pedagógico, formação articulada às avaliações, engajamento e mobilização. Projetos: Sistema Estruturado de Ensino, Gestão para a Aprendizagem.
 - Pesquisas e Estudos: investigar e propor soluções para desafios das políticas educacionais (pesquisas e publicações).`;
 
-export const TIPOLOGIAS = `MANUAL DE TIPOLOGIAS DE ENTREGA (código, modalidade, descrição curta):
-1. Formação (percurso formativo reconhecível: objetivos, carga horária, metodologia e, se aplicável, avaliação e certificação; eventos só de articulação não contam)
- 1A Formação Presencial: cursos, oficinas, workshops, seminários formativos, imersões, encontros presenciais; logística de local, alimentação e deslocamento.
- 1B Formação Virtual Síncrona: aulas ao vivo, webinários, mentoria e tutoria online, encontros síncronos, bancas por videoconferência.
- 1C Formação Virtual Assíncrona: cursos autoinstrucionais em AVA, trilhas com módulos, atividades avaliativas em plataforma, fóruns com tutoria.
- 1D Formação Híbrida: combina presencial, síncrono e assíncrono num percurso único.
- 1E Programas Especiais: pós-graduação lato sensu, certificação profissional, residência técnica, comunidades de prática.
- 1F Capacitação Técnica Embutida: treinamento curto para a equipe do contratante operar o que foi entregue (ferramentas, processos, rotinas de monitoramento).
-2. Material Pedagógico (orienta como ensinar ou formar; destinatário é o educador)
- 2A Digital: guias metodológicos, matrizes curriculares e de competências, sequências didáticas, planos de curso e de aula.
- 2B Físico: os mesmos materiais impressos em tiragem, com diagramação, impressão e distribuição.
-3. Material Didático (carrega o conteúdo a ser aprendido)
- 3A Digital: cadernos de conteúdo e de atividades, textos de referência, bancos de questões.
- 3B Físico: os mesmos impressos em tiragem.
-4. Recursos Educacionais Digitais
- 4A Conteúdos audiovisuais (videoaulas, podcasts, animações). 4B Objetos e recursos interativos (OEDs, simulações, quizzes). 4C Ambientes virtuais de aprendizagem configurados com conteúdo.
-5. Avaliação
- 5A Avaliação de aprendizagem (diagnósticas, formativas, somativas, rubricas, bancos de itens, relatórios de desempenho). 5B Avaliação institucional e de programas (índices de maturidade, avaliação de programas). 5C Avaliação causal e de impacto. 5D Avaliação de desempenho operacional (métricas de uso e adoção).
-6. Diagnóstico e Estudos
- 6A Diagnóstico operacional e situacional (diagnóstico de rede ou organizacional, mapeamento de processos e fluxos, inventários, escutas e entrevistas, mapeamento de atores). 6B Estudos técnicos e modelagens (estudos de viabilidade, bases unificadas, modelagem financeira, cenários). 6C Pesquisas acadêmicas e publicações.
-7. Assessoramento Estratégico
- 7A Planejamento, estratégia e estruturação organizacional (planejamento estratégico, planos de ação, modelos de governança e estrutura, redesenho de processos, manuais operacionais, matrizes de indicadores). 7B Ferramentas, dashboards e painéis de gestão (painéis de indicadores, planilhas de controle, templates). 7C Normativo e regulatório (minutas de leis, decretos, portarias, regimentos e normativos internos, notas técnicas jurídicas).
-8. Solução Tecnológica
- 8A Plataformas e sistemas (desenvolvimento ou integração de software). 8B Modelos algorítmicos e de IA.`;
+// Manual de Tipologias de Serviço da FGV DGPE (Superintendência de Projetos, 2026): 8 categorias e suas modalidades.
+export interface Tipologia { codigo: string; categoria: string; modalidade: string; descricao: string }
+export const TIPOLOGIAS_MANUAL: Tipologia[] = [
+  { codigo: '1A-F', categoria: 'Formação', modalidade: 'Formação Presencial', descricao: 'cursos, oficinas, workshops, seminários formativos com avaliação e imersões em espaço físico; envolve logística de local, alimentação e deslocamento' },
+  { codigo: '1B-F', categoria: 'Formação', modalidade: 'Formação Virtual Síncrona', descricao: 'aulas ao vivo por videoconferência, webinários formativos, tutoria online e bancas por videoconferência' },
+  { codigo: '1C-F', categoria: 'Formação', modalidade: 'Formação Virtual Assíncrona', descricao: 'cursos autoinstrucionais em AVA, trilhas com módulos sequenciais, atividades avaliativas em plataforma, fóruns com tutoria e leituras dirigidas' },
+  { codigo: '1D-F', categoria: 'Formação', modalidade: 'Formação de Longa Duração', descricao: 'pós-graduação lato sensu e certificação profissional, com carga horária elevada e caráter acadêmico ou certificador' },
+  { codigo: '1E-F', categoria: 'Formação', modalidade: 'Formações Técnicas', descricao: 'treinamentos curtos, que não são o objeto principal, para a equipe do parceiro operar ferramentas, processos redesenhados, metodologias e rotinas de monitoramento entregues no projeto' },
+  { codigo: '2A-MP', categoria: 'Material Pedagógico', modalidade: 'Material Pedagógico Digital', descricao: 'orienta como ensinar ou formar (destinatário é o educador), em formato digital: guias metodológicos, matrizes curriculares e de competências, sequências didáticas, planos de curso e de aula' },
+  { codigo: '2B-MP', categoria: 'Material Pedagógico', modalidade: 'Material Pedagógico Físico', descricao: 'os mesmos materiais pedagógicos impressos, com diagramação, impressão e distribuição' },
+  { codigo: '3A-MD', categoria: 'Material Didático', modalidade: 'Material Didático Digital', descricao: 'carrega o conteúdo a ser aprendido, em formato digital: cadernos de conteúdo e de atividades, textos de referência, livros e apostilas, bancos de questões' },
+  { codigo: '3B-MD', categoria: 'Material Didático', modalidade: 'Material Didático Físico', descricao: 'os mesmos materiais didáticos impressos em tiragem, com diagramação, impressão e logística de distribuição' },
+  { codigo: '4A-RD', categoria: 'Recursos Educacionais Digitais', modalidade: 'Conteúdos Audiovisuais', descricao: 'videoaulas, gravações de aulas, podcasts, animações e vídeos explicativos com finalidade educacional' },
+  { codigo: '4B-RD', categoria: 'Recursos Educacionais Digitais', modalidade: 'Objetos e Recursos Interativos', descricao: 'objetos educacionais digitais, simulações, infográficos interativos, quizzes com correção automática e atividades gamificadas' },
+  { codigo: '4C-RD', categoria: 'Recursos Educacionais Digitais', modalidade: 'Ambientes Virtuais de Aprendizagem', descricao: 'plataformas AVA configuradas e carregadas com trilhas completas, bibliotecas e repositórios digitais' },
+  { codigo: '5A-A', categoria: 'Avaliação', modalidade: 'Avaliação de Aprendizagem', descricao: 'avaliações diagnósticas, formativas e somativas, rubricas, bancos de itens e relatórios de desempenho' },
+  { codigo: '5B-A', categoria: 'Avaliação', modalidade: 'Avaliação Institucional e de Programas', descricao: 'índices de maturidade, prontidão ou elegibilidade e avaliações de programas e políticas' },
+  { codigo: '5C-A', categoria: 'Avaliação', modalidade: 'Avaliação de Desempenho Operacional', descricao: 'métricas de uso e adoção de ferramentas, sistemas ou processos implantados' },
+  { codigo: '6A-DE', categoria: 'Diagnóstico e Estudos', modalidade: 'Diagnóstico Operacional e Situacional', descricao: 'fotografia da situação atual: diagnósticos de rede ou organizacionais, mapeamento de processos e fluxos, levantamento de normativos e contratos, escutas, entrevistas e mapeamento de atores' },
+  { codigo: '6B-DE', categoria: 'Diagnóstico e Estudos', modalidade: 'Estudos Técnicos e Modelagens', descricao: 'estudos de viabilidade, bases unificadas de fontes oficiais, modelagens financeiras, matrizes de custo, cenários e simulações' },
+  { codigo: '7A-AE', categoria: 'Assessoramento Especializado', modalidade: 'Planejamento e Estratégia', descricao: 'planejamentos estratégicos e planos de ação, modelos de governança, redesenho de processos, matrizes de indicadores, metodologias de monitoramento, manuais operacionais' },
+  { codigo: '7B-AE', categoria: 'Assessoramento Especializado', modalidade: 'Ferramentas de Gestão', descricao: 'painéis e dashboards de indicadores, planilhas de controle, formulários e templates, de baixa a média complexidade, operados pelo parceiro' },
+  { codigo: '7C-AE', categoria: 'Assessoramento Especializado', modalidade: 'Assessoria Técnica Continuada', descricao: 'acompanhamento recorrente da execução de modelos e processos já definidos: escritório de projetos, apoio à implementação, ciclos de assessoria com relatórios periódicos' },
+  { codigo: '7D-AE', categoria: 'Assessoramento Especializado', modalidade: 'Normativo e Regulatório', descricao: 'minutas de leis, decretos, portarias, resoluções, regimentos e normativos internos, notas técnicas de viabilidade jurídica' },
+  { codigo: '7E-AE', categoria: 'Assessoramento Especializado', modalidade: 'Assessoria Pedagógica', descricao: 'acompanhamento técnico-pedagógico de rotinas de gestão da aprendizagem nas escolas, devolutivas e apoio a coordenadores e gestores escolares' },
+  { codigo: '8A-ST', categoria: 'Solução Tecnológica', modalidade: 'Plataformas e Sistemas', descricao: 'desenvolvimento ou integração de software com múltiplas funcionalidades num ambiente digital unificado' },
+];
+
+/** "7A-AE" -> "Assessoramento Especializado: Planejamento e Estratégia (7A-AE)". Aceita o código sozinho ou já com o nome. */
+export function nomeTipologia(x: string): string {
+  const cod = x.trim().match(/^(\d[A-Z])(-[A-Z]{1,2})?/i)?.[0]?.toUpperCase() ?? '';
+  const t = TIPOLOGIAS_MANUAL.find((y) => y.codigo === cod) ?? TIPOLOGIAS_MANUAL.find((y) => cod && y.codigo.startsWith(cod));
+  return t ? `${t.categoria}: ${t.modalidade} (${t.codigo})` : x.trim();
+}
+
+export const TIPOLOGIAS = `MANUAL DE TIPOLOGIAS DE SERVIÇO DA FGV DGPE (código, categoria, modalidade, o que caracteriza):
+${TIPOLOGIAS_MANUAL.map((t) => `- ${t.codigo} | ${t.categoria} | ${t.modalidade}: ${t.descricao}.`).join('\n')}
+Critérios: Formação exige percurso formativo reconhecível (objetivos, carga horária, metodologia); eventos só de articulação não contam. Material Pedagógico orienta como ensinar (destinatário é o educador); Material Didático carrega o que aprender. Recursos Educacionais Digitais têm finalidade educacional e são interativos ou audiovisuais; Solução Tecnológica tem finalidade operacional. Manuais operacionais e documentações metodológicas de gestão são Assessoramento Especializado, não Material Pedagógico. Um mesmo produto pode combinar mais de um serviço.`;
 
 export const TIPOS_RISCO = `CATEGORIAS DE RISCO (Categoria -> Tema):
 - Risco Operacional (Gestão): dificuldades na operação das atividades: mobilização de participantes, logística de eventos presenciais, articulação com muitos municípios ou escolas, infraestrutura, sobreposição de agendas.
@@ -52,21 +66,44 @@ Estratégias: Prevenir, Mitigar, Transferir, Escalar, Aceitar.
 Redação: "Se [causa], então pode ocorrer [risco], gerando [efeito]". Sem riscos genéricos: cada causa cita um elemento concreto do projeto.`;
 
 export const PARTES_INTERESSADAS = `MATRIZ DE PARTES INTERESSADAS (metodologia FGV DGPE):
-Identifica grupos ou instituições com poder de impactar o projeto (decidir, validar, aprovar, mobilizar, executar, avaliar ou influenciar). No planejamento o mapeamento é institucional: órgãos, secretarias, áreas, conselhos, financiadores, redes, públicos e fornecedores críticos. Não liste pessoas físicas. Não infle a matriz com quem não interfere de fato (cargo não é influência). Normalmente de 5 a 12 partes.
+Identifica grupos ou instituições com poder de impactar o projeto (decidir, validar, aprovar, mobilizar, executar, avaliar ou influenciar). No planejamento o mapeamento é institucional: órgãos, secretarias, áreas, conselhos, financiadores, redes, públicos e fornecedores críticos. Não liste pessoas físicas. A FGV DGPE (contratada) nunca entra na matriz, nem suas áreas, diretorias ou equipes: a matriz mapeia só partes externas. Não infle a matriz com quem não interfere de fato (cargo não é influência). Normalmente de 5 a 12 partes.
 Etapas: identificar; papel; interesse; poder/influência; estratégia pelo cruzamento; expectativas; riscos da relação (atrasos em decisões ou validações, baixa adesão, mobilização, mudança de direcionamento, retrabalho, comunicação, percepção de resultados).
 Estratégia (fórmula da monday): Poder Alto + Interesse Alto = Gerenciar de perto; Poder Alto + Interesse Médio ou Baixo = Engajar institucionalmente; Poder Médio ou Baixo + Interesse Alto = Consultar frequentemente; demais = Manter informado.`;
 
 export const OKR = `PAINEL DE INDICADORES (OKRs) da FGV DGPE:
 - Objetivo (O): qualitativo e aspiracional, a principal mudança que o projeto quer gerar. Racional: "O projeto será bem-sucedido se...". Ideal: até 3 por projeto, conforme o tamanho do escopo.
-- Resultado-chave (KR): quantitativo, SMART, sem subjetividade; mede "o que mudou". Racional: "Ao final, [resultado] comprovado por [critério], até [prazo]". Ideal: até 5 por objetivo.
+- Resultado-chave (KR): mensurável, SMART, sem subjetividade; mede "o que mudou". Racional: "Ao final, [resultado] comprovado por [critério], até [prazo]". Ideal: até 5 por objetivo.
 - KPI de processo: acompanha a execução operacional (prazo, cobertura, aderência ao padrão); mede "executamos como planejado?". Ideal: até 3 por KR.
 - Relacione KRs e KPIs aos produtos do cronograma. Confronte com o TR e o contrato (indicadores de medição de resultado exigidos pelo cliente entram obrigatoriamente).`;
+
+// Padronização dos indicadores (Revisão e padronização dos indicadores dos projetos, CoPlan, nov/2026).
+export const INDICADORES_PADRAO = `PADRÃO DE REDAÇÃO DOS INDICADORES (revisão de 376 indicadores de 30 projetos da FGV DGPE):
+- Estrutura do nome: unidade de medida por extenso + objeto mensurado + recorte ou condição, só quando necessário. Começa com "Percentual de", "Média de", "Número de" ou "Pontuação de".
+- Sem siglas no nome (sistemas, órgãos, programas e "NPS" por extenso: "Pontuação de satisfação (Net Promoter Score) das formações").
+- "Taxa" vira "Percentual". "Índice de" só para índice com metodologia própria; senão "Percentual de".
+- Média de satisfação e Net Promoter Score são indicadores diferentes; o Net Promoter Score já é um cálculo próprio, não escreva "média de NPS".
+- Nome genérico e comparável entre projetos: sem nota de corte, etapa, série, trilha, módulo, nome de cliente, rede ou sistema no nome. Esses recortes vão na forma de cálculo ou na descrição. Ex.: "Percentual de cursistas aprovados por módulo com nota final ≥ 7" vira "Percentual de cursistas aprovados nas avaliações da formação".
+- Forma de cálculo coerente com o nome e a unidade, com %, Nº ou Σ explícitos. Ex.: "(Nº de produtos validados pelo cliente / Nº de produtos previstos) x 100".
+- Quantidade absoluta é exceção: contagem de entregas, documentos, produtos ou eventos vira percentual de alcance do previsto ("Número de documentos normativos elaborados" vira "Percentual de documentos normativos elaborados", meta 100). Use "Número de" só quando não existir um total previsto que sirva de denominador.
+UNIDADE (use exatamente um destes):
+- Percentual: proporções, coberturas, participação ou alcance em relação a um total de referência. É a unidade padrão.
+- Média: valor médio de um conjunto de observações (por turma, por profissional, por período).
+- Pontuação ou escala: Net Promoter Score, escala de satisfação ou de proficiência com metodologia própria.
+- Binário: cumprimento ou não de uma condição (0 ou 1), como aprovação integral de um documento nas instâncias de governança ou implantação de uma metodologia. Meta 1.
+- Unidade: contagem em unidade própria, só quando não houver denominador.
+METAS PADRÃO POR TIPO (use quando o TR ou o contrato não fixarem outra):
+- Execução de entregas e atividades planejadas: 100 (%). Entregas revisadas e validadas: 100 (%). Entregas validadas sem necessidade de revisão: 85 (%).
+- Participação e presença em formações e eventos: 80 (%). Conclusão, aprovação e certificação de cursistas: 80 (%). Taxa de resposta a pesquisas: 70 (%).
+- Satisfação por respostas positivas: 80 (%). Net Promoter Score: 80. Satisfação em nota média numa escala de 1 a 5: 4.
+- Adoção e uso pela rede ou parceiro: 85 (%). Participação de estudantes em avaliações: 85 (%).
+- Resultados educacionais (aprendizagem, fluxo, frequência) e indicadores específicos do projeto: meta do contexto, tirada dos documentos.`;
 
 export const EAP = `EAP E CRONOGRAMA DA FGV DGPE (grupo Cronograma do quadro [PLAN]):
 - Nível 1 = Produto (já existe no grupo Produtos; não repetir).
 - Nível 2 = Entregável: o que precisa existir para o produto estar concluído. 2 a 4 por produto.
-- Nível 3 = Marco: resultado intermediário e verificável que leva o entregável à conclusão; traz quantitativos e condicionantes do contrato quando existirem (ex.: "Recebimento provisório (5 dias) e definitivo (10 dias)"). 2 a 4 por entregável. Inclua como marco o fluxo de aceite e faturamento de cada produto faturável.
-- Nível 4 = Atividade do cronograma de execução: o que fazer para atingir o marco. 2 a 4 por marco. A redação é importantíssima: SEMPRE começa com verbo no infinitivo (Elaborar, Realizar, Validar, Consolidar, Enviar, Mapear...), é específica e verificável, sem gerúndio e sem substantivo no início.
+- Nível 3 = Marco: resultado intermediário e verificável que leva o entregável à conclusão; traz condicionantes do contrato quando existirem (ex.: "Recebimento provisório (5 dias) e definitivo (10 dias)"). 2 a 4 por entregável. Inclua como marco o fluxo de aceite e faturamento de cada produto faturável.
+- Nomes dos Níveis 2 e 3 sem prefixo de rótulo (nunca "ENTREGÁVEL", "MARCO", "Entregável:" ou "Marco:" no nome) e sem quantidade solta: em vez de "1 sistema de gestão diagnosticado", escreva "Diagnóstico do sistema de gestão concluído".
+- Nível 4 = Atividade do cronograma de execução: o que fazer para atingir o marco. 2 a 4 por marco. Fica como subitem do seu marco (Nível 3) no quadro: toda atividade pertence a um marco. A redação é importantíssima: SEMPRE começa com verbo no infinitivo (Elaborar, Realizar, Validar, Consolidar, Enviar, Mapear...), é específica e verificável, sem gerúndio e sem substantivo no início.
 - Padrões usuais (adapte, não copie se não couber): eventos e formações = Preparação Pedagógica e Logística, Execução, Avaliação, Relatório e Aceite; documentos, estudos e diagnósticos = Levantamento/Mapeamento, Elaboração/Produção, Validação e Entrega; plano de trabalho ou início = Mobilização e Governança, Planejamento Operacional, Plano de Trabalho.
 - Prazos em dias corridos contados a partir do início da execução (dia 1). Respeite as fases e marcos do TR e as datas de entrega dos produtos; nenhuma atividade passa do fim da vigência.`;
 
@@ -79,6 +116,7 @@ export const REGRAS_GERAIS = `REGRAS INVIOLÁVEIS
 - Linguagem: português, institucional, direta, simples, sem jargão jurídico, sem citações longas. Qualquer pessoa da DGPE deve entender o projeto lendo só o seu texto. Não use travessão como conector de frases.
 - Sem nomes de pessoas físicas: use cargo ou instância (ex.: "Superintendente", "Gestor do contrato"). Signatários da proposta (diretoria da FGV DGPE) não são equipe gestora.
 - Prazos: transcreva como estão ("10 dias", sem acrescentar "úteis" ou "corridos").
+- Quantitativos: só use número quando ele for informação real do escopo (público atendido, carga horária, municípios). Nunca "1 X" para dizer que existe uma entrega ("1 sistema de gestão" é "construção do sistema de gestão"), nem contagem de produtos, lote, item ou quantitativo de licitação.
 - Valores: número com ponto decimal, sem "R$" e sem separador de milhar (ex.: 551526.22).`;
 
 // Responsabilidades fixas do TAP por tipo de projeto (Instrumento de Planejamento v.2026: FP.02 TAP, TAP (CNCA), TAP (GA)).

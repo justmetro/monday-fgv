@@ -31,6 +31,13 @@ export const CP = {
   statusMed: 'color_mm1gg0hb',
 };
 
+// Colunas dos subitens do [PLAN] (Nível 4 do cronograma; iguais em todos os quadros criados pelo modelo)
+export const SUB = { status: 'color_mm48hram', cronograma: 'timerange_mm489r9r', frentes: 'color_mm48sa6t', responsavel: 'person' };
+
+/** Equipe "Planejamento" da monday: responsável automática por todo item que o hub cria no [PLAN]. */
+export const TIME_PLANEJAMENTO = 1359388;
+export const RESP_PLANEJAMENTO = { personsAndTeams: [{ id: TIME_PLANEJAMENTO, kind: 'team' }] };
+
 export interface Projeto {
   id: string; name: string; codigo: string; status: string; eixo: string; valor: number | null; cliente: string; uf: string;
   quadroUrl: string; quadroId: string | null; vigInicio: string | null; vigFim: string | null; assinatura: string | null; focal: string; temDocs: boolean;
@@ -156,6 +163,28 @@ export async function criarItens(boardId: string, grupo: string, itens: { nome: 
       vars[`v${k}`] = JSON.stringify(it.valores);
     });
     const d = await gql(`mutation ($b: ID!, $g: String!, ${defs.join(', ')}) { ${corpo.join(' ')} }`, vars);
+    lote.forEach((_, k) => ids.push(String(d[`c${k}`].id)));
+    onProgresso?.(ids.length);
+    await sleep(PAUSA);
+  }
+  return ids;
+}
+
+/** Cria subitens em lotes. Devolve os ids na mesma ordem. */
+export async function criarSubitens(itens: { pai: string; nome: string; valores: Record<string, unknown> }[], onProgresso?: (n: number) => void): Promise<string[]> {
+  const ids: string[] = [];
+  for (let i = 0; i < itens.length; i += LOTE) {
+    const lote = itens.slice(i, i + LOTE);
+    const defs: string[] = [], corpo: string[] = [];
+    const vars: Record<string, unknown> = {};
+    lote.forEach((it, k) => {
+      defs.push(`$p${k}: ID!, $n${k}: String!, $v${k}: JSON!`);
+      corpo.push(`c${k}: create_subitem(parent_item_id: $p${k}, item_name: $n${k}, column_values: $v${k}, create_labels_if_missing: true) { id }`);
+      vars[`p${k}`] = it.pai;
+      vars[`n${k}`] = it.nome.slice(0, 255);
+      vars[`v${k}`] = JSON.stringify(it.valores);
+    });
+    const d = await gql(`mutation (${defs.join(', ')}) { ${corpo.join(' ')} }`, vars);
     lote.forEach((_, k) => ids.push(String(d[`c${k}`].id)));
     onProgresso?.(ids.length);
     await sleep(PAUSA);

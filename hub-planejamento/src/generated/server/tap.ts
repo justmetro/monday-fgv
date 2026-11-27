@@ -1,7 +1,7 @@
 // Preenche o doc "0. TAP" do quadro [PLAN] (doc de aba do quadro). A API GraphQL pública não alcança docs de aba,
 // então a leitura e a escrita passam pelo servidor MCP hospedado da monday, com o token OAuth do app.
 import { gql } from '../../../server/monday';
-import { responsabilidades, type ModeloTap } from './conhecimento';
+import { responsabilidades, nomeTipologia, type ModeloTap } from './conhecimento';
 
 export interface DadosTap {
   nome_projeto: string;
@@ -18,7 +18,7 @@ export interface DadosTap {
   total_produtos: number;
   tipos_entrega: string[];
   processo_entrega: string[];
-  perfis_equipe: string;
+  perfis_equipe?: string;
   fora_escopo: string[];
   necessidades: string[];
   modelo_tap: ModeloTap;
@@ -122,20 +122,22 @@ export async function escreverTap(boardId: string, tap: DadosTap, autor: string,
   porPrefixo('Modalidade do atendimento', () => rotulado('Modalidade do atendimento: ', tap.modalidade));
   porPrefixo('Experiência Institucional', () => rotulado('Experiência Institucional: ', tap.experiencia_institucional));
   porPrefixo('[Inserir justificativa]', () => simples(tap.justificativa));
-  const resultados = [tap.resultado_principal, tap.como_chega, ...(tap.resultados_quantitativos.length ? ['Resultados quantitativos esperados:', ...tap.resultados_quantitativos.map((x) => `• ${x}`)] : [])].filter(Boolean).join('\n');
+  // Resultados esperados sem prazo de execução, fases, lote/item nem contagem de produtos.
+  const esperados = (tap.resultados_quantitativos ?? []).filter((x) => !/prazo de execu|\bdias\b|\blote\b|quantitativo|\bprodutos (previstos|distribu)/i.test(x));
+  const resultados = [tap.resultado_principal, tap.como_chega, ...(esperados.length ? ['Resultados esperados:', ...esperados.map((x) => `• ${x}`)] : [])].filter(Boolean).join('\n');
   porPrefixo('[Inserir resultados]', () => simples(resultados));
   porPrefixo('3.1. TOTAL DE PRODUTOS', () => rotulado('3.1. TOTAL DE PRODUTOS PREVISTOS: ', `${tap.total_produtos} produtos previstos`));
 
   // 3.2. Tipos de entrega: troca o enunciado e remove a lista de opções do modelo.
   const iTipos = acharComeco('3.2. Tipos de entrega');
   if (iTipos >= 0) {
-    atualizar(textos[iTipos].b, rotulado('3.2. Tipos de entrega: ', tap.tipos_entrega.join('; ') || 'Não identificado nos documentos'));
+    atualizar(textos[iTipos].b, rotulado('3.2. Tipos de entrega: ', [...new Set(tap.tipos_entrega.map(nomeTipologia))].join('; ') || 'Não identificado nos documentos'));
     const pai = textos[iTipos].b.parent_block_id;
     for (let k = iTipos + 1; k < textos.length && textos[k].b.parent_block_id === pai; k++) apagar.push(textos[k].b.id);
   } else naoAchei.push('3.2. Tipos de entrega');
 
   porPrefixo('[Inserir processo de entrega', () => simples(tap.processo_entrega.join('\n') || 'Não identificado nos documentos'));
-  porPrefixo('[Inserir responsáveis]', () => simples(`A definir pela Coordenação de Planejamento.\nEspecialista(s): a definir\nGerente(s): a definir${tap.perfis_equipe && !/não identificado/i.test(tap.perfis_equipe) ? `\nPerfis indicados na proposta: ${tap.perfis_equipe}` : ''}`));
+  porPrefixo('[Inserir responsáveis]', () => simples('A definir pela Coordenação de Planejamento.\nEspecialista(s): a definir\nGerente(s): a definir'));
 
   // Responsabilidades conforme o modelo de TAP (padrão, CNCA ou GA)
   const resp = responsabilidades(tap.modelo_tap);

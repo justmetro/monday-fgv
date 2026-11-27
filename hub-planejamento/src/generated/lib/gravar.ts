@@ -1,5 +1,5 @@
 // Gravação de cada etapa no quadro [PLAN], pelo login de quem usa o hub.
-import { CP, criarItens, alterarItens, itensDosGrupos, arquivarItens, faixa, diaParaData } from '@generated/lib/quadros';
+import { CP, SUB, RESP_PLANEJAMENTO, criarItens, criarSubitens, alterarItens, itensDosGrupos, arquivarItens, faixa, diaParaData } from '@generated/lib/quadros';
 import { gql } from '@generated/lib/monday';
 import { txt } from '@generated/lib/monday';
 
@@ -93,7 +93,7 @@ export async function gravarProdutos(boardId: string, produtos: Produto[], inici
   const valores = (p: Produto) => {
     const v: Record<string, unknown> = {
       [CP.codigo]: p.codigo, [CP.descricao]: cortar(p.descricao), [CP.meses]: `M${p.mes_inicio} - M${p.mes_fim}`,
-      [CP.valor]: String(p.valor ?? 0), [CP.objetivo]: cortar(p.objetivo || ''), [CP.categoriaInsumo]: { labels: ['PRODUTO'] },
+      [CP.valor]: String(p.valor ?? 0), [CP.objetivo]: cortar(p.objetivo || ''), [CP.categoriaInsumo]: { labels: ['PRODUTO'] }, person: RESP_PLANEJAMENTO,
     };
     if (p.tipo_entrega) v[CP.tipoEntrega] = { labels: [p.tipo_entrega] };
     if (/^Fase [1-4]$/.test(p.fase)) { v[CP.etapaProduto] = { label: p.fase }; v.color_mkyf9bv4 = { label: p.fase }; }
@@ -124,9 +124,12 @@ export async function mapaProdutos(boardId: string): Promise<Record<string, stri
 }
 
 // ---------- EAP / Cronograma ----------
+// Nível 2 e Nível 3 viram itens do grupo Cronograma; cada atividade (Nível 4) vira subitem do seu marco (Nível 3).
 export async function gravarEap(boardId: string, eap: EapProduto[], ordem: string[], mapa: Record<string, string>, inicio: string, progresso: (m: string) => void) {
   const linhas: { nome: string; valores: Record<string, unknown> }[] = [];
+  const atividades: { linha: number; nome: string; valores: Record<string, unknown> }[] = [];
   const semProduto: string[] = [];
+  const tiraRotulo = (n: string) => n.replace(/^\s*(entreg[aá]vel|marco)\s*[|:–-]\s*/i, '').trim();
   for (const p of eap) {
     const k = ordem.indexOf(p.codigo) + 1 || ordem.length + 1;
     const pid = mapa[p.codigo.toUpperCase()];
@@ -134,24 +137,26 @@ export async function gravarEap(boardId: string, eap: EapProduto[], ordem: strin
     const rel = pid ? { [CP.produtoRel]: { item_ids: [Number(pid)] } } : {};
     p.entregaveis.forEach((e, ie) => {
       const n2 = `${k}.${ie + 1}.`;
-      linhas.push({ nome: `${n2} ENTREGÁVEL | ${e.nome}`, valores: { ...rel, [CP.eap]: { labels: ['Nível 2'] }, [CP.cronograma]: faixa(inicio, e.dia_inicio, e.dia_fim), [CP.status]: { label: 'Não Iniciado' } } });
+      linhas.push({ nome: `${n2} ${tiraRotulo(e.nome)}`, valores: { ...rel, [CP.eap]: { labels: ['Nível 2'] }, [CP.cronograma]: faixa(inicio, e.dia_inicio, e.dia_fim), [CP.status]: { label: 'Não Iniciado' }, person: RESP_PLANEJAMENTO } });
       e.marcos.forEach((m, im) => {
         const n3 = `${n2}${im + 1}.`;
-        linhas.push({ nome: `${n3} MARCO | ${m.nome}`, valores: { ...rel, [CP.eap]: { labels: ['Nível 3'] }, [CP.cronograma]: faixa(inicio, m.dia_inicio, m.dia_fim), [CP.status]: { label: 'Não Iniciado' } } });
+        const linha = linhas.length;
+        linhas.push({ nome: `${n3} ${tiraRotulo(m.nome)}`, valores: { ...rel, [CP.eap]: { labels: ['Nível 3'] }, [CP.cronograma]: faixa(inicio, m.dia_inicio, m.dia_fim), [CP.status]: { label: 'Não Iniciado' }, person: RESP_PLANEJAMENTO } });
         m.atividades.forEach((a, ia) => {
-          const v: Record<string, unknown> = { ...rel, [CP.eap]: { labels: ['Nível 4'] }, [CP.cronograma]: faixa(inicio, a.dia_inicio, a.dia_fim), [CP.status]: { label: 'Não Iniciado' } };
-          if (a.frente) v[CP.frentes] = { label: a.frente };
-          linhas.push({ nome: `${n3}${ia + 1}. ${a.nome}`, valores: v });
+          const v: Record<string, unknown> = { [SUB.cronograma]: faixa(inicio, a.dia_inicio, a.dia_fim), [SUB.status]: { label: 'Não Iniciado' }, [SUB.responsavel]: RESP_PLANEJAMENTO };
+          if (a.frente) v[SUB.frentes] = { label: a.frente };
+          atividades.push({ linha, nome: `${n3}${ia + 1}. ${a.nome}`, valores: v });
         });
       });
     });
   }
   progresso('Arquivando os itens de exemplo do modelo…');
   await limparModelo(boardId, CP.grupos.cronograma);
-  await criarItens(boardId, CP.grupos.cronograma, linhas, (n) => progresso(`Criando itens do cronograma ${n}/${linhas.length}…`), true);
-  progresso('Ajustando a aba 8. CRONOGRAMA para mostrar marcos e atividades…');
+  const ids = await criarItens(boardId, CP.grupos.cronograma, linhas, (n) => progresso(`Criando entregáveis e marcos ${n}/${linhas.length}…`));
+  await criarSubitens(atividades.map((a) => ({ pai: ids[a.linha], nome: a.nome, valores: a.valores })), (n) => progresso(`Criando atividades (subitens) ${n}/${atividades.length}…`));
+  progresso('Ajustando a aba 8. CRONOGRAMA para mostrar os marcos e suas atividades…');
   const aba = await ajustarAbaCronograma(boardId).catch(() => false);
-  return { itens: linhas.length, semProduto, aba };
+  return { itens: linhas.length + atividades.length, semProduto, aba };
 }
 
 // ---------- Riscos específicos (IA) ----------
@@ -160,7 +165,7 @@ export function valoresRisco(r: Risco, inicio: string | null): Record<string, un
     [CP.tema]: { labels: [r.tema] }, [CP.categoria]: { labels: [r.categoria] }, [CP.impactado]: { labels: r.impactado },
     [CP.causa]: { text: r.causa }, [CP.efeito]: { text: r.efeito }, [CP.prob]: { label: r.probabilidade }, [CP.imp]: { label: r.impacto },
     [CP.estrategia]: { label: r.estrategia }, [CP.resposta]: { text: r.resposta }, [CP.cargoResp]: r.cargo_responsavel,
-    [CP.status]: { label: 'Não Iniciado' },
+    [CP.status]: { label: 'Não Iniciado' }, person: RESP_PLANEJAMENTO,
   };
   if (r.frente) v[CP.frentes] = { label: r.frente };
   if (inicio && r.dia_inicio && r.dia_fim) v[CP.periodo] = faixa(inicio, r.dia_inicio, r.dia_fim);
@@ -177,26 +182,31 @@ export async function gravarRiscosIA(boardId: string, riscos: Risco[], inicio: s
 
 // ---------- Partes interessadas ----------
 export async function gravarPartes(boardId: string, partes: Parte[], progresso: (m: string) => void) {
-  const sel = partes.filter((p) => p.incluir !== false);
+  // A FGV DGPE (contratada) nunca entra na matriz de partes interessadas.
+  const sel = partes.filter((p) => p.incluir !== false && !/\bFGV\b|DGPE|contratada/i.test(`${p.nome} ${p.area} ${p.classe}`));
   await limparModelo(boardId, CP.grupos.partes);
   await criarItens(boardId, CP.grupos.partes, sel.map((p) => ({
     nome: p.nome,
     valores: {
       [CP.cargoCliente]: p.cargo_cliente, [CP.area]: `${p.area}${p.classe ? ` (${p.classe})` : ''}`, [CP.papel]: { labels: p.papel },
       [CP.interesse]: { label: p.interesse }, [CP.poder]: { label: p.poder }, [CP.expectativas]: { text: p.expectativas },
-      [CP.riscosAssoc]: cortar(p.riscos_associados, 1000), [CP.status]: { label: 'Não Iniciado' },
+      [CP.riscosAssoc]: cortar(p.riscos_associados, 1000), [CP.status]: { label: 'Não Iniciado' }, person: RESP_PLANEJAMENTO,
     },
   })), (n) => progresso(`Criando partes interessadas ${n}/${sel.length}…`));
   return sel.length;
 }
 
 // ---------- Indicadores (OKRs) ----------
+// Unidades antigas do quadro para as unidades revisadas na padronização.
+const UNIDADE: Record<string, string> = { '%': 'Percentual', NPS: 'Pontuação ou escala', Pessoa: 'Unidade', Projeto: 'Unidade', Dia: 'Unidade', Hora: 'Unidade', Professor: 'Unidade', Estudante: 'Unidade' };
+const unidadePadrao = (u: string) => UNIDADE[u] ?? u;
+
 function valoresIndicador(i: Indicador, tipo: 'KR - Resultado Chave' | 'KPI - Resultado de Processo', objetivo: string): Record<string, unknown> {
   return {
     [CP.tipoInd]: { label: tipo }, [CP.descInd]: { text: i.descricao }, [CP.formula]: cortar(i.formula, 1000), [CP.meta]: String(i.meta ?? ''),
-    [CP.unidade]: { labels: [i.unidade] }, [CP.temporalidade]: { labels: [i.temporalidade] }, [CP.coleta]: { labels: [i.coleta] },
+    [CP.unidade]: { labels: [unidadePadrao(i.unidade)] }, [CP.temporalidade]: { labels: [i.temporalidade] }, [CP.coleta]: { labels: [i.coleta] },
     [CP.polaridade]: { label: i.polaridade }, [CP.qtdMed]: String(i.medicoes?.length ?? 0), [CP.objetivo]: cortar(objetivo, 1000),
-    [CP.statusMed]: { label: 'Em Planejamento' },
+    [CP.statusMed]: { label: 'Em Planejamento' }, person: RESP_PLANEJAMENTO,
   };
 }
 
@@ -205,21 +215,21 @@ export async function gravarIndicadores(boardId: string, objetivos: Objetivo[], 
   const medicoes: { nome: string; valores: Record<string, unknown> }[] = [];
   const addMed = (ind: Indicador, id: string) => {
     (ind.medicoes ?? []).forEach((dia, k) => {
-      const v: Record<string, unknown> = { [CP.meta]: String(ind.meta ?? ''), [CP.formula]: cortar(ind.formula, 1000), [CP.indVinculado]: { item_ids: [Number(id)] }, [CP.statusMed]: { label: 'Não Iniciado' } };
+      const v: Record<string, unknown> = { [CP.meta]: String(ind.meta ?? ''), [CP.formula]: cortar(ind.formula, 1000), [CP.indVinculado]: { item_ids: [Number(id)] }, [CP.statusMed]: { label: 'Não Iniciado' }, person: RESP_PLANEJAMENTO };
       if (inicio) v[CP.prazoMed] = { date: diaParaData(inicio, dia) };
       medicoes.push({ nome: `Medição ${k + 1} - ${ind.nome}`, valores: v });
     });
   };
   await limparModelo(boardId, CP.grupos.indicador);
   for (const o of objetivos) {
-    const krIds = await criarItens(boardId, CP.grupos.indicador, o.krs.map((kr) => ({ nome: kr.nome, valores: valoresIndicador(kr, 'KR - Resultado Chave', o.objetivo) })));
+    const krIds = await criarItens(boardId, CP.grupos.indicador, o.krs.map((kr) => ({ nome: kr.nome, valores: valoresIndicador(kr, 'KR - Resultado Chave', o.objetivo) })), undefined, true);
     nInd += krIds.length;
     progresso(`Criando indicadores (${nInd})…`);
     for (let k = 0; k < o.krs.length; k++) {
       const kr = o.krs[k];
       addMed(kr, krIds[k]);
       if (kr.kpis?.length) {
-        const kpiIds = await criarItens(boardId, CP.grupos.indicador, kr.kpis.map((kpi) => ({ nome: kpi.nome, valores: { ...valoresIndicador(kpi, 'KPI - Resultado de Processo', o.objetivo), [CP.krVinculado]: { item_ids: [Number(krIds[k])] } } })));
+        const kpiIds = await criarItens(boardId, CP.grupos.indicador, kr.kpis.map((kpi) => ({ nome: kpi.nome, valores: { ...valoresIndicador(kpi, 'KPI - Resultado de Processo', o.objetivo), [CP.krVinculado]: { item_ids: [Number(krIds[k])] } } })), undefined, true);
         nInd += kpiIds.length;
         kr.kpis.forEach((kpi, j) => addMed(kpi, kpiIds[j]));
         progresso(`Criando indicadores (${nInd})…`);
