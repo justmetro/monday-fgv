@@ -6,7 +6,7 @@ Hub de IA do planejamento de projetos. Parte do item do projeto no 02.01 Projeto
 - Aba no quadro 09.0 Hub de Planejamento (18441661190), view 294170734, pasta 09. Ferramentas de Planejamento.
 - Servidor: https://live1-service-29669755-a2a4a63b.us.monday.app (versão v3: https://ce14b-service-29669755-a2a4a63b.us.monday.app). OAuth em /oauth/start, retorno em /oauth/callback (cadastrado no manifest como redirectUri).
 - Escopos: boards:read/write, boards:update, me:read, users:read, workspaces:read/write, docs:read/write, ai:consume, assets:read. Mudança de escopo ou de URL de OAuth exige versão nova (`mapps manifest:import -a 12877701`).
-- Variáveis do monday code: CLIENT_SECRET, CRON_KEY, GEMINI_API_KEY (chave do Google AI Studio). Sem MONDAY_API_TOKEN.
+- Variáveis do monday code: CLIENT_SECRET, CRON_KEY, GEMINI_API_KEY (chave do Google AI Studio); secret OPENROUTER_API_KEY (`mapps code:secret`). Sem MONDAY_API_TOKEN.
 - Banco (Document DB): hub_runs (execuções e resultados por etapa), hub_docs (texto dos documentos), app_oauth, app_mutacoes, app_jobs.
 
 ## Como funciona
@@ -18,6 +18,7 @@ Hub de IA do planejamento de projetos. Parte do item do projeto no 02.01 Projeto
 - Calculadora no servidor: arquiva os exemplos, cadastra no 09.1, roda o motor, envia ao [PLAN] (rótulo de dropdown que falta no destino é criado) e dispara a geração do complemento. No SUFOTUR levou 51 s; aplicar o complemento em 73 riscos levou 17 s.
 - IA: gateway da monday, modelo padrão `monday-standard`. Também aceitos pelo gateway e listados no app: gpt-5 e gpt-5-mini. Cada etapa lê todos os documentos (cerca de 110 mil tokens no caso SUFOTUR) e custa entre US$ 0,30 e 0,45.
 - Gemini como alternativa (gemini-3.5-flash e gemini-3.8-flash), pela API do Google no formato OpenAI (`generativelanguage.googleapis.com/v1beta/openai`), com a chave GEMINI_API_KEY. Não consome crédito da monday. No nível gratuito há limite por minuto e por dia, e o Google pode usar o conteúdo para melhorar os produtos; com faturamento ativo na chave isso não acontece. Os modelos Pro não entram no nível gratuito.
+- OpenRouter gratuito como segunda alternativa: `openrouter/free` (com reservas `nvidia/nemotron-3-ultra-550b-a55b:free` e `google/gemma-4-31b-it:free` no campo `models`) e o Nemotron 3 Ultra direto. Limite da conta: 20 pedidos por minuto e 50 por dia (1000 por dia depois de uma compra única de US$ 10); o consumo do dia aparece em `GET https://openrouter.ai/api/v1/key`. O 429 vira mensagem amigável. Provedores dos modelos gratuitos podem guardar os prompts. Em teste com cerca de 100 mil tokens de entrada, o roteador respondeu em 3 s.
 - Etapas de IA rodam em segundo plano no servidor (`gerarEtapa` / `iniciarGeracao`) e a tela consulta `estadoEtapas` a cada 4 s enquanto algo gera ou grava.
 - Prompts em `src/generated/server/prompts.ts`, base de conhecimento da metodologia em `conhecimento.ts` (Guia de Bolso, Eixos, Tipologias, Tipos de Riscos, Partes Interessadas e responsabilidades dos três modelos de TAP: padrão, CNCA e GA).
 - Colunas do quadro [PLAN] v6 em `src/generated/lib/quadros.ts` (CP). São iguais em todos os quadros criados pelo modelo (quadro modelo 18430945750, área "Projeto - Planejamento v2").

@@ -231,6 +231,8 @@ export default function App() {
                       <option value="gpt-5-mini">IA: GPT-5 mini</option>
                       <option value="gemini-3.5-flash">IA: Gemini 3.5 Flash</option>
                       <option value="gemini-3.8-flash">IA: Gemini 3.8 Flash</option>
+                      <option value="openrouter/free">IA: OpenRouter gratuito</option>
+                      <option value="nvidia/nemotron-3-ultra-550b-a55b:free">IA: Nemotron 3 Ultra (OpenRouter)</option>
                     </select>
                   )}
                   <Botao variante={run ? 'secundario' : 'primario'} onClick={nova} carregando={abrindo}><Plus className="h-4 w-4" /> Nova execução</Botao>
