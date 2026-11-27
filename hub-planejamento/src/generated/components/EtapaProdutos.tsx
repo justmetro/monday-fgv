@@ -3,6 +3,7 @@ import { useHub } from '@generated/lib/estado';
 import { diasDoProduto, type Produto } from '@generated/lib/gravar';
 import { ROTULOS } from '@generated/lib/rotulos';
 import { diaParaData } from '@generated/lib/quadros';
+import { PainelQuadro } from '@generated/components/PainelQuadro';
 import { Moldura, BarraGravar } from '@generated/components/Moldura';
 import { Campo, Texto, Escolha, Aviso, Botao, Selo, Numero, BarraLista, ItemRecolhivel, useRecolher, moeda, dataBR } from '@generated/components/ui';
 
@@ -77,6 +78,7 @@ export function EtapaProdutos() {
           </div>
           <BarraGravar onGravar={gravar} gravando={!!st.gravando} progresso={st.progressoGravacao ?? ''} erro={st.erroGravacao ?? ''} rotulo="Gravar produtos no quadro" desabilitado={!run.boardId}
             aviso={!inicio ? <Aviso>Sem data de início da execução, a coluna Contratual Início - Entrega fica vazia. Defina na aba Quadro.</Aviso> : undefined} />
+          <PainelQuadro etapa="produtos" />
         </div>
       )}
     </Moldura>

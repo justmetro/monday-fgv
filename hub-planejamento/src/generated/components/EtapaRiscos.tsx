@@ -6,6 +6,7 @@ import { errorMessage } from '@generated/lib/monday';
 import { ROTULOS } from '@generated/lib/rotulos';
 import { resumoProdutos, type ResultadoProdutos } from '@generated/components/EtapaProdutos';
 import type { Analise } from '@generated/components/EtapaAnalise';
+import { PainelQuadro } from '@generated/components/PainelQuadro';
 import { Moldura, BarraGravar } from '@generated/components/Moldura';
 import { Cartao, Campo, Texto, Escolha, Aviso, Botao, Progresso, Selo, Numero, BarraLista, ItemRecolhivel, useRecolher, naoAlterna } from '@generated/components/ui';
 
@@ -44,7 +45,8 @@ export function EtapaRiscos() {
     if (!run.boardId || !analise?.calculadora || !produtos.length) return;
     autoFeito.current = true;
     if (st.status === 'nao_iniciada' && run.docs.length) gerar('riscos', { produtos }).catch(() => null);
-    if (stCalc.status !== 'gravada' && !stCalc.gravando) rodarCalc();
+    // Depois de apagar os riscos da calculadora pelo hub (resumo preenchido), não roda sozinha de novo.
+    if (stCalc.status !== 'gravada' && !stCalc.gravando && !stCalc.resumoGravacao) rodarCalc();
     else lerQuadro();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [run?._id, run?.boardId, !!analise, produtos.length]);
@@ -104,6 +106,7 @@ export function EtapaRiscos() {
               </ItemRecolhivel>
             ))}
             <BarraGravar onGravar={gravar} gravando={!!st.gravando} progresso={st.progressoGravacao ?? ''} erro={st.erroGravacao ?? ''} rotulo="Gravar riscos específicos" desabilitado={!run.boardId} />
+          <PainelQuadro etapa="riscos" />
           </div>
         )}
       </Moldura>
@@ -128,6 +131,7 @@ export function EtapaRiscos() {
           <Botao onClick={lerQuadro} disabled={!run.boardId || calcRodando || lendo}>Ler riscos do quadro</Botao>
           <Botao variante={stCalc.status === 'gravada' ? 'secundario' : 'primario'} onClick={rodarCalc} carregando={calcRodando} disabled={!analise || !run.boardId}>{stCalc.status === 'gravada' ? 'Rodar de novo' : 'Rodar agora'}</Botao>
         </div>
+        <PainelQuadro etapa="calculadora" comparar={false} />
       </Cartao>
 
       <Moldura titulo="6c. Completar os riscos da calculadora" st={stC} onGerar={gerarComplemento} podeGerar={alvos.length > 0} motivo='Rode a calculadora ou clique em "Ler riscos do quadro" para listar os riscos que vieram do Cardápio.'

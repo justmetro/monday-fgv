@@ -12,7 +12,7 @@ import {
   type Produto, type EapProduto, type Risco, type Parte, type Objetivo,
 } from '@generated/lib/gravar';
 import { prepararProjetoCalc, rodarCalculadora, enviarAoPlanejamento, riscosDoQuadro, aplicarComplemento, type Caracteristicas, type Complemento } from '@generated/lib/calc';
-import { CP, registrarNoHub } from '@generated/lib/quadros';
+import { CP, registrarNoHub, itensDosGrupos } from '@generated/lib/quadros';
 import { ROTULO_ETAPA } from '@generated/lib/rotulos';
 
 const ACOES = ['produtos', 'eap', 'riscos', 'partes', 'indicadores', 'complemento', 'calculadora'] as const;
@@ -20,7 +20,7 @@ type Acao = (typeof ACOES)[number];
 
 const res = <T,>(run: Execucao, e: Etapa) => run.etapas[e]?.resultado as T | undefined;
 
-function produtosResumo(run: Execucao) {
+export function produtosResumo(run: Execucao) {
   return (res<{ produtos: Produto[] }>(run, 'produtos')?.produtos ?? []).map((x, i) => ({
     codigo: x.codigo, nome: x.nome, descricao: x.descricao, dia_inicio: x.dia_inicio, dia_fim: x.dia_fim,
     mes_inicio: x.mes_inicio, mes_fim: x.mes_fim, valor: x.valor, ordem: i + 1,
@@ -28,7 +28,14 @@ function produtosResumo(run: Execucao) {
 }
 
 /** Executa a gravação e devolve o resumo que aparece na tela e no 09.0. */
-async function executar(run: Execucao, acao: Acao, userId: string, prog: (m: string) => void): Promise<string> {
+/** Grupo com itens que já não são do modelo: gravar tudo de novo duplicaria. */
+async function jaTemItens(boardId: string, grupo: string, filtro: (nome: string) => boolean = () => true) {
+  await limparModelo(boardId, grupo);
+  return (await itensDosGrupos(boardId, [grupo], [])).filter((it) => filtro(it.name)).length;
+}
+const DUPLICARIA = (n: number) => `O quadro já tem ${n} itens nesta etapa. Use "Comparar com o quadro" para adicionar só o que é novo, ou "Apagar do quadro" antes de gravar tudo de novo.`;
+
+async function executar(run: Execucao, acao: Acao, userId: string, prog: (m: string) => void): Promise<{ resumo: string; ids?: string[] }> {
   const boardId = run.boardId;
   if (!boardId) throw new Error('Vincule o quadro [PLAN] antes de gravar.');
   const inicio = run.contexto.inicioExecucao ?? null;
@@ -38,40 +45,48 @@ async function executar(run: Execucao, acao: Acao, userId: string, prog: (m: str
       const r = res<{ produtos: Produto[] }>(run, 'produtos');
       if (!r?.produtos?.length) throw new Error('Não há produtos para gravar.');
       const out = await gravarProdutos(boardId, r.produtos, inicio, prog);
-      return `${out.criados} produtos criados e ${out.atualizados} atualizados no grupo Produtos`;
+      return { resumo: `${out.criados} produtos criados e ${out.atualizados} atualizados no grupo Produtos`, ids: r.produtos.map((p) => out.mapa[p.codigo.toUpperCase()]).filter(Boolean) };
     }
     case 'eap': {
       const r = res<{ produtos: EapProduto[] }>(run, 'eap');
       if (!r?.produtos?.length) throw new Error('Não há EAP para gravar.');
       if (!inicio) throw new Error('Defina a data de início da execução na aba Quadro.');
+      const n = await jaTemItens(boardId, CP.grupos.cronograma);
+      if (n) throw new Error(DUPLICARIA(n));
       prog('Lendo os produtos do quadro…');
       const mapa = await mapaProdutos(boardId);
       const out = await gravarEap(boardId, r.produtos, produtosResumo(run).map((p) => p.codigo), mapa, inicio, prog);
-      return `${out.itens} itens criados no grupo Cronograma (Níveis 2, 3 e 4)${out.semProduto.length ? `; sem produto no quadro: ${out.semProduto.join(', ')}` : ''}`;
+      return { resumo: `${out.itens} itens criados no grupo Cronograma (Níveis 2 e 3, com as atividades do Nível 4 como subitens)${out.semProduto.length ? `; sem produto no quadro: ${out.semProduto.join(', ')}` : ''}`, ids: out.ids };
     }
     case 'riscos': {
       const r = res<{ riscos: Risco[] }>(run, 'riscos');
       if (!r?.riscos?.length) throw new Error('Não há riscos para gravar.');
-      const n = await gravarRiscosIA(boardId, r.riscos, inicio, prog);
-      return `${n} riscos específicos criados no grupo Riscos`;
+      const ja = await jaTemItens(boardId, CP.grupos.riscos, (nome) => /^\s*RISCO \d+\s*\|/i.test(nome));
+      if (ja) throw new Error(DUPLICARIA(ja));
+      const out = await gravarRiscosIA(boardId, r.riscos, inicio, prog);
+      return { resumo: `${out.n} riscos específicos criados no grupo Riscos`, ids: out.ids };
     }
     case 'partes': {
       const r = res<{ partes: Parte[] }>(run, 'partes');
       if (!r?.partes?.length) throw new Error('Não há partes interessadas para gravar.');
-      const n = await gravarPartes(boardId, r.partes, prog);
-      return `${n} partes interessadas (institucionais) criadas`;
+      const ja = await jaTemItens(boardId, CP.grupos.partes);
+      if (ja) throw new Error(DUPLICARIA(ja));
+      const out = await gravarPartes(boardId, r.partes, prog);
+      return { resumo: `${out.n} partes interessadas (institucionais) criadas`, ids: out.ids };
     }
     case 'indicadores': {
       const r = res<{ objetivos: Objetivo[] }>(run, 'indicadores');
       if (!r?.objetivos?.length) throw new Error('Não há indicadores para gravar.');
+      const ja = await jaTemItens(boardId, CP.grupos.indicador);
+      if (ja) throw new Error(DUPLICARIA(ja));
       const out = await gravarIndicadores(boardId, r.objetivos, inicio, prog);
-      return `${out.indicadores} indicadores (KRs e KPIs) e ${out.medicoes} medições criados`;
+      return { resumo: `${out.indicadores} indicadores (KRs e KPIs) e ${out.medicoes} medições criados`, ids: out.ids };
     }
     case 'complemento': {
       const r = res<{ riscos: Complemento[] }>(run, 'complemento');
       if (!r?.riscos?.length) throw new Error('Não há complemento para aplicar.');
       const n = await aplicarComplemento(boardId, r.riscos, inicio, prog);
-      return `${n} riscos da calculadora completados (período, frente, estratégia e resposta)`;
+      return { resumo: `${n} riscos da calculadora completados (período, frente, estratégia e resposta)` };
     }
     case 'calculadora': {
       const analise = res<{ calculadora?: Caracteristicas; tap?: Record<string, string> }>(run, 'analise');
@@ -96,13 +111,13 @@ async function executar(run: Execucao, acao: Acao, userId: string, prog: (m: str
           riscosQuadro: alvo.map((x) => ({ id: x.id, nome: x.nome, causa: x.causa, efeito: x.efeito, categoria: x.categoria, estrategia: x.estrategia, resposta: x.resposta })),
         });
       }
-      return resumo;
+      return { resumo };
     }
   }
 }
 
 /** Atualiza o registro da execução no 09.0 (falha aqui não desfaz a gravação). */
-async function registrar(runId: string, userId: string) {
+export async function registrar(runId: string, userId: string) {
   try {
     const atual = await (await colRuns()).findOne({ _id: runId });
     if (!atual) return;
@@ -136,9 +151,10 @@ export const gravarNoQuadro = createServerFn()
     };
     const job = tokenAtual.run(token, async () => {
       try {
-        const resumo = await executar(run, data.acao, c.userId, prog);
+        const { resumo, ids } = await executar(run, data.acao, c.userId, prog);
         await setEtapa(run._id, e, {
           gravando: false, progressoGravacao: '', erroGravacao: '', status: 'gravada', gravadaEm: agora(), gravadaPor: c.userId, resumoGravacao: resumo,
+          ...(ids ? { itensQuadro: ids } : {}), comparacao: null,
         });
         await registrar(run._id, c.userId);
       } catch (err) {

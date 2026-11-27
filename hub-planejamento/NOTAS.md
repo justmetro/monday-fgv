@@ -29,6 +29,14 @@ Hub de IA do planejamento de projetos. Parte do item do projeto no 02.01 Projeto
 - Indicadores: padrão de redação, unidades (Percentual, Média, Pontuação ou escala, Binário, Unidade, criadas no quadro na gravação) e metas padrão da revisão de indicadores (nov/2026) em `INDICADORES_PADRAO`; cardápio de 211 indicadores por tipologia em `server/cardapio.ts` (aba Cardápio da Planilha de Revisão dos Indicadores, sem o eixo GA).
 - TAP: necessidades além das 5 do modelo viram itens numerados novos na mesma célula (`create_block` com `parent_block_id`, em ordem inversa logo após o último item).
 
+## Planilha, comparação com o quadro e apagar (nov/2026)
+
+- Documentos: "Adicionar documentos" soma à lista da execução (mesmo nome substitui); `hub:ajustarDocumentos` remove um ou vários e troca o tipo. Os anexos do 02.01 não são removidos.
+- Planilha (`server/planilha.ts`, SheetJS 0.20.3 do cdn.sheetjs.com): `exportarPlanilha` monta o .xlsx (Leia-me, Análise e TAP, Pendências, Produtos, Cronograma, Riscos, Riscos da calculadora, Indicadores, Partes interessadas e a aba oculta `_dados` com o JSON completo) e guarda em `hub_arquivos`; o download sai por `GET /arquivo/<id>` (vale 15 min). `importarPlanilha` lê as abas de volta para as prévias (recusa planilha de outro item do 02.01). No Cronograma e nos Indicadores a ordem das linhas define a hierarquia.
+- Comparação (`server/comparar.ts`): `compararComQuadro` casa prévia e quadro pela chave (código do produto; nível + produto + título; título do risco; tipo + nome do indicador; nome da parte) e depois por semelhança de palavras no mesmo escopo. Devolve novos, alterados (com os campos diferentes), só no quadro e iguais. `aplicarComparacao` (segundo plano) adiciona, atualiza (sem mexer em status e responsável, mantendo a numeração do nome) e arquiva. Na EAP, atividades novas entram como subitens do marco casado; atividades no formato antigo (itens soltos de Nível 4) aparecem como "só no quadro".
+- Gravar de novo EAP, riscos, partes ou indicadores com itens no grupo agora é recusado com aviso para usar a comparação (produtos continuam atualizando pelo código).
+- Ids gravados ficam em `etapas.<x>.itensQuadro`. `previaApagar` lista o que sai (ids do hub, itens que batem com a prévia, atividades do formato antigo; medições junto dos indicadores; na calculadora, os riscos `Rn-nnn |`). `apagarDoQuadro` arquiva ou exclui de vez (exige a confirmação EXCLUIR).
+
 ## Build e publicação
 
 ```bash

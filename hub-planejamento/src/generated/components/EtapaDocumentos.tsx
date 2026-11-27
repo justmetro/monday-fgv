@@ -1,11 +1,11 @@
 import { useRef, useState } from 'react';
-import { Upload, FileText, X, Loader2 } from 'lucide-react';
+import { Upload, FileText, X, Loader2, Trash2 } from 'lucide-react';
 import { useHub } from '@generated/lib/estado';
 import { lerArquivo, adivinharTipo, paraBase64, TIPOS_DOC, type DocLocal } from '@generated/lib/documentos';
-import { salvarDocumentos, anexarDocumento } from '@generated/server/hub';
+import { salvarDocumentos, anexarDocumento, ajustarDocumentos } from '@generated/server/hub';
 import { C0201 } from '@generated/lib/quadros';
 import { errorMessage } from '@generated/lib/monday';
-import { Botao, Cartao, Aviso, Escolha, Progresso, Selo } from '@generated/components/ui';
+import { Botao, Cartao, Aviso, Escolha, Progresso } from '@generated/components/ui';
 
 export function EtapaDocumentos({ onPronto }: { onPronto: () => void }) {
   const { projeto, run, recarregar } = useHub();
@@ -16,6 +16,8 @@ export function EtapaDocumentos({ onPronto }: { onPronto: () => void }) {
   const [erro, setErro] = useState('');
   const [ok, setOk] = useState('');
   const [arrastando, setArrastando] = useState(false);
+  const [marcados, setMarcados] = useState<Set<string>>(new Set());
+  const [removendo, setRemovendo] = useState(false);
   const input = useRef<HTMLInputElement>(null);
   if (!projeto || !run) return null;
 
@@ -47,10 +49,26 @@ export function EtapaDocumentos({ onPronto }: { onPronto: () => void }) {
         }
       }
       await recarregar();
-      setOk(`${prontos.length} documentos salvos (${Math.round(r.chars / 1000)} mil caracteres)${anexar ? ' e anexados no 02.01, coluna Documentos de Pactuação' : ''}.`);
+      setOk(`${prontos.length} documentos adicionados (a execução tem agora ${r.docs?.length ?? prontos.length} documentos, ${Math.round(r.chars / 1000)} mil caracteres)${anexar ? ' e anexados no 02.01, coluna Documentos de Pactuação' : ''}.`);
       setDocs([]);
     } catch (e) { setErro(errorMessage(e)); } finally { setBusy(false); setProg(''); }
   };
+
+  const remover = async (nomes: string[]) => {
+    if (!nomes.length) return;
+    setRemovendo(true); setErro(''); setOk('');
+    try {
+      await ajustarDocumentos({ data: { runId: run._id, remover: nomes } });
+      await recarregar();
+      setMarcados(new Set());
+      setOk(`${nomes.length === 1 ? '1 documento removido' : `${nomes.length} documentos removidos`} da execução. Os anexos do 02.01 continuam lá.`);
+    } catch (e) { setErro(errorMessage(e)); } finally { setRemovendo(false); }
+  };
+  const trocarTipo = async (nome: string, tipo: string) => {
+    try { await ajustarDocumentos({ data: { runId: run._id, tipos: { [nome]: tipo } } }); await recarregar(); } catch (e) { setErro(errorMessage(e)); }
+  };
+  const alternar = (nome: string) => setMarcados((m) => { const n = new Set(m); if (n.has(nome)) n.delete(nome); else n.add(nome); return n; });
+  const todos = run.docs.length > 0 && marcados.size === run.docs.length;
 
   const temTR = docs.some((d) => d.tipo === 'TR') || run.docs.some((d) => d.tipo === 'TR');
   const temContrato = docs.some((d) => /Contrato|Aditivo/.test(d.tipo)) || run.docs.some((d) => /Contrato|Aditivo/.test(d.tipo));
@@ -62,9 +80,22 @@ export function EtapaDocumentos({ onPronto }: { onPronto: () => void }) {
         <p className="text-[13px] text-muted-foreground">Envie o TR, a proposta, o contrato e os anexos (normalmente baixados do SGI). O texto é lido aqui no navegador e vai para a IA. A ordem de prioridade entre documentos é TR, contrato, proposta, minuta e demais anexos.</p>
         {run.docs.length > 0 && (
           <div className="rounded-xl bg-muted/60 p-3 space-y-1.5">
-            <div className="text-[12.5px] font-medium">Documentos já salvos nesta execução</div>
-            {run.docs.map((d) => <div key={d.nome} className="text-[13px] flex items-center gap-2"><FileText className="h-3.5 w-3.5 text-muted-foreground" /> {d.nome} <Selo>{d.tipo}</Selo> <span className="text-muted-foreground text-[12px]">{Math.round(d.chars / 1000)} mil caracteres</span></div>)}
-            <div className="text-[12px] text-muted-foreground">Enviar novos documentos substitui esta lista.</div>
+            <div className="flex items-center gap-2">
+              <input type="checkbox" checked={todos} onChange={() => setMarcados(todos ? new Set() : new Set(run.docs.map((d) => d.nome)))} aria-label="Marcar todos" />
+              <div className="text-[12.5px] font-medium flex-1">Documentos já salvos nesta execução ({run.docs.length})</div>
+              {marcados.size > 0 && <Botao variante="fantasma" onClick={() => remover([...marcados])} carregando={removendo}><Trash2 className="h-3.5 w-3.5" /> Remover {marcados.size}</Botao>}
+            </div>
+            {run.docs.map((d) => (
+              <div key={d.nome} className="text-[13px] flex items-center gap-2">
+                <input type="checkbox" checked={marcados.has(d.nome)} onChange={() => alternar(d.nome)} aria-label={`Marcar ${d.nome}`} />
+                <FileText className="h-3.5 w-3.5 text-muted-foreground" /> <span className="truncate">{d.nome}</span>
+                <span className="text-muted-foreground text-[12px] shrink-0">{Math.round(d.chars / 1000)} mil caracteres</span>
+                <div className="flex-1" />
+                <Escolha opcoes={TIPOS_DOC} valor={d.tipo} onMudar={(v) => trocarTipo(d.nome, v)} />
+                <button onClick={() => remover([d.nome])} className="text-muted-foreground hover:text-destructive" aria-label={`Remover ${d.nome}`}><X className="h-4 w-4" /></button>
+              </div>
+            ))}
+            <div className="text-[12px] text-muted-foreground">Novos documentos entram somados a esta lista. Um arquivo com o mesmo nome substitui o anterior.</div>
           </div>
         )}
         <div
@@ -105,7 +136,7 @@ export function EtapaDocumentos({ onPronto }: { onPronto: () => void }) {
           {busy && <Progresso texto={prog} />}
           <div className="flex-1" />
           {run.docs.length > 0 && !docs.length && <Botao onClick={onPronto}>Continuar para Análise</Botao>}
-          <Botao variante="primario" onClick={salvar} carregando={busy} disabled={!docs.some((d) => d.estado === 'ok' && !d.semTexto) || docs.some((d) => d.estado === 'lendo')}>Salvar documentos</Botao>
+          <Botao variante="primario" onClick={salvar} carregando={busy} disabled={!docs.some((d) => d.estado === 'ok' && !d.semTexto) || docs.some((d) => d.estado === 'lendo')}>Adicionar documentos</Botao>
         </div>
       </Cartao>
     </div>

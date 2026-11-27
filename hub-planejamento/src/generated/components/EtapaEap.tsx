@@ -4,6 +4,7 @@ import type { EapProduto } from '@generated/lib/gravar';
 import { ROTULOS } from '@generated/lib/rotulos';
 import { diaParaData } from '@generated/lib/quadros';
 import { resumoProdutos, type ResultadoProdutos } from '@generated/components/EtapaProdutos';
+import { PainelQuadro } from '@generated/components/PainelQuadro';
 import { Moldura, BarraGravar } from '@generated/components/Moldura';
 import { Campo, Escolha, Aviso, dataBR } from '@generated/components/ui';
 
@@ -91,8 +92,9 @@ export function EtapaEap() {
             aviso={<>
               {!prodGravados && <Aviso>Grave os produtos primeiro: cada item do cronograma é ligado ao seu produto.</Aviso>}
               {!inicio && <Aviso>Defina a data de início da execução na aba Quadro para calcular as datas.</Aviso>}
-              {st.status === 'gravada' && <Aviso tom="info">Já gravada. Gravar de novo cria os itens outra vez (não substitui).</Aviso>}
+              {st.status === 'gravada' && <Aviso tom="info">Já gravada. Para levar mudanças ao quadro sem duplicar, use Comparar com o quadro.</Aviso>}
             </>} />
+          <PainelQuadro etapa="eap" />
         </div>
       )}
     </Moldura>

@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Moon, Sun, Search, RefreshCw, Plus, ExternalLink, Check, CircleDashed, Loader2, AlertTriangle, KeyRound } from 'lucide-react';
+import { Moon, Sun, Search, RefreshCw, Plus, ExternalLink, Check, CircleDashed, Loader2, AlertTriangle, KeyRound, Download, Upload } from 'lucide-react';
 import { mondayClient } from '@/context/MondayContextProvider';
 import { listarProjetos, ehAtivo, type Projeto } from '@generated/lib/quadros';
 import { errorMessage } from '@generated/lib/monday';
 import { criarExecucao, listarExecucoes, estadoEtapas, statusIA, pedirAutorizacao, atualizarExecucao, type Execucao, type Etapa } from '@generated/server/hub';
 import { HubProvider } from '@generated/lib/estado';
+import { exportarPlanilha, importarPlanilha } from '@generated/server/planilha';
+import { paraBase64 } from '@generated/lib/documentos';
 import { ROTULO_ETAPA } from '@generated/lib/rotulos';
 import { Botao, Cartao, Selo, Campo, Aviso, cx, dataBR } from '@generated/components/ui';
 import { EtapaQuadro } from '@generated/components/EtapaQuadro';
@@ -48,6 +50,9 @@ export default function App() {
   const [autorizando, setAutorizando] = useState(false);
   const espera = useRef<number | undefined>(undefined);
   const [abrindo, setAbrindo] = useState(false);
+  const [planilha, setPlanilha] = useState<'' | 'exportando' | 'importando'>('');
+  const [aviso, setAviso] = useState<{ tom: 'ok' | 'erro' | 'info'; texto: string; url?: string; blob?: string; nome?: string } | null>(null);
+  const arquivoPlanilha = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', tema === 'escuro');
@@ -121,6 +126,32 @@ export default function App() {
   const abrirRun = async (id: string) => {
     setAbrindo(true);
     try { setRun((await estadoEtapas({ data: { runId: id } })) as Execucao); } catch (e) { setErro(errorMessage(e)); } finally { setAbrindo(false); }
+  };
+
+  // Planilha .xlsx com tudo o que foi gerado nesta execução (uma aba por etapa).
+  const exportar = async () => {
+    if (!run) return;
+    setPlanilha('exportando'); setAviso(null);
+    try {
+      const r = (await exportarPlanilha({ data: { runId: run._id } })) as { id: string; nome: string; base64: string };
+      const url = new URL(`./arquivo/${r.id}`, window.location.href).href;
+      const bytes = Uint8Array.from(atob(r.base64), (c) => c.charCodeAt(0));
+      const blob = URL.createObjectURL(new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+      mondayClient.execute('openLinkInTab', { url }).catch(() => window.open(url, '_blank'));
+      setAviso({ tom: 'ok', texto: 'Planilha exportada. O download abre numa aba nova.', url, blob, nome: r.nome });
+    } catch (e) { setAviso({ tom: 'erro', texto: errorMessage(e) }); } finally { setPlanilha(''); }
+  };
+
+  const importar = async (f: File | undefined) => {
+    if (!run || !f) return;
+    setPlanilha('importando'); setAviso(null);
+    try {
+      const r = (await importarPlanilha({ data: { runId: run._id, base64: await paraBase64(f) } })) as { etapas: Etapa[]; avisos: string[] };
+      setRun((await estadoEtapas({ data: { runId: run._id } })) as Execucao);
+      const nomes = r.etapas.map((e) => ROTULO_ETAPA[e as keyof typeof ROTULO_ETAPA] ?? e).join(', ');
+      const gravadas = r.etapas.filter((e) => run.etapas?.[e]?.status === 'gravada');
+      setAviso({ tom: 'ok', texto: `Planilha importada nas prévias: ${nomes}.${gravadas.length ? ' Nas etapas já gravadas, use Comparar com o quadro para levar as mudanças.' : ''}${r.avisos.length ? ` Avisos: ${r.avisos.slice(0, 5).join(' ')}` : ''}` });
+    } catch (e) { setAviso({ tom: 'erro', texto: errorMessage(e) }); } finally { setPlanilha(''); if (arquivoPlanilha.current) arquivoPlanilha.current.value = ''; }
   };
 
   const iconeAba = (a: (typeof ABAS)[number]) => {
@@ -247,9 +278,21 @@ export default function App() {
                       <option value="google/gemma-4-31b-it:free">IA: Gemma 4 31B (OpenRouter)</option>
                     </select>
                   )}
+                  {run && <Botao variante="fantasma" onClick={exportar} carregando={planilha === 'exportando'} title="Baixar tudo o que foi gerado em .xlsx"><Download className="h-4 w-4" /> Exportar</Botao>}
+                  {run && <Botao variante="fantasma" onClick={() => arquivoPlanilha.current?.click()} carregando={planilha === 'importando'} title="Subir uma planilha exportada pelo hub para as prévias desta execução"><Upload className="h-4 w-4" /> Importar</Botao>}
+                  <input ref={arquivoPlanilha} type="file" accept=".xlsx" className="hidden" onChange={(e) => importar(e.target.files?.[0])} />
                   <Botao variante={run ? 'secundario' : 'primario'} onClick={nova} carregando={abrindo}><Plus className="h-4 w-4" /> Nova execução</Botao>
                 </div>
               </div>
+              {aviso && (
+                <div className="mt-3">
+                  <Aviso tom={aviso.tom}>
+                    {aviso.texto}
+                    {aviso.blob && <> Se não baixou, <a className="underline" href={aviso.blob} download={aviso.nome}>baixe por aqui</a> ou <a className="underline" href={aviso.url} target="_blank" rel="noreferrer">abra o link</a> (vale 15 minutos).</>}
+                    <button className="ml-2 underline text-[12px]" onClick={() => setAviso(null)}>fechar</button>
+                  </Aviso>
+                </div>
+              )}
               {run && (
                 <nav className="mt-4 flex flex-wrap gap-1">
                   {ABAS.map((a) => (

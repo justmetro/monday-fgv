@@ -3,6 +3,7 @@ import { useHub } from '@generated/lib/estado';
 import type { Objetivo, Indicador } from '@generated/lib/gravar';
 import { ROTULOS } from '@generated/lib/rotulos';
 import { resumoProdutos, type ResultadoProdutos } from '@generated/components/EtapaProdutos';
+import { PainelQuadro } from '@generated/components/PainelQuadro';
 import { Moldura, BarraGravar } from '@generated/components/Moldura';
 import { Campo, Texto, Escolha, Aviso, Selo, Numero, BarraLista, ItemRecolhivel, useRecolher } from '@generated/components/ui';
 
@@ -89,6 +90,7 @@ export function EtapaIndicadores() {
           ))}
           <BarraGravar onGravar={gravar} gravando={!!st.gravando} progresso={st.progressoGravacao ?? ''} erro={st.erroGravacao ?? ''} rotulo="Gravar indicadores no quadro" desabilitado={!run.boardId}
             aviso={!inicio ? <Aviso>Sem data de início, as medições ficam sem prazo. Defina na aba Quadro.</Aviso> : undefined} />
+          <PainelQuadro etapa="indicadores" />
         </div>
       )}
     </Moldura>

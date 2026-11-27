@@ -1,6 +1,7 @@
 import { useHub } from '@generated/lib/estado';
 import type { Parte, Risco } from '@generated/lib/gravar';
 import { ROTULOS } from '@generated/lib/rotulos';
+import { PainelQuadro } from '@generated/components/PainelQuadro';
 import { Moldura, BarraGravar } from '@generated/components/Moldura';
 import { Campo, Texto, Escolha, Selo, Aviso, Numero, BarraLista, ItemRecolhivel, useRecolher, naoAlterna } from '@generated/components/ui';
 
@@ -65,6 +66,7 @@ export function EtapaPartes() {
             </ItemRecolhivel>
           ))}
           <BarraGravar onGravar={gravar} gravando={!!st.gravando} progresso={st.progressoGravacao ?? ''} erro={st.erroGravacao ?? ''} rotulo="Gravar partes interessadas" desabilitado={!run.boardId} />
+          <PainelQuadro etapa="partes" />
         </div>
       )}
     </Moldura>

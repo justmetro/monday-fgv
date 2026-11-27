@@ -135,8 +135,8 @@ export async function itensDosGrupos(boardId: string, grupos: string[], colunas:
   const cols = JSON.stringify(colunas);
   do {
     const d: any = cursor
-      ? await gql(`query ($c: String!) { next_items_page(limit: 200, cursor: $c) { cursor items { id name group { id } column_values(ids: ${cols}) { id text value } } } }`, { c: cursor })
-      : await gql(`query ($b: [ID!], $g: CompareValue!) { boards(ids: $b) { items_page(limit: 200, query_params: { rules: [{ column_id: "group", compare_value: $g, operator: any_of }] }) { cursor items { id name group { id } column_values(ids: ${cols}) { id text value } } } } }`, { b: [boardId], g: grupos });
+      ? await gql(`query ($c: String!) { next_items_page(limit: 200, cursor: $c) { cursor items { id name group { id } column_values(ids: ${cols}) { id text value ... on BoardRelationValue { linked_item_ids } } } } }`, { c: cursor })
+      : await gql(`query ($b: [ID!], $g: CompareValue!) { boards(ids: $b) { items_page(limit: 200, query_params: { rules: [{ column_id: "group", compare_value: $g, operator: any_of }] }) { cursor items { id name group { id } column_values(ids: ${cols}) { id text value ... on BoardRelationValue { linked_item_ids } } } } } }`, { b: [boardId], g: grupos });
     const page: any = cursor ? d.next_items_page : d.boards[0].items_page;
     for (const it of page.items) out.push({ id: String(it.id), name: it.name, group: it.group.id, cols: Object.fromEntries(it.column_values.map((c: any) => [c.id, c])) });
     cursor = page.cursor;

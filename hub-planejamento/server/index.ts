@@ -10,6 +10,7 @@ import { oauthStart, oauthCallback, oauthStatus, lembrarCliente } from './oauth'
 import { MODULES } from './registry';
 import { respostaMonday } from './monday';
 import { definirExecutor } from '@generated/lib/monday';
+import { servirArquivo } from '@generated/server/planilha';
 
 // As bibliotecas do hub (gravar, quadros, calculadora) rodam também no servidor, com o token de quem pediu.
 definirExecutor(async (query: string, variables: Record<string, unknown>) => {
@@ -115,6 +116,15 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && p === '/oauth/callback') return await oauthCallback(req, res, url);
     if (req.method === 'GET' && p === '/oauth/status') return await oauthStatus(res);
     if (p === '/health') return send(res, 200, { ok: true });
+    if (req.method === 'GET' && p.startsWith('/arquivo/')) {
+      const a = await servirArquivo(decodeURIComponent(p.slice(9)));
+      if (!a) { res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }); return res.end('Link expirado. Exporte a planilha de novo no hub.'); }
+      res.writeHead(200, {
+        'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'Cache-Control': 'no-store',
+        'Content-Disposition': `attachment; filename="planilha.xlsx"; filename*=UTF-8''${encodeURIComponent(a.nome)}`,
+      });
+      return res.end(a.bytes);
+    }
     // Arquivos do front
     const rel = p === '/' ? 'index.html' : path.normalize(p).replace(/^([/\\])+/, '');
     const file = path.join(PUBLIC, rel);

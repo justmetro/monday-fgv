@@ -24,6 +24,10 @@ export interface EstadoEtapa {
   resultado?: unknown; gravadaEm?: string; gravadaPor?: string; resumoGravacao?: string;
   // Gravação no quadro em segundo plano (servidor)
   gravando?: boolean; progressoGravacao?: string; erroGravacao?: string; batidaGravacao?: string;
+  /** Ids dos itens que o hub criou no quadro nesta etapa (para comparar e apagar depois). */
+  itensQuadro?: string[];
+  /** Última comparação da prévia com o quadro. */
+  comparacao?: unknown;
 }
 
 export interface Execucao {
@@ -118,14 +122,37 @@ export const atualizarExecucao = createServerFn()
   });
 
 export const salvarDocumentos = createServerFn()
-  .validator(z.object({ runId: z.string(), docs: z.array(z.object({ nome: z.string(), tipo: z.string(), texto: z.string() })).min(1) }))
+  .validator(z.object({ runId: z.string(), docs: z.array(z.object({ nome: z.string(), tipo: z.string(), texto: z.string() })).min(1), substituir: z.boolean().optional() }))
   .handler(async ({ data }) => {
-    const docs: DocTexto[] = (data.docs as DocTexto[]).map((d: DocTexto) => ({ ...d, texto: d.texto.replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n') }));
-    const total = docs.reduce((s: number, d: DocTexto) => s + d.texto.length, 0);
-    if (total > 1_500_000) throw new Error('Os documentos somam texto demais para a IA (mais de 1,5 milhão de caracteres). Envie só os documentos de pactuação principais.');
-    await (await colDocs()).updateOne({ _id: data.runId }, { $set: { docs } }, { upsert: true });
-    await (await colRuns()).updateOne({ _id: data.runId }, { $set: { docs: docs.map((d: DocTexto) => ({ nome: d.nome, tipo: d.tipo, chars: d.texto.length })), atualizadoEm: agora() } });
-    return { ok: true, chars: total };
+    const novos: DocTexto[] = (data.docs as DocTexto[]).map((d: DocTexto) => ({ ...d, texto: d.texto.replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n') }));
+    // Soma aos documentos já salvos; arquivo com o mesmo nome substitui o anterior.
+    const atuais = data.substituir ? [] : ((await (await colDocs()).findOne({ _id: data.runId }))?.docs ?? []);
+    const nomes = new Set(novos.map((d) => d.nome));
+    const docs = [...atuais.filter((d) => !nomes.has(d.nome)), ...novos];
+    return gravarDocs(data.runId, docs);
+  });
+
+async function gravarDocs(runId: string, docs: DocTexto[]) {
+  const total = docs.reduce((s: number, d: DocTexto) => s + d.texto.length, 0);
+  if (total > 1_500_000) throw new Error('Os documentos somam texto demais para a IA (mais de 1,5 milhão de caracteres). Envie só os documentos de pactuação principais.');
+  await (await colDocs()).updateOne({ _id: runId }, { $set: { docs } }, { upsert: true });
+  await (await colRuns()).updateOne({ _id: runId }, { $set: { docs: docs.map((d: DocTexto) => ({ nome: d.nome, tipo: d.tipo, chars: d.texto.length })), atualizadoEm: agora() } });
+  return { ok: true, chars: total, docs: docs.map((d) => ({ nome: d.nome, tipo: d.tipo, chars: d.texto.length })) };
+}
+
+/** Remove um ou vários documentos já salvos, ou troca o tipo deles. */
+export const ajustarDocumentos = createServerFn()
+  .validator(z.object({ runId: z.string(), remover: z.array(z.string()).optional(), tipos: z.record(z.string()).optional() }))
+  .handler(async ({ data }) => {
+    const fora = new Set(data.remover ?? []);
+    const atuais = (await (await colDocs()).findOne({ _id: data.runId }))?.docs ?? [];
+    const docs = atuais.filter((d) => !fora.has(d.nome)).map((d) => (data.tipos?.[d.nome] ? { ...d, tipo: data.tipos[d.nome] } : d));
+    if (!docs.length) {
+      await (await colDocs()).updateOne({ _id: data.runId }, { $set: { docs: [] } }, { upsert: true });
+      await (await colRuns()).updateOne({ _id: data.runId }, { $set: { docs: [], atualizadoEm: agora() } });
+      return { ok: true, chars: 0, docs: [] };
+    }
+    return gravarDocs(data.runId, docs);
   });
 
 export const salvarEdicao = createServerFn()
