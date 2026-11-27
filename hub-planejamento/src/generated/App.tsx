@@ -229,6 +229,8 @@ export default function App() {
                       <option value="monday-standard">IA: padrão da monday</option>
                       <option value="gpt-5">IA: GPT-5</option>
                       <option value="gpt-5-mini">IA: GPT-5 mini</option>
+                      <option value="gemini-3.5-flash">IA: Gemini 3.5 Flash</option>
+                      <option value="gemini-3.8-flash">IA: Gemini 3.8 Flash</option>
                     </select>
                   )}
                   <Botao variante={run ? 'secundario' : 'primario'} onClick={nova} carregando={abrindo}><Plus className="h-4 w-4" /> Nova execução</Botao>
