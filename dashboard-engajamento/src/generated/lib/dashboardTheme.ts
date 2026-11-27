@@ -5,7 +5,7 @@ import type { PersonWeek } from './engagementMetrics';
 export const SCORE_HIGH_THRESHOLD = 80; // Score alto: 80% ou mais
 export const SCORE_LOW_THRESHOLD = 50; // Score baixo: abaixo de 50%
 
-export type ScoreBand = 'high' | 'medium' | 'low' | 'away' | 'engaged' | 'not_engaged';
+export type ScoreBand = 'high' | 'medium' | 'low' | 'away' | 'engaged' | 'not_engaged' | 'inactive';
 
 export const BAND_LABELS: Record<ScoreBand, string> = {
   high: 'Alto',
@@ -13,14 +13,15 @@ export const BAND_LABELS: Record<ScoreBand, string> = {
   low: 'Baixo',
   away: 'Afastados',
   engaged: 'Engajados',
-  not_engaged: 'Não engajados',
+  not_engaged: 'Desengajados',
+  inactive: 'Inativos',
 };
 
 /** Faixa da pessoa no período. null = sem dados para classificar. */
 export function personBand(p: PersonWeek, weekly: boolean): ScoreBand | null {
   if (weekly) {
     if (p.activeAbsence) return 'away';
-    return p.engaged ? 'engaged' : 'not_engaged';
+    return p.engaged ? 'engaged' : p.inactive ? 'inactive' : 'not_engaged';
   }
   if (p.periodScore.isAllAbsence) return 'away';
   const s = p.periodScore.scorePercent;
@@ -37,12 +38,13 @@ export interface BandCounts {
   medium: number;
   low: number;
   engaged: number;
-  notEngaged: number;
+  notEngaged: number; // Desengajados (mais de 7 dias sem acesso)
+  inactive: number; // Inativos (mais de 30 dias sem acesso)
   ringValue: number | null;
 }
 
 export function countBands(people: PersonWeek[], weekly: boolean): BandCounts {
-  const c: BandCounts = { evaluated: 0, away: 0, high: 0, medium: 0, low: 0, engaged: 0, notEngaged: 0, ringValue: null };
+  const c: BandCounts = { evaluated: 0, away: 0, high: 0, medium: 0, low: 0, engaged: 0, notEngaged: 0, inactive: 0, ringValue: null };
   let scoreSum = 0;
   people.forEach((p) => {
     const b = personBand(p, weekly);
@@ -57,6 +59,7 @@ export function countBands(people: PersonWeek[], weekly: boolean): BandCounts {
     else if (b === 'low') c.low++;
     else if (b === 'engaged') c.engaged++;
     else if (b === 'not_engaged') c.notEngaged++;
+    else if (b === 'inactive') c.inactive++;
     if (!weekly) scoreSum += p.periodScore.scorePercent ?? 0;
   });
   if (c.evaluated > 0) {
@@ -69,4 +72,10 @@ export function countBands(people: PersonWeek[], weekly: boolean): BandCounts {
 export function readableProjectName(fullName: string): string {
   if (!fullName) return '';
   return fullName.replace(/^\s*\d{4}\s*\/\s*\d+\s*[-–]?\s*/, '').trim() || fullName;
+}
+
+/** Situação semanal com a nomenclatura padrão. */
+export function weeklyStatusLabel(p: PersonWeek): 'Afastado' | 'Engajado' | 'Desengajado' | 'Inativo' {
+  if (p.activeAbsence) return 'Afastado';
+  return p.engaged ? 'Engajado' : p.inactive ? 'Inativo' : 'Desengajado';
 }

@@ -27,6 +27,9 @@ import { PeriodInfoLine } from './dashboard/PeriodInfoLine';
 import type { PeriodView } from '@generated/hooks/useStoredEngagement';
 import { WeeklyTrendChart } from './charts/WeeklyTrendChart';
 import { CollapsibleCard } from './charts/CollapsibleCard';
+import { ApusSection } from './ApusSection';
+import { useApus } from '@generated/hooks/useApus';
+import type { ApusRow } from '../../../server/apus';
 import { engagementSeries, projectCode } from '@generated/lib/weeklySeries';
 import { communicationSeries, useCommunication } from '@generated/hooks/useCommunication';
 
@@ -65,6 +68,7 @@ export function ManagerDashboard({
   const [selectedPerson, setSelectedPerson] = useState<PersonWeek | null>(null);
   const [focusAbsence, setFocusAbsence] = useState(false);
   const comm = useCommunication(userSession);
+  const apus = useApus(userSession);
 
   const canManage = Boolean(userSession.canManage);
 
@@ -179,6 +183,20 @@ export function ManagerDashboard({
     const codes = new Set([...scopeProjects].map(projectCode).filter(Boolean));
     return communicationSeries(comm.view, codes);
   }, [comm.view, scopeProjects]);
+
+  // Comunicação por projeto: projetos do recorte pelo código SGI (ou o gerente marcado no quadro)
+  const apusFilter = useMemo(() => {
+    const codes = new Set([...scopeProjects].map(projectCode).filter(Boolean));
+    const me = effectiveManagerName.trim().toLowerCase();
+    return (r: ApusRow) => (r.code ? codes.has(r.code) : projFilter === 'all' && r.managers.some((m) => m.toLowerCase() === me));
+  }, [scopeProjects, effectiveManagerName, projFilter]);
+  // Mensagens (updates + respostas) da última semana calculada na Comunicação
+  const lastWeekMessages = useMemo(() => {
+    const ws = comm.view?.weeks[0]?.weekStart;
+    const m = new Map<string, number>();
+    (comm.view?.rows ?? []).filter((r) => r.weekStart === ws).forEach((r) => m.set(r.code, (m.get(r.code) ?? 0) + r.total));
+    return m;
+  }, [comm.view]);
 
   return (
     <div className="space-y-6">
@@ -351,6 +369,16 @@ export function ManagerDashboard({
         </CollapsibleCard>
       </div>
 
+      <ApusSection
+        data={apus.data}
+        loading={apus.loading}
+        error={apus.error}
+        filter={apusFilter}
+        messagesByCode={lastWeekMessages}
+        showTable
+        scopeText="dos seus projetos"
+      />
+
       <CollapsibleCard title="Projetos sob sua gestão" subtitle="Score = presenças ativas ÷ total de análises">
         {filteredWeek.projects.length === 0 ? (
           <p className="p-6 text-center text-xs text-muted-foreground">
@@ -489,7 +517,7 @@ export function ManagerDashboard({
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-                              <XCircle className="w-3.5 h-3.5" /> Não engajado
+                              <XCircle className="w-3.5 h-3.5" /> {p.inactive ? 'Inativo' : 'Desengajado'}
                             </span>
                           )
                         ) : (

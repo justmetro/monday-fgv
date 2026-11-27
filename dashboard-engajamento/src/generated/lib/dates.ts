@@ -13,7 +13,7 @@ export interface GranularityConfig {
 export const GRANULARITIES: GranularityConfig[] = [
   {
     id: 'weekly',
-    label: 'Semanal (seg a dom)',
+    label: 'Semanal (dom a sáb)',
     shortLabel: 'Semana',
     description: 'Semana da data de referência, de domingo a sábado',
     comparisonLabel: 'semana anterior',

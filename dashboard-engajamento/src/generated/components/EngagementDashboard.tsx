@@ -80,6 +80,7 @@ export function EngagementDashboard({
   // Padrão do Painel Geral: departamento "Projeto" (o usuário pode trocar)
   const [dept, setDept] = useState(DEFAULT_DEPT);
   const [band, setBand] = useState<ScoreBand | null>(null);
+  const [manager, setManager] = useState('all');
   const [selectedPerson, setSelectedPerson] = useState<PersonWeek | null>(null);
 
   const weekly = granularity === 'weekly';
@@ -100,7 +101,7 @@ export function EngagementDashboard({
   // Departamentos disponíveis: só os das pessoas do projeto escolhido (todos em "Todos os projetos")
   const departmentOptions = useMemo(() => {
     if (!currentWeek) return [];
-    const ppl = project === 'all' ? currentWeek.people : currentWeek.people.filter((p) => p.activeProjects.includes(project));
+    const ppl = currentWeek.people.filter((p) => (project === 'all' ? p.activeProjects.length > 0 : p.activeProjects.includes(project)));
     return Array.from(new Set(ppl.flatMap((p) => (p.departments.length ? p.departments : ['Sem departamento'])))).sort((a: string, b: string) =>
       a.localeCompare(b)
     );
@@ -114,14 +115,33 @@ export function EngagementDashboard({
   }, [departmentOptions, dept, currentWeek]);
 
   /**
+   * Só quem está em equipe de projeto entra nesta aba (o engajamento de todos fica na aba DGPE).
    * LISTA ÚNICA de pessoas filtradas (projeto E departamento), calculada só aqui.
    * Anel, números do topo, classificação, gráfico por projeto, tabela e Score do usuário leem dela.
    */
-  const segmented = useMemo(
-    () => (currentWeek ? applyFilter(currentWeek, dept, project, 'all', false, activeProjects) : null),
+  const unmanaged = useMemo(
+    () => (currentWeek ? applyFilter(currentWeek, dept, project, 'all', true, activeProjects) : null),
     [currentWeek, dept, project, activeProjects]
   );
+  const segmented = useMemo(
+    () => (currentWeek && manager !== 'all' ? applyFilter(currentWeek, dept, project, manager, true, activeProjects) : unmanaged),
+    [currentWeek, dept, project, manager, activeProjects, unmanaged]
+  );
+  // Gerente escolhido que saiu do recorte volta para "Todos"
+  useEffect(() => {
+    if (manager !== 'all' && unmanaged && !unmanaged.managers.some((m) => m.name === manager)) setManager('all');
+  }, [unmanaged, manager]);
   const filteredPeople = useMemo(() => segmented?.people ?? [], [segmented]);
+
+  // Afastamentos: só os das pessoas do recorte (projeto escolhido ou equipes de projeto), em qualquer semana
+  const scopeEmails = useMemo(() => {
+    const set = new Set<string>();
+    weeks.forEach((w) => w.people.forEach((p) => {
+      const inScope = (project === 'all' ? p.activeProjects.length > 0 : p.activeProjects.includes(project)) && (manager === 'all' || p.managers.includes(manager));
+      if (inScope && p.email) set.add(p.email.toLowerCase().trim());
+    }));
+    return set;
+  }, [weeks, project, manager]);
 
   const counts = useMemo(() => countBands(filteredPeople, weekly), [filteredPeople, weekly]);
 
@@ -177,9 +197,7 @@ export function EngagementDashboard({
         <WeeklyTrendChart
           data={engagementSeries(
             weeks,
-            project === 'all' && dept === 'all'
-              ? undefined
-              : (p) => (project === 'all' || p.activeProjects.includes(project)) && (dept === 'all' || p.departments.includes(dept))
+            (p) => (project === 'all' ? p.activeProjects.length > 0 : p.activeProjects.includes(project)) && (dept === 'all' || p.departments.includes(dept)) && (manager === 'all' || p.managers.includes(manager))
           )}
           barName="% engajada na semana"
           lineName="Média acumulada"
@@ -202,6 +220,17 @@ export function EngagementDashboard({
         <ProjectBarsCard projects={segmented.projects} selected={project} onSelect={setProject} />
       </div>
 
+      <ProjectBarsCard
+        projects={unmanaged?.managers ?? []}
+        selected={manager}
+        onSelect={setManager}
+        kicker="Por gerente"
+        title="Engajamento consolidado por gerente"
+        hint="Média das pessoas dos projetos de cada gerente · clique para segmentar"
+        unit="gerentes"
+        rawNames
+      />
+
       <PeopleScoreTable
         people={tablePeople}
         weekly={weekly}
@@ -212,7 +241,8 @@ export function EngagementDashboard({
         onRegisterAbsence={canManage ? (p) => { setFocusAbsence(true); setSelectedPerson(p); } : undefined}
       />
 
-      <AbsenceListCard weeks={weeks} absences={absences} canManage={canManage} onChanged={onAbsenceChanged} />
+      <AbsenceListCard weeks={weeks} absences={absences} canManage={canManage} onChanged={onAbsenceChanged}
+        emails={scopeEmails} scopeText={project === 'all' ? 'pessoas em equipe de projeto' : `equipe de ${readableProjectName(project)}`} />
 
       <PersonProfileDrawer
         person={selectedPerson}

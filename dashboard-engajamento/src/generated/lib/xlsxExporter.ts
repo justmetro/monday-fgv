@@ -55,7 +55,7 @@ export function buildWorkbook(rows: ExplodedRow[], week: WeekSummary | undefined
         p.teams.join(', '),
         p.departments.join(', '),
         formatBR(p.lastAccess),
-        p.engaged ? 'Engajado' : 'Não engajado',
+        p.engaged ? 'Engajado' : p.inactive ? 'Inativo' : 'Desengajado',
       ]),
       { autoFilter: true, freezeHeader: true, alternateRows: true }
     );

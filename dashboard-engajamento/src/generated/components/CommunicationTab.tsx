@@ -10,6 +10,8 @@ import { communicationSeries, useCommunication } from '@generated/hooks/useCommu
 import { WeeklyTrendChart } from './charts/WeeklyTrendChart';
 import { CollapsibleCard } from './charts/CollapsibleCard';
 import { SearchableSelect } from './SearchableSelect';
+import { ApusSection } from './ApusSection';
+import { useApus } from '@generated/hooks/useApus';
 
 const brDateTime = (iso: string) => {
   const d = new Date(iso);
@@ -25,6 +27,7 @@ interface Props {
 
 export function CommunicationTab({ session, weeks }: Props) {
   const { view, error, loading, reload, claim } = useCommunication(session, 12);
+  const apus = useApus(session);
   const [weekStart, setWeekStart] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [busy, setBusy] = useState(false);
@@ -124,9 +127,11 @@ export function CommunicationTab({ session, weeks }: Props) {
       {msg && <p className={`rounded-lg px-3 py-2 text-xs ${msg.kind === 'err' ? 'bg-destructive/10 text-destructive' : 'bg-muted text-foreground'}`}>{msg.text}</p>}
       {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">{error}</p>}
 
+      <ApusSection data={apus.data} loading={apus.loading} error={apus.error} onReload={session.canManage ? () => void apus.reload(true) : undefined} />
+
       {!view?.weeks.length ? (
         <p className="rounded-xl border border-border bg-card p-8 text-center text-xs text-muted-foreground">
-          Nenhuma semana calculada ainda. A consolidação roda toda segunda às 6h10 para a semana anterior (domingo a sábado).
+          Nenhuma semana calculada ainda. A consolidação roda toda segunda à tarde (14h10) para a semana anterior (domingo a sábado).
         </p>
       ) : (
         <>

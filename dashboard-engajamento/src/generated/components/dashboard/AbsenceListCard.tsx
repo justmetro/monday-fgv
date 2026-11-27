@@ -12,12 +12,14 @@ interface Props {
   absences: (AbsenceDoc & { id: string })[];
   canManage: boolean;
   onChanged: () => void;
+  emails?: Set<string>; // recorte: só afastamentos dessas pessoas
+  scopeText?: string;
 }
 
 const PAGE = 20;
 
 /** Lista de afastamentos registrados (Painel Geral): filtro por tipo, busca por pessoa; edição para a gestão. */
-export function AbsenceListCard({ weeks, absences, canManage, onChanged }: Props) {
+export function AbsenceListCard({ weeks, absences, canManage, onChanged, emails, scopeText }: Props) {
   const { session } = useUserSession();
   const [tipo, setTipo] = useState<'all' | 'Férias' | 'Licença'>('all');
   const [search, setSearch] = useState('');
@@ -41,6 +43,7 @@ export function AbsenceListCard({ weeks, absences, canManage, onChanged }: Props
     const q = normText(search);
     return absences
       .filter((a) => !a.removido)
+      .filter((a) => !emails || emails.has(a.email.toLowerCase().trim()))
       .filter((a) => tipo === 'all' || a.tipo === tipo)
       .filter((a) => {
         if (!q) return true;
@@ -48,7 +51,7 @@ export function AbsenceListCard({ weeks, absences, canManage, onChanged }: Props
         return normText(`${nameByEmail.get(email) ?? ''} ${email}`).includes(q);
       })
       .sort((a, b) => b.inicio.localeCompare(a.inicio));
-  }, [absences, tipo, search, nameByEmail]);
+  }, [absences, tipo, search, nameByEmail, emails]);
 
   const run = async (fn: () => Promise<unknown>, ok: string, fail: string): Promise<boolean> => {
     setBusy(true);
@@ -74,7 +77,7 @@ export function AbsenceListCard({ weeks, absences, canManage, onChanged }: Props
         <div className="flex items-center gap-2 min-w-0">
           <Palmtree className="w-4 h-4 text-primary shrink-0" />
           <h2 className="text-lg font-semibold text-foreground">Afastamentos registrados</h2>
-          <span className="text-xs text-muted-foreground">{list.length}</span>
+          <span className="text-xs text-muted-foreground">{list.length}{scopeText ? ` · ${scopeText}` : ''}</span>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative">

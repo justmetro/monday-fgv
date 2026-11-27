@@ -20,8 +20,9 @@ interface Row {
 export function ClassificationCard({ weekly, counts, selected, onSelect }: Props) {
   const rows: Row[] = weekly
     ? [
-        { id: 'engaged', label: 'Engajados', hint: 'Acesso na semana (seg a dom)', count: counts.engaged, barClass: 'bg-[hsl(var(--brand-navy))]' },
-        { id: 'not_engaged', label: 'Não engajados', hint: 'Sem acesso recente', count: counts.notEngaged, barClass: 'bg-[hsl(var(--brand-navy)/0.35)]' },
+        { id: 'engaged', label: 'Engajados', hint: 'Acesso na semana (dom a sáb)', count: counts.engaged, barClass: 'bg-[hsl(var(--brand-navy))]' },
+        { id: 'not_engaged', label: 'Desengajados', hint: 'Mais de 7 dias sem acesso', count: counts.notEngaged, barClass: 'bg-[hsl(var(--brand-navy)/0.45)]' },
+        { id: 'inactive', label: 'Inativos', hint: 'Mais de 30 dias sem acesso', count: counts.inactive, barClass: 'bg-[hsl(var(--brand-navy)/0.2)]' },
         { id: 'away', label: 'Afastados', hint: 'Férias ou licença', count: counts.away, barClass: 'bg-muted-foreground/40' },
       ]
     : [

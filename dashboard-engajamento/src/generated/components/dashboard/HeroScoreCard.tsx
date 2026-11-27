@@ -102,7 +102,8 @@ export function HeroScoreCard({ weekly, headlinePeriod, periodPhrase, scopePhras
             {weekly ? (
               <>
                 <Stat value={counts.engaged} label="Engajados" />
-                <Stat value={counts.notEngaged} label="Não engajados" />
+                <Stat value={counts.notEngaged} label="Desengajados (+7 dias)" />
+                <Stat value={counts.inactive} label="Inativos (+30 dias)" />
               </>
             ) : (
               <>

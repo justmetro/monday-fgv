@@ -116,6 +116,8 @@ export interface PersonWeek {
   managers: string[]; // Gerentes dos projetos ativos (sem duplicações)
   lastAccess: Date | null; // Maior último acesso conhecido da pessoa em toda a base
   engaged: boolean; // Para o critério semanal
+  daysWithoutAccess: number | null; // Dias entre o último acesso conhecido e o fim da semana (null = nunca acessou)
+  inactive: boolean; // Não engajado e mais de 30 dias sem acesso (ou nunca acessou)
   accessAfterRef: boolean;
   activeAbsence: AbsenceInfo | null; // Afastamento ativo na data da semana analisada
   periodScore: PersonPeriodScore; // Score para o período selecionado
@@ -168,6 +170,14 @@ export interface WeekSummary {
     label: string;
     weeksCount: number;
   };
+}
+
+/** Desengajado: mais de 7 dias sem acesso. Inativo: mais de 30 dias (ou nunca acessou). */
+export const INACTIVE_DAYS = 30;
+function accessGap(engaged: boolean, last: Date | null, end: Date): { daysWithoutAccess: number | null; inactive: boolean } {
+  if (!last) return { daysWithoutAccess: null, inactive: !engaged };
+  const days = Math.max(0, Math.floor((end.getTime() - last.getTime()) / 86400000));
+  return { daysWithoutAccess: days, inactive: !engaged && days > INACTIVE_DAYS };
 }
 
 export function personKey(name: string, email: string): string {
@@ -774,6 +784,7 @@ export function buildWeeks(
         managers: unionOf((a) => a.mgrs),
         lastAccess: maxLastAccess,
         engaged: engagedWeekly,
+        ...accessGap(engagedWeekly, currentWeekRecord?.lastAccess ?? maxLastAccess, endOfWeek),
         accessAfterRef: !!maxLastAccess && maxLastAccess > endOfWeek,
         activeAbsence,
         periodScore,

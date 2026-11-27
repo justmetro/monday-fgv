@@ -9,6 +9,7 @@ import {
   RefreshCw,
   AlertTriangle,
   MessageSquare,
+  Building2,
 } from 'lucide-react';
 import { useUserSession } from './hooks/useUserSession';
 import { useStoredEngagement } from './hooks/useStoredEngagement';
@@ -19,9 +20,10 @@ import { EngagementDashboard } from './components/EngagementDashboard';
 import { ManagerTab } from './components/ManagerTab';
 import { MyProfileTab } from './components/MyProfileTab';
 import { CommunicationTab } from './components/CommunicationTab';
+import { DepartmentTab } from './components/DepartmentTab';
 import type { TimeGranularity } from './lib/dates';
 
-type Tab = 'dashboard' | 'manager' | 'comm' | 'profile' | 'base' | 'update';
+type Tab = 'dashboard' | 'dgpe' | 'manager' | 'comm' | 'profile' | 'base' | 'update';
 
 // Diagnóstico temporário da sessão (fonte do usuário, e-mail, dono/admin/PMO).
 // Só aparece fora do "Editar APP" e só para o dono. Troque para false para desligar.
@@ -105,6 +107,7 @@ export default function App() {
               {/* Navegação entre abas com restrição de acesso */}
               <nav className="flex items-center gap-1 p-1 rounded-2xl bg-muted/70 overflow-x-auto">
                 {canManage && navButton('dashboard', 'Engajamento', BarChart3)}
+                {canManage && navButton('dgpe', 'DGPE', Building2)}
                 {navButton('manager', 'Painel do Gerente', FolderKanban)}
                 {canManage && navButton('comm', 'Comunicação', MessageSquare)}
                 {navButton('profile', 'Meu Perfil', User)}
@@ -186,6 +189,21 @@ export default function App() {
               userName={session?.name}
               canManage={canManage}
               weekGroupNames={weekGroupNames}
+            />
+          )}
+
+          {activeTab === 'dgpe' && canManage && (
+            <DepartmentTab
+              weeks={weeks}
+              activeProjects={activeProjects}
+              loading={loading}
+              granularity={granularity}
+              onGranularityChange={setGranularity}
+              period={period}
+              onPeriodChange={setPeriodKey}
+              absences={snapshot?.absences ?? []}
+              onAbsenceChanged={() => void refresh()}
+              canManage={canManage}
             />
           )}
 

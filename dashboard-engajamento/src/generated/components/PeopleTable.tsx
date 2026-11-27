@@ -92,7 +92,7 @@ export function PeopleTable({
 
   const statusOptions = [
     { value: 'yes', label: 'Engajados na semana' },
-    { value: 'no', label: 'Não engajados' },
+    { value: 'no', label: 'Desengajados e inativos' },
   ];
 
   const handleProjectChange = (val: string) => {
@@ -268,7 +268,7 @@ export function PeopleTable({
                         : 'bg-secondary text-secondary-foreground'
                     }`}
                   >
-                    {p.engaged ? 'Engajado' : 'Não engajado'}
+                    {p.engaged ? 'Engajado' : p.inactive ? 'Inativo' : 'Desengajado'}
                   </span>
                 </td>
               </tr>

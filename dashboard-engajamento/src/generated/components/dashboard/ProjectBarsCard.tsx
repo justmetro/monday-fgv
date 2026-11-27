@@ -6,19 +6,24 @@ interface Props {
   projects: GroupStat[];
   selected: string;
   onSelect: (name: string) => void;
+  kicker?: string;
+  title?: string;
+  hint?: string;
+  unit?: string; // "projetos", "gerentes", "departamentos"
+  rawNames?: boolean; // não tira o código SGI do nome
 }
 
-export function ProjectBarsCard({ projects, selected, onSelect }: Props) {
+export function ProjectBarsCard({ projects, selected, onSelect, kicker = 'Por projeto', title = 'Score por projeto ativo', hint = 'Do maior para o menor score · clique para segmentar', unit = 'projetos', rawNames = false }: Props) {
   // Já vem ordenado do maior para o menor score
   return (
     <section className="rounded-3xl bg-card soft-stack-card p-6 min-w-0 flex flex-col">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Por projeto</p>
-          <h3 className="mt-1 text-lg font-medium tracking-[-0.015em] text-[hsl(var(--brand-navy))]">Score por projeto ativo</h3>
-          <p className="text-xs text-muted-foreground">Do maior para o menor score · clique para segmentar</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{kicker}</p>
+          <h3 className="mt-1 text-lg font-medium tracking-[-0.015em] text-[hsl(var(--brand-navy))]">{title}</h3>
+          <p className="text-xs text-muted-foreground">{hint}</p>
         </div>
-        <span className="text-xs text-muted-foreground tabular-nums whitespace-nowrap">{projects.length} projetos</span>
+        <span className="text-xs text-muted-foreground tabular-nums whitespace-nowrap">{projects.length} {unit}</span>
       </div>
 
       {projects.length === 0 ? (
@@ -52,7 +57,7 @@ export function ProjectBarsCard({ projects, selected, onSelect }: Props) {
                 className={`w-full text-left rounded-xl px-2 py-1.5 transition-colors ${active ? 'bg-[hsl(var(--brand-sky))]' : 'hover:bg-[hsl(var(--brand-sky-2))]'}`}
               >
                 <div className="flex items-center justify-between gap-3 text-xs">
-                  <span className="truncate text-[hsl(var(--brand-navy))] font-medium">{readableProjectName(proj.name)}</span>
+                  <span className="truncate text-[hsl(var(--brand-navy))] font-medium">{rawNames ? proj.name : readableProjectName(proj.name)}</span>
                   <span className="shrink-0 text-[11px] text-muted-foreground tabular-nums">
                     {proj.totalPeople} {proj.totalPeople === 1 ? 'pessoa' : 'pessoas'}
                   </span>

@@ -22,6 +22,7 @@ interface Props {
   periodOptions: PeriodOption[];
   periodKey: string;
   onPeriod: (k: string) => void;
+  hideProject?: boolean; // aba DGPE: só departamento
 }
 
 export function SegmentBar({
@@ -40,9 +41,10 @@ export function SegmentBar({
   periodOptions,
   periodKey,
   onPeriod,
+  hideProject = false,
 }: Props) {
   const projectText = project === 'all' ? `Todos os ${projectsInScope} projetos` : readableProjectName(project);
-  const summary = dept === 'all' ? projectText : `${projectText} · ${dept}`;
+  const summary = hideProject ? (dept === 'all' ? 'Toda a DGPE' : dept) : dept === 'all' ? projectText : `${projectText} · ${dept}`;
 
   return (
     <section className="rounded-3xl bg-card soft-stack-card p-4 sm:p-5 flex flex-col xl:flex-row xl:items-center gap-4 justify-between">
@@ -51,7 +53,7 @@ export function SegmentBar({
           <Layers className="w-4 h-4" strokeWidth={1.75} />
         </span>
         <div className="min-w-0">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Segmentar por projeto e departamento</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">{hideProject ? 'Segmentar por departamento' : 'Segmentar por projeto e departamento'}</p>
           <p className="text-sm font-medium text-[hsl(var(--brand-navy))] truncate" title={project === 'all' ? summary : `${project}${dept === 'all' ? '' : ` · ${dept}`}`}>
             {summary}
           </p>
@@ -105,7 +107,7 @@ export function SegmentBar({
           />
         )}
 
-        <SearchableSelect
+        {!hideProject && <SearchableSelect
           id="segment-project"
           ariaLabel="Segmentar por projeto"
           value={project}
@@ -115,7 +117,7 @@ export function SegmentBar({
           searchPlaceholder="Buscar projeto ou SGI..."
           buttonClassName="h-10 w-full sm:w-64 rounded-full"
           dropdownClassName="w-full sm:w-96"
-        />
+        />}
 
         <SearchableSelect
           id="segment-dept"

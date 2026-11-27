@@ -45,7 +45,8 @@ export function PeopleScoreTable({ people, weekly, periodGroups, bandLabel, onCl
   const statusOptions = weekly
     ? [
         { value: 'engaged', label: 'Engajados' },
-        { value: 'not_engaged', label: 'Não engajados' },
+        { value: 'not_engaged', label: 'Desengajados (+7 dias)' },
+        { value: 'inactive', label: 'Inativos (+30 dias)' },
         { value: 'away', label: 'Afastados' },
       ]
     : [
@@ -180,7 +181,7 @@ export function PeopleScoreTable({ people, weekly, periodGroups, bandLabel, onCl
                         ) : p.engaged ? (
                           <span className="inline-flex items-center gap-1.5 text-[hsl(var(--brand-navy))] font-medium"><CheckCircle2 className="w-3.5 h-3.5" /> Engajado</span>
                         ) : (
-                          <span className="inline-flex items-center gap-1.5 text-muted-foreground"><XCircle className="w-3.5 h-3.5" /> Não engajado</span>
+                          <span className="inline-flex items-center gap-1.5 text-muted-foreground"><XCircle className="w-3.5 h-3.5" /> {p.inactive ? 'Inativo' : 'Desengajado'}</span>
                         )
                       ) : (
                         <span className="font-medium tabular-nums text-[hsl(var(--brand-navy))]">{p.periodScore.scoreText}</span>
@@ -194,7 +195,7 @@ export function PeopleScoreTable({ people, weekly, periodGroups, bandLabel, onCl
                           <>
                             <div className="font-medium text-[hsl(var(--brand-navy))]">{p.engaged ? '100%' : '0%'}</div>
                             <div className="text-[10px] text-muted-foreground">
-                              {p.engaged ? 'Acessou durante a semana analisada' : 'Não acessou na semana até o dia da análise'}
+                              {p.engaged ? 'Acessou durante a semana analisada' : p.daysWithoutAccess === null ? 'Nunca acessou' : `${p.daysWithoutAccess} dias sem acesso no fim da semana`}
                             </div>
                           </>
                         )
