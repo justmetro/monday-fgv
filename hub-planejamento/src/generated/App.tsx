@@ -240,6 +240,11 @@ export default function App() {
                       <option value="gemini-3.8-flash">IA: Gemini 3.8 Flash</option>
                       <option value="openrouter/free">IA: OpenRouter gratuito</option>
                       <option value="nvidia/nemotron-3-ultra-550b-a55b:free">IA: Nemotron 3 Ultra (OpenRouter)</option>
+                      <option value="nvidia/nemotron-3.5-super-vl:free">IA: Nemotron 3.5 Super (OpenRouter)</option>
+                      <option value="nvidia/nemotron-3.5-lightning:free">IA: Nemotron 3.5 Lightning (OpenRouter)</option>
+                      <option value="baidu/ernie-5.5-flash-preview:free">IA: ERNIE 5.5 Flash (OpenRouter)</option>
+                      <option value="particle-ai/particle-1:free">IA: Particle 1 (OpenRouter)</option>
+                      <option value="google/gemma-4-31b-it:free">IA: Gemma 4 31B (OpenRouter)</option>
                     </select>
                   )}
                   <Botao variante={run ? 'secundario' : 'primario'} onClick={nova} carregando={abrindo}><Plus className="h-4 w-4" /> Nova execução</Botao>

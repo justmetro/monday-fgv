@@ -10,7 +10,7 @@ export const URL_OPENROUTER = 'https://openrouter.ai/api/v1/chat/completions';
 const ehGemini = (modelo: string) => /^gemini/.test(modelo);
 const ehOpenRouter = (modelo: string) => modelo === 'openrouter/free' || /:free$/.test(modelo);
 // Reservas do roteador gratuito: modelos :free com contexto de 1 milhão de tokens ou perto disso.
-const RESERVAS_OPENROUTER = ['nvidia/nemotron-3-ultra-550b-a55b:free', 'google/gemma-4-31b-it:free'];
+const RESERVAS_OPENROUTER = ['nvidia/nemotron-3-ultra-550b-a55b:free', 'nvidia/nemotron-3.5-super-vl:free'];
 
 function provedor(modelo: string) {
   if (ehGemini(modelo)) return { url: URL_GEMINI, chave: process.env.GEMINI_API_KEY, fonte: 'Gemini', variavel: 'GEMINI_API_KEY' };
@@ -26,6 +26,11 @@ export const MODELOS = [
   { id: 'gemini-3.8-flash', nome: 'Gemini 3.8 Flash (Google)' },
   { id: 'openrouter/free', nome: 'OpenRouter gratuito (automático)' },
   { id: 'nvidia/nemotron-3-ultra-550b-a55b:free', nome: 'Nemotron 3 Ultra (OpenRouter gratuito)' },
+  { id: 'nvidia/nemotron-3.5-super-vl:free', nome: 'Nemotron 3.5 Super (OpenRouter gratuito)' },
+  { id: 'nvidia/nemotron-3.5-lightning:free', nome: 'Nemotron 3.5 Lightning (OpenRouter gratuito)' },
+  { id: 'baidu/ernie-5.5-flash-preview:free', nome: 'ERNIE 5.5 Flash (OpenRouter gratuito)' },
+  { id: 'particle-ai/particle-1:free', nome: 'Particle 1 (OpenRouter gratuito)' },
+  { id: 'google/gemma-4-31b-it:free', nome: 'Gemma 4 31B (OpenRouter gratuito)' },
 ] as const;
 
 export interface RespostaIA<T> { data: T; modelo: string; custo: number | null; tokensEntrada: number; tokensSaida: number; ms: number }
@@ -59,6 +64,8 @@ export async function chamarIA<T = any>(prompt: Prompt, token: string, modelo = 
     max_tokens: gemini || openrouter ? Math.min(prompt.maxTokens + 16000, 65536) : prompt.maxTokens,
   };
   if (modelo === 'openrouter/free') corpo.models = ['openrouter/free', ...RESERVAS_OPENROUTER];
+  // Modelo gratuito escolhido direto: se estiver fora do ar, cai para o roteador automático.
+  else if (openrouter) corpo.models = [modelo, 'openrouter/free'];
   if (!/^gpt/.test(modelo)) corpo.temperature = 0.2;
   let ultimoErro = '';
   for (let tentativa = 1; tentativa <= (gemini ? 5 : 3); tentativa++) {
