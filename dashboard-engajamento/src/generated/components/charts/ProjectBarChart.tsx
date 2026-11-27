@@ -20,9 +20,21 @@ const short = (v: number, d: number) => fmt(v, d === 0 || v >= 10 ? 0 : v >= 1 ?
 const abbr = (s: string, n = 18) => (s.length > n ? `${s.slice(0, n - 1).trimEnd()}…` : s);
 
 /** Barras por projeto em ordem crescente, com rótulo do valor e linhas de referência opcionais. */
-export function ProjectBarChart({ data, series, decimals = 0, refLines = [], height = 320, emptyText = 'Sem projetos nas semanas escolhidas.' }: Props) {
-  if (!data.length) return <p className="py-10 text-center text-xs text-muted-foreground">{emptyText}</p>;
-  const ser = series?.length ? series : [{ key: 'value', name: 'Valor' }];
+export function ProjectBarChart({ data: rawData, series: rawSeries, decimals = 0, refLines = [], height = 320, emptyText = 'Sem projetos nas semanas escolhidas.' }: Props) {
+  if (!rawData.length) return <p className="py-10 text-center text-xs text-muted-foreground">{emptyText}</p>;
+  let data = rawData;
+  let series = rawSeries;
+  // Até 3 projetos com várias semanas: as semanas vão para o eixo X e cada projeto vira uma série
+  if (rawSeries && rawSeries.length > 1 && rawData.length <= 3) {
+    data = rawSeries.map((s) => {
+      const row: ProjectBar = { label: s.name, full: s.name, value: 0 };
+      rawData.forEach((d, i) => { if (d[s.key] !== undefined) row[`p${i}`] = d[s.key]; });
+      if (rawData.length === 1) row.value = Number(row.p0 ?? 0);
+      return row;
+    }).filter((r) => rawData.some((_, i) => r[`p${i}`] !== undefined));
+    series = rawData.length === 1 ? undefined : rawData.map((d, i) => ({ key: `p${i}`, name: d.label }));
+  }
+  const ser = series?.length ? series : [{ key: 'value', name: rawData.length === 1 && rawSeries && rawSeries.length > 1 ? rawData[0].full : 'Valor' }];
   const multi = ser.length > 1;
   const values = data.flatMap((d) => ser.map((s) => Number(d[s.key] ?? 0)));
   const max = Math.max(...values, ...refLines.map((r) => r.y));
@@ -47,8 +59,8 @@ export function ProjectBarChart({ data, series, decimals = 0, refLines = [], hei
           <CartesianGrid vertical={false} stroke="hsl(var(--border))" />
           <XAxis dataKey="label" tickLine={false} axisLine={false} interval={0} angle={-45} textAnchor="end" height={96}
             tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} tickFormatter={(v: string) => abbr(v)} />
-          <YAxis tickLine={false} axisLine={false} width={44} domain={[0, Math.ceil(max * 1.1) || 1]}
-            tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} tickFormatter={(v) => fmt(v, 0)} />
+          <YAxis tickLine={false} axisLine={false} width={44} domain={[0, Math.ceil(max * 1.1) || 1]} allowDecimals={max <= 5}
+            tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} tickFormatter={(v: number) => v.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} />
           <Tooltip
             cursor={{ fill: 'hsl(var(--muted) / 0.5)' }}
             content={({ active, payload }) => {
