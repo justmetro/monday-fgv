@@ -12,9 +12,11 @@ interface Ctx {
   userId: string;
   setRun: (r: Execucao | null) => void;
   recarregar: () => Promise<void>;
-  atualizar: (p: { boardId?: string; boardUrl?: string; hubItemId?: string; modelo?: string; inicioExecucao?: string | null; diasVigencia?: number | null }) => Promise<void>;
+  atualizar: (p: { boardId?: string; boardUrl?: string; hubItemId?: string; modelo?: string; modeloReserva?: string; inicioExecucao?: string | null; diasVigencia?: number | null }) => Promise<void>;
   etapa: (e: Etapa) => EstadoEtapa;
   gerar: (e: Exclude<Etapa, 'tap'>, entrada?: unknown) => Promise<void>;
+  /** Continua uma geração que parou (ex.: IA sem crédito), opcionalmente com outra IA. */
+  continuar: (e: Exclude<Etapa, 'tap'>, modelo?: string) => Promise<void>;
   editar: (e: Etapa, resultado: unknown) => void;
   /** Grava a prévia no quadro em segundo plano (servidor, no nome de quem clicou). */
   gravarQuadro: (e: AcaoGravar) => Promise<void>;
@@ -60,6 +62,12 @@ export function HubProvider({ projeto, run, setRun, userId, children }: { projet
     await recarregar();
   };
 
+  const continuar: Ctx['continuar'] = async (e, modelo) => {
+    if (!runRef.current) return;
+    await gerarEtapa({ data: { runId: runRef.current._id, etapa: e as any, continuar: true, ...(modelo ? { modelo } : {}) } as any });
+    await recarregar();
+  };
+
   const editar: Ctx['editar'] = (e, resultado) => {
     const r = runRef.current;
     if (!r) return;
@@ -84,5 +92,5 @@ export function HubProvider({ projeto, run, setRun, userId, children }: { projet
     }
   };
 
-  return <C.Provider value={{ projeto, run, userId, setRun, recarregar, atualizar, etapa, gerar, editar, gravarQuadro }}>{children}</C.Provider>;
+  return <C.Provider value={{ projeto, run, userId, setRun, recarregar, atualizar, etapa, gerar, continuar, editar, gravarQuadro }}>{children}</C.Provider>;
 }

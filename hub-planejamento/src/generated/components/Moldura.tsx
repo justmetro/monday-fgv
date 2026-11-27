@@ -1,5 +1,8 @@
 import { useState, type ReactNode } from 'react';
-import { Sparkles, Check, ChevronDown } from 'lucide-react';
+import { useHub } from '@generated/lib/estado';
+import { MODELOS, nomeModelo, fonteModelo } from '@generated/lib/modelos';
+import type { Etapa } from '@generated/server/hub';
+import { Sparkles, Check, ChevronDown, RotateCw } from 'lucide-react';
 import type { EstadoEtapa } from '@generated/server/hub';
 import { Botao, Cartao, Selo, Aviso, Progresso, dataBR, cx } from '@generated/components/ui';
 
@@ -12,8 +15,10 @@ export function SeloStatus({ st }: { st: EstadoEtapa }) {
 }
 
 /** Moldura de uma etapa de IA: título, estado, botão de gerar e área da prévia. */
-export function Moldura({ titulo, descricao, st, onGerar, podeGerar = true, motivo, extra, children, rotuloGerar }: {
+export function Moldura({ titulo, descricao, st, onGerar, podeGerar = true, motivo, extra, children, rotuloGerar, etapa }: {
   titulo: string; descricao: ReactNode; st: EstadoEtapa; onGerar?: () => void; podeGerar?: boolean; motivo?: string; extra?: ReactNode; children?: ReactNode; rotuloGerar?: string;
+  /** Etapa de IA: com ela, um erro mostra a opção de continuar com outra IA. */
+  etapa?: Exclude<Etapa, 'tap' | 'calculadora'>;
 }) {
   const temResultado = st.resultado != null && st.status !== 'gerando';
   const [fechada, setFechada] = useState(false);
@@ -43,6 +48,8 @@ export function Moldura({ titulo, descricao, st, onGerar, podeGerar = true, moti
       {!podeGerar && motivo && st.status !== 'gerando' && !temResultado && <Aviso tom="info">{motivo}</Aviso>}
       {st.status === 'gerando' && <Progresso texto={st.progresso || 'A IA está lendo os documentos. Leva de 1 a 4 minutos; pode trocar de aba enquanto isso.'} />}
       {st.status === 'erro' && <Aviso tom="erro">{st.erro}</Aviso>}
+      {st.status === 'erro' && etapa && <ContinuarIA etapa={etapa} st={st} />}
+      {st.status !== 'gerando' && !!st.trocas?.length && <Aviso tom="info">{st.trocas.join(' ')}</Aviso>}
       {st.status === 'gravada' && st.resumoGravacao && <Aviso tom="ok">{st.resumoGravacao}</Aviso>}
       {temResultado && children && (
         <div className={cx('recolhe', !fechada && 'aberto')}><div className="min-h-0 overflow-hidden">{children}</div></div>
@@ -62,6 +69,34 @@ export function BarraGravar({ onGravar, gravando, progresso, erro, rotulo, aviso
         <div className="flex-1" />
         <Botao variante="primario" onClick={onGravar} carregando={gravando} disabled={desabilitado}>{rotulo}</Botao>
       </div>
+    </div>
+  );
+}
+
+/** Depois de uma falha da IA (sem crédito, limite ou erro), escolhe outra IA e continua de onde parou. */
+function ContinuarIA({ etapa, st }: { etapa: Exclude<Etapa, 'tap' | 'calculadora'>; st: EstadoEtapa }) {
+  const { run, continuar } = useHub();
+  const falhou = st.modeloFalhou || run?.modelo || 'monday-standard';
+  // Sugere a primeira IA de outra fonte de crédito (monday, Google ou OpenRouter).
+  const sugestao = MODELOS.find((m) => fonteModelo(m.id) !== fonteModelo(falhou))?.id ?? MODELOS[0].id;
+  const [modelo, setModelo] = useState<string>(run?.modeloReserva && run.modeloReserva !== falhou ? run.modeloReserva : sugestao);
+  const [busy, setBusy] = useState(false);
+  const feitos = st.parcial?.feitos?.length ?? 0;
+  const ir = async () => { setBusy(true); try { await continuar(etapa, modelo); } finally { setBusy(false); } };
+  return (
+    <div className="rounded-xl border border-border/60 p-3 space-y-2">
+      <div className="text-[13px]">
+        {st.erroTipo === 'credito' ? `${nomeModelo(falhou)} ficou sem crédito ou atingiu o limite de uso.` : `A geração parou com ${nomeModelo(falhou)}.`}
+        {' '}{feitos ? `${feitos} ${etapa === 'eap' ? 'produtos' : 'riscos'} já saíram e ficam guardados; a outra IA faz só o que falta.` : 'Escolha outra IA para gerar esta etapa.'}
+        {st.resultado != null && ' A prévia anterior continua abaixo até a nova sair.'}
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <select className="rounded-lg border border-input bg-background/60 px-2 h-8 text-[12.5px]" value={modelo} onChange={(e) => setModelo(e.target.value)}>
+          {MODELOS.map((m) => <option key={m.id} value={m.id}>{m.nome}{m.id === falhou ? ' (a que falhou)' : ''}</option>)}
+        </select>
+        <Botao variante="primario" onClick={ir} carregando={busy}><RotateCw className="h-3.5 w-3.5" /> {feitos ? 'Continuar com esta IA' : 'Gerar com esta IA'}</Botao>
+      </div>
+      {fonteModelo(modelo) === fonteModelo(falhou) && st.erroTipo === 'credito' && <div className="text-[12px] text-muted-foreground">Esta IA usa o mesmo crédito da que falhou e pode parar de novo.</div>}
     </div>
   );
 }

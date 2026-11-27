@@ -37,6 +37,14 @@ Hub de IA do planejamento de projetos. Parte do item do projeto no 02.01 Projeto
 - Gravar de novo EAP, riscos, partes ou indicadores com itens no grupo agora é recusado com aviso para usar a comparação (produtos continuam atualizando pelo código).
 - Ids gravados ficam em `etapas.<x>.itensQuadro`. `previaApagar` lista o que sai (ids do hub, itens que batem com a prévia, atividades do formato antigo; medições junto dos indicadores; na calculadora, os riscos `Rn-nnn |`). `apagarDoQuadro` arquiva ou exclui de vez (exige a confirmação EXCLUIR).
 
+## IA sem crédito: trocar e continuar (nov/2026)
+
+- `chamarIA` lança `ErroIA` com `tipo: 'credito'` para 402, mensagens de crédito, cota ou limite e 429 em todas as tentativas.
+- Execução tem `modeloReserva` (seletor "Reserva" no topo): se a IA principal ficar sem crédito no meio da geração, o servidor troca uma vez para a reserva, segue de onde parou e a execução passa a usar a reserva. As trocas aparecem em `etapas.<x>.trocas`.
+- Sem reserva, a etapa fica em erro com `erroTipo`/`modeloFalhou`, e a moldura mostra "Continuar com esta IA" (sugere uma IA de outra fonte de crédito). `gerarEtapa` com `continuar: true` reaproveita a entrada guardada (`etapas.<x>.entrada`) e, na EAP e no complemento, o `parcial` (lotes já prontos): a nova IA faz só o que falta.
+- A prévia anterior não é mais apagada ao começar a gerar; só é trocada quando a nova sai.
+- Publicar (`mapps code:push`) reinicia o servidor e interrompe gerações em andamento; depois de 90 s a etapa aparece como interrompida e pode ser continuada.
+
 ## Build e publicação
 
 ```bash

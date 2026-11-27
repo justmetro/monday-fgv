@@ -26,7 +26,7 @@ export function EtapaPartes() {
   const gravar = () => { if (r && run.boardId) gravarQuadro('partes'); };
 
   return (
-    <Moldura titulo="8. Partes Interessadas" st={st} onGerar={() => gerar('partes', { riscos })} podeGerar={!!run.docs.length}
+    <Moldura etapa="partes" titulo="8. Partes Interessadas" st={st} onGerar={() => gerar('partes', { riscos })} podeGerar={!!run.docs.length}
       descricao="Mapeamento institucional (órgãos, secretarias, áreas, conselhos, financiadores, redes, públicos e fornecedores críticos), sem pessoas físicas. Classe, papel, interesse, poder, expectativas e riscos associados; a estratégia é a fórmula do quadro.">
       {!riscos.length && st.status === 'nao_iniciada' && <Aviso tom="info">Dica: gere os riscos específicos antes, para a IA ligar cada parte aos riscos.</Aviso>}
       {r && (

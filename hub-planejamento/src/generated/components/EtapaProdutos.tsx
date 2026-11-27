@@ -31,7 +31,7 @@ export function EtapaProdutos() {
   const soma = r?.produtos.reduce((s, p) => s + (Number(p.valor) || 0), 0) ?? 0;
 
   return (
-    <Moldura titulo="4. Cronograma de Produtos" st={st} onGerar={() => gerar('produtos')} podeGerar={!!run.docs.length} motivo="Envie os documentos antes."
+    <Moldura etapa="produtos" titulo="4. Cronograma de Produtos" st={st} onGerar={() => gerar('produtos')} podeGerar={!!run.docs.length} motivo="Envie os documentos antes."
       descricao="Uma linha por produto ou parcela, com código, descrição verificável, meses contratuais, valor, fase e tipo de entrega. Grava no grupo Produtos; produtos com o mesmo código são atualizados, não duplicados.">
       {r && (
         <div className="space-y-3">

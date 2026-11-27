@@ -7,7 +7,8 @@ import { mongo } from '../../../server/mongo';
 import { currentCtx } from '../../../server/context';
 import { tokenDoUsuario, autorizacaoDoUsuario, linkAutorizacao } from '../../../server/oauth';
 import { gql } from '../../../server/monday';
-import { chamarIA, MODELOS } from './iaCore';
+import { chamarIA, MODELOS, ErroIA } from './iaCore';
+import { nomeModelo } from '@generated/lib/modelos';
 import {
   promptAnalise, promptProdutos, promptEap, promptRiscos, promptPartes, promptIndicadores, promptComplemento,
   type ContextoProjeto, type DocTexto, type ProdutoResumo, type RiscoQuadro, type Prompt,
@@ -28,6 +29,14 @@ export interface EstadoEtapa {
   itensQuadro?: string[];
   /** Última comparação da prévia com o quadro. */
   comparacao?: unknown;
+  /** Falha por falta de crédito ou limite da IA: dá para continuar com outra. */
+  erroTipo?: 'credito' | 'outro'; modeloFalhou?: string;
+  /** Parte já gerada (EAP e complemento, em lotes), mantida para continuar com outra IA. */
+  parcial?: { itens: unknown[]; feitos: string[]; custo: number; tokens: number } | null;
+  /** Entrada usada na geração, para continuar sem a tela mandar de novo. */
+  entrada?: unknown;
+  /** Trocas automáticas de IA durante a geração. */
+  trocas?: string[];
 }
 
 export interface Execucao {
@@ -37,6 +46,8 @@ export interface Execucao {
   docs: { nome: string; tipo: string; chars: number }[];
   etapas: Partial<Record<Etapa, EstadoEtapa>>;
   hubItemId?: string;
+  /** IA de reserva: se a principal ficar sem crédito no meio da geração, o hub troca sozinho e continua. */
+  modeloReserva?: string;
 }
 
 export const colRuns = async () => (await mongo()).collection<Execucao>('hub_runs');
@@ -104,7 +115,7 @@ export const obterExecucao = createServerFn()
 export const atualizarExecucao = createServerFn()
   .validator(z.object({
     runId: z.string(), boardId: z.string().optional(), boardUrl: z.string().optional(), hubItemId: z.string().optional(),
-    modelo: z.string().optional(), inicioExecucao: z.string().nullable().optional(), diasVigencia: z.number().nullable().optional(),
+    modelo: z.string().optional(), modeloReserva: z.string().optional(), inicioExecucao: z.string().nullable().optional(), diasVigencia: z.number().nullable().optional(),
   }))
   .handler(async ({ data }) => {
     const set: Record<string, unknown> = { atualizadoEm: agora() };
@@ -114,6 +125,10 @@ export const atualizarExecucao = createServerFn()
     if (data.modelo !== undefined) {
       if (!MODELOS.some((m) => m.id === data.modelo)) throw new Error('Modelo de IA desconhecido.');
       set.modelo = data.modelo;
+    }
+    if (data.modeloReserva !== undefined) {
+      if (data.modeloReserva && !MODELOS.some((m) => m.id === data.modeloReserva)) throw new Error('Modelo de IA desconhecido.');
+      set.modeloReserva = data.modeloReserva;
     }
     if (data.inicioExecucao !== undefined) set['contexto.inicioExecucao'] = data.inicioExecucao;
     if (data.diasVigencia !== undefined) set['contexto.diasVigencia'] = data.diasVigencia;
@@ -183,15 +198,18 @@ export async function setEtapa(runId: string, etapa: Etapa, patch: Partial<Estad
   await (await colRuns()).updateOne({ _id: runId }, { $set: set });
 }
 
-async function rodarIA(prompt: Prompt, modelo: string) {
-  return chamarIA(prompt, await tokenIA(), modelo);
-}
+const semCredito = (e: unknown) => e instanceof ErroIA && e.tipo === 'credito';
 
 async function emParalelo<T, R>(xs: T[], n: number, fn: (x: T, i: number) => Promise<R>): Promise<R[]> {
   const out: R[] = new Array(xs.length);
   let i = 0;
+  let falhou = false;
+  // Depois de uma falha, nenhum lote novo começa (os que já estão em andamento terminam e ficam guardados).
   await Promise.all(Array.from({ length: Math.min(n, xs.length) }, async () => {
-    while (i < xs.length) { const k = i++; out[k] = await fn(xs[k], k); }
+    while (i < xs.length && !falhou) {
+      const k = i++;
+      try { out[k] = await fn(xs[k], k); } catch (e) { falhou = true; throw e; }
+    }
   }));
   return out;
 }
@@ -204,86 +222,135 @@ export const Entrada = z.object({
   codigos: z.array(z.string()).optional(),
 }).optional();
 
-async function executarEtapa(run: Execucao, etapa: Etapa, entrada: z.infer<typeof Entrada>) {
+async function executarEtapa(run: Execucao, etapa: Etapa, entrada: z.infer<typeof Entrada>, continuar = false) {
   const docs = (await (await colDocs()).findOne({ _id: run._id }))?.docs ?? [];
   if (!docs.length && etapa !== 'complemento') throw new Error('Envie os documentos antes de gerar.');
   const p = run.contexto;
-  const m = run.modelo || 'monday-standard';
+  const token = await tokenIA();
   // Sem lista vinda da tela, usa os produtos já gerados nesta execução.
   const salvos = ((run.etapas?.produtos?.resultado as any)?.produtos ?? []) as any[];
   const produtos = (entrada?.produtos?.length ? entrada.produtos : salvos.map((x, i) => ({
     codigo: x.codigo, nome: x.nome, descricao: x.descricao, dia_inicio: x.dia_inicio, dia_fim: x.dia_fim,
     mes_inicio: x.mes_inicio, mes_fim: x.mes_fim, valor: x.valor, ordem: i + 1,
   }))) as ProdutoResumo[];
-  let custo = 0, tokens = 0, modelo = m;
+  const parcial = continuar ? run.etapas[etapa]?.parcial ?? null : null;
+  let custo = parcial?.custo ?? 0, tokens = parcial?.tokens ?? 0;
+  let m = run.modelo || 'monday-standard';
+  let modelo = m;
+  const trocas: string[] = [];
   const somar = (r: { custo: number | null; tokensEntrada: number; tokensSaida: number; modelo: string }) => { custo += r.custo ?? 0; tokens += r.tokensEntrada + r.tokensSaida; modelo = r.modelo; };
+  // Sem crédito na IA principal: troca uma vez para a reserva da execução e segue de onde parou.
+  const ia = async (prompt: Prompt) => {
+    const usado = m;
+    try { return await chamarIA(prompt, token, usado); } catch (e) {
+      const reserva = run.modeloReserva;
+      if (!semCredito(e) || !reserva || reserva === usado) throw e;
+      if (m === usado) {
+        m = reserva;
+        trocas.push(`${nomeModelo(usado)} ficou sem crédito ou limite; continuou com ${nomeModelo(reserva)}.`);
+        await setEtapa(run._id, etapa, { progresso: `Sem crédito em ${nomeModelo(usado)}. Continuando com ${nomeModelo(reserva)}…`, trocas });
+      }
+      return chamarIA(prompt, token, m);
+    }
+  };
 
   let resultado: unknown;
   if (etapa === 'analise') {
-    const r = await rodarIA(promptAnalise(p, docs), m); somar(r); resultado = r.data;
+    const r = await ia(promptAnalise(p, docs)); somar(r); resultado = r.data;
   } else if (etapa === 'produtos') {
-    const r = await rodarIA(promptProdutos(p, docs), m); somar(r); resultado = r.data;
+    const r = await ia(promptProdutos(p, docs)); somar(r); resultado = r.data;
   } else if (etapa === 'eap') {
     if (!produtos.length) throw new Error('Grave ou aprove os produtos antes de gerar a EAP.');
     const alvo = entrada?.codigos?.length ? produtos.filter((x) => entrada.codigos!.includes(x.codigo)) : produtos;
+    // Continuação: os produtos que já saíram ficam e só os que faltam vão para a IA.
+    const prontos = (parcial?.itens ?? []) as { codigo: string }[];
+    const feitosAntes = new Set(parcial?.feitos ?? []);
+    const falta = alvo.filter((x) => !feitosAntes.has(x.codigo));
     const lotes: ProdutoResumo[][] = [];
-    for (let i = 0; i < alvo.length; i += 3) lotes.push(alvo.slice(i, i + 3));
-    let feitos = 0;
-    const partes = await emParalelo(lotes, 2, async (lote) => {
-      const r = await rodarIA(promptEap(p, docs, lote, produtos), m); somar(r);
-      feitos += lote.length;
-      await setEtapa(run._id, etapa, { progresso: `${feitos} de ${alvo.length} produtos` });
-      return (r.data as { produtos?: unknown[] })?.produtos ?? [];
+    for (let i = 0; i < falta.length; i += 3) lotes.push(falta.slice(i, i + 3));
+    const acumulado = [...prontos];
+    const feitos = new Set(feitosAntes);
+    await setEtapa(run._id, etapa, { progresso: feitos.size ? `Continuando: ${feitos.size} de ${alvo.length} produtos já prontos` : 'Lendo os documentos…' });
+    await emParalelo(lotes, 2, async (lote) => {
+      const r = await ia(promptEap(p, docs, lote, produtos)); somar(r);
+      acumulado.push(...((r.data as { produtos?: { codigo: string }[] })?.produtos ?? []));
+      lote.forEach((x) => feitos.add(x.codigo));
+      await setEtapa(run._id, etapa, { progresso: `${feitos.size} de ${alvo.length} produtos`, parcial: { itens: acumulado, feitos: [...feitos], custo, tokens } });
     });
-    resultado = { produtos: partes.flat() };
+    const ordem = alvo.map((x) => x.codigo);
+    resultado = { produtos: acumulado.sort((x, y) => ordem.indexOf(x.codigo) - ordem.indexOf(y.codigo)) };
   } else if (etapa === 'riscos') {
-    const r = await rodarIA(promptRiscos(p, docs, produtos), m); somar(r); resultado = r.data;
+    const r = await ia(promptRiscos(p, docs, produtos)); somar(r); resultado = r.data;
   } else if (etapa === 'partes') {
-    const r = await rodarIA(promptPartes(p, docs, entrada?.riscos ?? []), m); somar(r); resultado = r.data;
+    const r = await ia(promptPartes(p, docs, entrada?.riscos ?? [])); somar(r); resultado = r.data;
   } else if (etapa === 'indicadores') {
     await setEtapa(run._id, etapa, { progresso: 'Lendo indicadores de planejamentos anteriores…' });
     const base = await baseIndicadores().catch((e) => { console.error('[base indicadores]', e); return null; });
     const refs = base ? referenciasIndicadores(base.itens, p.eixo02 ?? '') : { texto: '', usados: 0 };
     await setEtapa(run._id, etapa, { progresso: `Gerando OKRs com ${refs.usados} indicadores de referência…` });
-    const r = await rodarIA(promptIndicadores(p, docs, produtos, refs.texto), m); somar(r);
+    const r = await ia(promptIndicadores(p, docs, produtos, refs.texto)); somar(r);
     resultado = { ...(r.data as object), base: base ? { indicadores: base.itens.length, projetos: base.projetos, usados: refs.usados, em: base.em } : null };
   } else if (etapa === 'complemento') {
     const rq = (entrada?.riscosQuadro ?? []) as RiscoQuadro[];
     if (!rq.length) throw new Error('Nenhum risco da calculadora para completar.');
+    const prontos = (parcial?.itens ?? []) as { id: string }[];
+    const feitos = new Set(parcial?.feitos ?? []);
+    const falta = rq.filter((x) => !feitos.has(x.id));
     const lotes: RiscoQuadro[][] = [];
-    for (let i = 0; i < rq.length; i += 20) lotes.push(rq.slice(i, i + 20));
-    let feitos = 0;
-    const partes = await emParalelo(lotes, 2, async (lote) => {
-      const r = await rodarIA(promptComplemento(p, produtos, lote, entrada?.resumo ?? ''), m); somar(r);
-      feitos += lote.length;
-      await setEtapa(run._id, etapa, { progresso: `${feitos} de ${rq.length} riscos` });
-      return (r.data as { riscos?: unknown[] })?.riscos ?? [];
+    for (let i = 0; i < falta.length; i += 20) lotes.push(falta.slice(i, i + 20));
+    const acumulado = [...prontos];
+    await emParalelo(lotes, 2, async (lote) => {
+      const r = await ia(promptComplemento(p, produtos, lote, entrada?.resumo ?? '')); somar(r);
+      acumulado.push(...((r.data as { riscos?: { id: string }[] })?.riscos ?? []));
+      lote.forEach((x) => feitos.add(x.id));
+      await setEtapa(run._id, etapa, { progresso: `${feitos.size} de ${rq.length} riscos`, parcial: { itens: acumulado, feitos: [...feitos], custo, tokens } });
     });
-    resultado = { riscos: partes.flat() };
+    resultado = { riscos: acumulado };
   } else {
     throw new Error(`Etapa sem IA: ${etapa}`);
   }
-  await setEtapa(run._id, etapa, { status: 'pronta', fim: agora(), resultado, custo: Math.round(custo * 10000) / 10000, tokens, modelo, progresso: '' });
+  await setEtapa(run._id, etapa, {
+    status: 'pronta', fim: agora(), resultado, custo: Math.round(custo * 10000) / 10000, tokens, modelo, progresso: '',
+    parcial: null, erroTipo: undefined, modeloFalhou: '', trocas,
+  });
+  // Se trocou de IA no meio, a execução segue com a reserva nas próximas etapas.
+  if (m !== (run.modelo || 'monday-standard')) await (await colRuns()).updateOne({ _id: run._id }, { $set: { modelo: m } });
 }
 
 export const gerarEtapa = createServerFn()
-  .validator(z.object({ runId: z.string(), etapa: z.enum(['analise', 'produtos', 'eap', 'riscos', 'partes', 'indicadores', 'complemento']), entrada: Entrada }))
+  .validator(z.object({ runId: z.string(), etapa: z.enum(['analise', 'produtos', 'eap', 'riscos', 'partes', 'indicadores', 'complemento']), entrada: Entrada, continuar: z.boolean().optional(), modelo: z.string().optional() }))
   .handler(async ({ data }) => {
-    const run = await (await colRuns()).findOne({ _id: data.runId });
+    const col = await colRuns();
+    // Trocar de IA ao continuar: a execução passa a usar o modelo escolhido.
+    if (data.modelo) {
+      if (!MODELOS.some((m) => m.id === data.modelo)) throw new Error('Modelo de IA desconhecido.');
+      await col.updateOne({ _id: data.runId }, { $set: { modelo: data.modelo, atualizadoEm: agora() } });
+    }
+    const run = await col.findOne({ _id: data.runId });
     if (!run) throw new Error('Execução não encontrada.');
     await tokenIA();
-    return iniciarGeracao(run, data.etapa, data.entrada);
+    const st = run.etapas[data.etapa as Etapa];
+    const entrada = data.entrada ?? (data.continuar ? (st?.entrada as z.infer<typeof Entrada>) : undefined);
+    return iniciarGeracao(run, data.etapa, entrada, !!data.continuar);
   });
 
 /** Começa a geração de uma etapa de IA em segundo plano (também usada depois da calculadora). */
-export async function iniciarGeracao(run: Execucao, etapa: Etapa, entrada: z.infer<typeof Entrada>) {
+export async function iniciarGeracao(run: Execucao, etapa: Etapa, entrada: z.infer<typeof Entrada>, continuar = false) {
   const chave = `${run._id}:${etapa}`;
   if (rodando.has(chave)) return { iniciada: false, motivo: 'Já está gerando.' };
-  await setEtapa(run._id, etapa, { status: 'gerando', inicio: agora(), erro: '', progresso: 'Lendo os documentos…', resultado: null });
-  const job = executarEtapa(run, etapa, entrada)
+  // A prévia anterior fica até a nova sair: se a IA falhar no meio, nada se perde.
+  await setEtapa(run._id, etapa, {
+    status: 'gerando', inicio: agora(), erro: '', erroTipo: undefined, modeloFalhou: '', progresso: 'Lendo os documentos…', entrada: entrada ?? null, trocas: [],
+    ...(continuar ? {} : { parcial: null }),
+  });
+  const job = executarEtapa(run, etapa, entrada, continuar)
     .catch(async (e) => {
       console.error(`[etapa ${etapa}]`, e);
-      await setEtapa(run._id, etapa, { status: 'erro', fim: agora(), erro: e instanceof Error ? e.message : String(e), progresso: '' });
+      const credito = semCredito(e);
+      await setEtapa(run._id, etapa, {
+        status: 'erro', fim: agora(), erro: e instanceof Error ? e.message : String(e), progresso: '',
+        erroTipo: credito ? 'credito' : 'outro', modeloFalhou: e instanceof ErroIA ? e.modelo : '',
+      });
     })
     .finally(() => rodando.delete(chave));
   rodando.set(chave, job);

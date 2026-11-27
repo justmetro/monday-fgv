@@ -42,7 +42,7 @@ export function EtapaEap() {
   const semVerbo = r?.produtos.flatMap((p) => p.entregaveis.flatMap((e) => e.marcos.flatMap((m) => m.atividades.filter((a) => VERBO.test(a.nome) || !/^[A-ZÁÉÍÓÚÂÊÔÃÕ][a-záéíóúâêôãõç]+(r|r-se)\b/.test(a.nome))))) ?? [];
 
   return (
-    <Moldura titulo="5. EAP e Cronograma" st={st} onGerar={() => gerar('eap', { produtos })} podeGerar={!!produtos.length} motivo="Gere e revise os produtos antes."
+    <Moldura etapa="eap" titulo="5. EAP e Cronograma" st={st} onGerar={() => gerar('eap', { produtos })} podeGerar={!!produtos.length} motivo="Gere e revise os produtos antes."
       descricao={<>Nível 1 é o produto (grupo Produtos). Nível 2 Entregável, Nível 3 Marco e Nível 4 atividade iniciando com verbo (subitem do marco), com os Níveis 2 e 3 ligados ao produto pela coluna Produto - Cronograma, com datas a partir do início da execução. A IA gera em lotes de 3 produtos.</>}>
       {r && (
         <div className="space-y-3">

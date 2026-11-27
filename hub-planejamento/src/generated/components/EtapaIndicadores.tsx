@@ -53,7 +53,7 @@ export function EtapaIndicadores() {
   const nKpi = r?.objetivos.reduce((s, o) => s + o.krs.reduce((s2, k) => s2 + (k.kpis?.length ?? 0), 0), 0) ?? 0;
 
   return (
-    <Moldura titulo="7. Painel de Indicadores (OKRs)" st={st} onGerar={() => gerar('indicadores', { produtos })} podeGerar={!!produtos.length} motivo="Gere os produtos antes."
+    <Moldura etapa="indicadores" titulo="7. Painel de Indicadores (OKRs)" st={st} onGerar={() => gerar('indicadores', { produtos })} podeGerar={!!produtos.length} motivo="Gere os produtos antes."
       descricao="Calculadora de indicadores do hub: lê os indicadores dos planejamentos anteriores (grupo Indicador dos quadros [PLAN] ligados no 02.01), prioriza os do mesmo eixo e propõe Objetivos (até 3), Resultados-Chave (até 5 por objetivo) e KPIs de processo (até 3 por KR), pelo Guia. Grava nos grupos Indicador e Medição do indicador, com KPIs ligados ao KR e medições ligadas ao indicador.">
       {r && (
         <div className="space-y-3">

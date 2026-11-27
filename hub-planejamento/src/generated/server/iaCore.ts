@@ -18,20 +18,14 @@ function provedor(modelo: string) {
   return null;
 }
 
-export const MODELOS = [
-  { id: 'monday-standard', nome: 'Padrão da monday' },
-  { id: 'gpt-5', nome: 'GPT-5' },
-  { id: 'gpt-5-mini', nome: 'GPT-5 mini (mais barato)' },
-  { id: 'gemini-3.5-flash', nome: 'Gemini 3.5 Flash (Google)' },
-  { id: 'gemini-3.8-flash', nome: 'Gemini 3.8 Flash (Google)' },
-  { id: 'openrouter/free', nome: 'OpenRouter gratuito (automático)' },
-  { id: 'nvidia/nemotron-3-ultra-550b-a55b:free', nome: 'Nemotron 3 Ultra (OpenRouter gratuito)' },
-  { id: 'nvidia/nemotron-3.5-super-vl:free', nome: 'Nemotron 3.5 Super (OpenRouter gratuito)' },
-  { id: 'nvidia/nemotron-3.5-lightning:free', nome: 'Nemotron 3.5 Lightning (OpenRouter gratuito)' },
-  { id: 'baidu/ernie-5.5-flash-preview:free', nome: 'ERNIE 5.5 Flash (OpenRouter gratuito)' },
-  { id: 'particle-ai/particle-1:free', nome: 'Particle 1 (OpenRouter gratuito)' },
-  { id: 'google/gemma-4-31b-it:free', nome: 'Gemma 4 31B (OpenRouter gratuito)' },
-] as const;
+export { MODELOS } from '@generated/lib/modelos';
+
+/** Falta de crédito ou limite de uso (cota diária, por minuto ou saldo): dá para continuar com outra IA. */
+export class ErroIA extends Error {
+  constructor(msg: string, public tipo: 'credito' | 'outro', public modelo: string) { super(msg); }
+}
+const pareceCredito = (status: number, msg: string) =>
+  status === 402 || /credit|cr[eé]dito|quota|cota|insufficient|billing|exhausted|exceeded|limit|saldo|balance/i.test(msg);
 
 export interface RespostaIA<T> { data: T; modelo: string; custo: number | null; tokensEntrada: number; tokensSaida: number; ms: number }
 
@@ -68,6 +62,7 @@ export async function chamarIA<T = any>(prompt: Prompt, token: string, modelo = 
   else if (openrouter) corpo.models = [modelo, 'openrouter/free'];
   if (!/^gpt/.test(modelo)) corpo.temperature = 0.2;
   let ultimoErro = '';
+  let ultimoStatus = 0;
   for (let tentativa = 1; tentativa <= (gemini ? 5 : 3); tentativa++) {
     let res: Response;
     try {
@@ -90,10 +85,12 @@ export async function chamarIA<T = any>(prompt: Prompt, token: string, modelo = 
     if (!res.ok) {
       ultimoErro = `${res.status}: ${String(j?.error?.message ?? j?.message ?? '').slice(0, 300)}`;
       if (openrouter && res.status === 429 && (tentativa >= 2 || /per-day|per day/i.test(ultimoErro))) {
-        throw new Error('O limite gratuito do OpenRouter foi atingido (20 pedidos por minuto e 50 por dia). Espere um pouco ou troque o modelo de IA.');
+        throw new ErroIA('O limite gratuito do OpenRouter foi atingido (20 pedidos por minuto e 50 por dia).', 'credito', modelo);
       }
+      ultimoStatus = res.status;
+      if (res.status !== 429 && pareceCredito(res.status, ultimoErro)) throw new ErroIA(`${fonte} ficou sem crédito ou atingiu o limite de uso (${ultimoErro}).`, 'credito', modelo);
       if (res.status === 429 || res.status >= 500) { await new Promise((r) => setTimeout(r, (gemini ? 20000 : 8000) * tentativa)); continue; }
-      throw new Error(`${fonte} recusou o pedido (${ultimoErro}).`);
+      throw new ErroIA(`${fonte} recusou o pedido (${ultimoErro}).`, 'outro', modelo);
     }
     const texto: string = j?.choices?.[0]?.message?.content ?? '';
     const motivo = j?.choices?.[0]?.finish_reason;
@@ -112,5 +109,7 @@ export async function chamarIA<T = any>(prompt: Prompt, token: string, modelo = 
       if (motivo === 'length') corpo.max_tokens = Math.min(Number(corpo.max_tokens) * 2, 64000);
     }
   }
-  throw new Error(`A IA não concluiu: ${ultimoErro}. Tente de novo.`);
+  // 429 em todas as tentativas: cota ou limite de uso esgotado.
+  if (ultimoStatus === 429) throw new ErroIA(`${fonte} atingiu o limite de uso (${ultimoErro}).`, 'credito', modelo);
+  throw new ErroIA(`A IA não concluiu: ${ultimoErro}. Tente de novo.`, 'outro', modelo);
 }

@@ -44,7 +44,7 @@ export function EtapaAnalise() {
 
   return (
     <div className="space-y-4">
-      <Moldura titulo="3. Análise dos documentos e TAP" st={st} onGerar={() => gerar('analise')} podeGerar={!sem} motivo="Envie os documentos antes."
+      <Moldura etapa="analise" titulo="3. Análise dos documentos e TAP" st={st} onGerar={() => gerar('analise')} podeGerar={!sem} motivo="Envie os documentos antes."
         descricao="Ficha do projeto, Termo de Abertura (com o modelo de responsabilidades conforme o tipo: padrão, CNCA ou GA), características para a Calculadora de Riscos e pendências para validar com Negócios ou com o cliente.">
         {a && (
           <div className="space-y-4">

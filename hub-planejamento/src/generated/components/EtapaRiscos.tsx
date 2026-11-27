@@ -73,7 +73,7 @@ export function EtapaRiscos() {
 
   return (
     <div className="space-y-4">
-      <Moldura titulo="6a. Riscos específicos do projeto" st={st} onGerar={() => gerar('riscos', { produtos })} podeGerar={!!run.docs.length && !!produtos.length} motivo="Gere os produtos antes."
+      <Moldura etapa="riscos" titulo="6a. Riscos específicos do projeto" st={st} onGerar={() => gerar('riscos', { produtos })} podeGerar={!!run.docs.length && !!produtos.length} motivo="Gere os produtos antes."
         descricao='De 10 a 20 riscos que só existem neste projeto, no formato "Se [causa], então [risco], gerando [efeito]", com período, frente e resposta. Os genéricos vêm da Calculadora (abaixo).'>
         {r && (
           <div className="space-y-2">
@@ -134,7 +134,7 @@ export function EtapaRiscos() {
         <PainelQuadro etapa="calculadora" comparar={false} />
       </Cartao>
 
-      <Moldura titulo="6c. Completar os riscos da calculadora" st={stC} onGerar={gerarComplemento} podeGerar={alvos.length > 0} motivo='Rode a calculadora ou clique em "Ler riscos do quadro" para listar os riscos que vieram do Cardápio.'
+      <Moldura etapa="complemento" titulo="6c. Completar os riscos da calculadora" st={stC} onGerar={gerarComplemento} podeGerar={alvos.length > 0} motivo='Rode a calculadora ou clique em "Ler riscos do quadro" para listar os riscos que vieram do Cardápio.'
         descricao={`A IA preenche Período do Risco, Frentes, Estratégia e Descrição da Resposta dos riscos que vieram do Cardápio, para este projeto. ${doQuadro ? `${alvos.length} riscos da calculadora no quadro.` : ''}`}>
         {comp && (
           <div className="space-y-2">

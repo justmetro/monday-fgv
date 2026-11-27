@@ -5,6 +5,7 @@ import { listarProjetos, ehAtivo, type Projeto } from '@generated/lib/quadros';
 import { errorMessage } from '@generated/lib/monday';
 import { criarExecucao, listarExecucoes, estadoEtapas, statusIA, pedirAutorizacao, atualizarExecucao, type Execucao, type Etapa } from '@generated/server/hub';
 import { HubProvider } from '@generated/lib/estado';
+import { MODELOS } from '@generated/lib/modelos';
 import { exportarPlanilha, importarPlanilha } from '@generated/server/planilha';
 import { paraBase64 } from '@generated/lib/documentos';
 import { ROTULO_ETAPA } from '@generated/lib/rotulos';
@@ -262,20 +263,16 @@ export default function App() {
                     </select>
                   )}
                   {run && (
-                    <select title="Modelo de IA usado nas próximas gerações" className="rounded-lg border border-input bg-background/60 px-2 h-8 text-[12.5px]" value={run.modelo}
+                    <select title="IA usada nas próximas gerações" className="rounded-lg border border-input bg-background/60 px-2 h-8 text-[12.5px] max-w-[200px]" value={run.modelo}
                       onChange={async (e) => setRun((await atualizarExecucao({ data: { runId: run._id, modelo: e.target.value } })) as Execucao)}>
-                      <option value="monday-standard">IA: padrão da monday</option>
-                      <option value="gpt-5">IA: GPT-5</option>
-                      <option value="gpt-5-mini">IA: GPT-5 mini</option>
-                      <option value="gemini-3.5-flash">IA: Gemini 3.5 Flash</option>
-                      <option value="gemini-3.8-flash">IA: Gemini 3.8 Flash</option>
-                      <option value="openrouter/free">IA: OpenRouter gratuito</option>
-                      <option value="nvidia/nemotron-3-ultra-550b-a55b:free">IA: Nemotron 3 Ultra (OpenRouter)</option>
-                      <option value="nvidia/nemotron-3.5-super-vl:free">IA: Nemotron 3.5 Super (OpenRouter)</option>
-                      <option value="nvidia/nemotron-3.5-lightning:free">IA: Nemotron 3.5 Lightning (OpenRouter)</option>
-                      <option value="baidu/ernie-5.5-flash-preview:free">IA: ERNIE 5.5 Flash (OpenRouter)</option>
-                      <option value="particle-ai/particle-1:free">IA: Particle 1 (OpenRouter)</option>
-                      <option value="google/gemma-4-31b-it:free">IA: Gemma 4 31B (OpenRouter)</option>
+                      {MODELOS.map((m) => <option key={m.id} value={m.id}>IA: {m.nome}</option>)}
+                    </select>
+                  )}
+                  {run && (
+                    <select title="Se a IA principal ficar sem crédito ou limite no meio de uma geração, o hub troca sozinho para esta e continua de onde parou" className="rounded-lg border border-input bg-background/60 px-2 h-8 text-[12.5px] max-w-[200px]" value={run.modeloReserva ?? ''}
+                      onChange={async (e) => setRun((await atualizarExecucao({ data: { runId: run._id, modeloReserva: e.target.value } })) as Execucao)}>
+                      <option value="">Reserva: nenhuma (pergunta)</option>
+                      {MODELOS.filter((m) => m.id !== run.modelo).map((m) => <option key={m.id} value={m.id}>Reserva: {m.nome}</option>)}
                     </select>
                   )}
                   {run && <Botao variante="fantasma" onClick={exportar} carregando={planilha === 'exportando'} title="Baixar tudo o que foi gerado em .xlsx"><Download className="h-4 w-4" /> Exportar</Botao>}
