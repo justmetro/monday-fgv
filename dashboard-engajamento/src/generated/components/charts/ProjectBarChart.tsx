@@ -14,6 +14,10 @@ interface Props {
 
 const COLORS = ['hsl(var(--chart-3))', 'hsl(var(--chart-1))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))', 'hsl(var(--chart-2))'];
 const fmt = (v: number, d: number) => v.toLocaleString('pt-BR', { minimumFractionDigits: d, maximumFractionDigits: d });
+/** Rótulo curto em cima da barra: menos casas decimais quanto maior o número. */
+const short = (v: number, d: number) => fmt(v, d === 0 || v >= 10 ? 0 : v >= 1 ? 1 : d);
+/** Nome curto no eixo; o nome inteiro fica no tooltip. */
+const abbr = (s: string, n = 18) => (s.length > n ? `${s.slice(0, n - 1).trimEnd()}…` : s);
 
 /** Barras por projeto em ordem crescente, com rótulo do valor e linhas de referência opcionais. */
 export function ProjectBarChart({ data, series, decimals = 0, refLines = [], height = 320, emptyText = 'Sem projetos nas semanas escolhidas.' }: Props) {
@@ -25,7 +29,7 @@ export function ProjectBarChart({ data, series, decimals = 0, refLines = [], hei
   // Muitas semanas: mesma cor, mais clara na mais antiga; o gráfico ganha largura e rola na horizontal
   const many = ser.length > COLORS.length;
   const colorOf = (i: number) => (many ? `hsl(var(--chart-3) / ${(0.2 + (0.8 * (i + 1)) / ser.length).toFixed(2)})` : COLORS[i % COLORS.length]);
-  const minWidth = multi ? data.length * Math.max(44, ser.length * 7 + 14) + 60 : 0;
+  const minWidth = data.length * (multi ? Math.max(44, ser.length * 7 + 14) : 38) + 60;
   return (
     <div className="w-full">
       {many && (
@@ -37,12 +41,12 @@ export function ProjectBarChart({ data, series, decimals = 0, refLines = [], hei
         </div>
       )}
       <div className="w-full overflow-x-auto">
-    <div style={{ height: multi && !many ? height + 24 : height, minWidth }} className="w-full">
+    <div style={{ height: multi && !many ? height + 24 : height, minWidth }} className="w-full [&_*:focus]:outline-none">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 18, right: 8, bottom: 0, left: -8 }} barGap={1}>
+        <BarChart data={data} margin={{ top: 18, right: 8, bottom: 0, left: -8 }} barGap={1} accessibilityLayer={false}>
           <CartesianGrid vertical={false} stroke="hsl(var(--border))" />
-          <XAxis dataKey="label" tickLine={false} axisLine={false} interval={0} angle={-40} textAnchor="end" height={110}
-            tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
+          <XAxis dataKey="label" tickLine={false} axisLine={false} interval={0} angle={-45} textAnchor="end" height={96}
+            tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} tickFormatter={(v: string) => abbr(v)} />
           <YAxis tickLine={false} axisLine={false} width={44} domain={[0, Math.ceil(max * 1.1) || 1]}
             tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} tickFormatter={(v) => fmt(v, 0)} />
           <Tooltip
@@ -73,7 +77,7 @@ export function ProjectBarChart({ data, series, decimals = 0, refLines = [], hei
           {ser.map((s, i) => (
             <Bar key={s.key} dataKey={s.key} name={s.name} fill={multi ? colorOf(i) : 'hsl(var(--chart-3) / 0.55)'}
               fillOpacity={multi && !many ? 0.8 : 1} stroke={multi ? undefined : 'hsl(var(--chart-3))'} radius={[3, 3, 0, 0]} maxBarSize={multi ? (many ? 8 : 14) : 28}>
-              {!multi && <LabelList dataKey={s.key} position="top" fontSize={10} fill="hsl(var(--foreground))" formatter={(v: unknown) => fmt(Number(v), decimals)} />}
+              {!multi && <LabelList dataKey={s.key} position="top" fontSize={9} fill="hsl(var(--foreground))" formatter={(v: unknown) => short(Number(v), decimals)} />}
             </Bar>
           ))}
         </BarChart>
