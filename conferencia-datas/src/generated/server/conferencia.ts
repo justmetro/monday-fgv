@@ -146,8 +146,47 @@ async function todos(): Promise<Item[]> {
 
 const ehDoGerente = (i: Item, e: Eu) => i.gerentes.some((g) => g.id === e.id) || (!!e.email && i.emails.includes(e.email));
 
+/** Inclui no quadro de dados os projetos novos do grupo da esteira do 02.01 (não mexe nos que já estão lá). */
+async function sincronizarNovos(simular = false): Promise<string[]> {
+  const ja = new Set<string>();
+  let cursor: string | null = null;
+  do {
+    const d: any = cursor
+      ? await gql('query ($c: String!) { next_items_page(limit: 200, cursor: $c) { cursor items { column_values(ids: ["' + C.id02 + '"]) { text } } } }', { c: cursor })
+      : await gql('query ($b: [ID!]) { boards(ids: $b) { items_page(limit: 200) { cursor items { column_values(ids: ["' + C.id02 + '"]) { text } } } } }', { b: [BOARD] });
+    const page: any = cursor ? d.next_items_page : d.boards[0].items_page;
+    page.items.forEach((it: any) => { const t = it.column_values[0]?.text; if (t) ja.add(String(t).trim()); });
+    cursor = page.cursor;
+  } while (cursor);
+  const novos: { id: string; name: string; vig: string | null; ult: string | null }[] = [];
+  cursor = null;
+  do {
+    const campos = 'cursor items { id name column_values(ids: ["' + PLAN.vig + '", "' + PLAN.ultimo + '"]) { id value } }';
+    const d: any = cursor
+      ? await gql('query ($c: String!) { next_items_page(limit: 200, cursor: $c) { ' + campos + ' } }', { c: cursor })
+      : await gql('query ($b: [ID!]) { boards(ids: $b) { groups(ids: ["topics"]) { items_page(limit: 200) { ' + campos + ' } } } }', { b: [BOARD_PLAN] });
+    const page: any = cursor ? d.next_items_page : d.boards[0].groups[0].items_page;
+    for (const it of page.items) {
+      if (ja.has(String(it.id))) continue;
+      const c = Object.fromEntries(it.column_values.map((x: any) => [x.id, x.value]));
+      novos.push({ id: String(it.id), name: it.name, vig: c[PLAN.vig], ult: c[PLAN.ultimo] });
+    }
+    cursor = page.cursor;
+  } while (cursor);
+  if (simular) return novos.map((n) => n.name);
+  for (const n of novos) {
+    const cv: Record<string, unknown> = { [C.id02]: n.id };
+    try { const v = JSON.parse(n.vig ?? 'null'); if (v?.from && v?.to) cv[C.vig] = { from: v.from, to: v.to }; } catch { /* sem vigência */ }
+    try { const u = JSON.parse(n.ult ?? 'null'); if (u?.date) cv[C.ultimo] = { date: u.date }; } catch { /* sem data */ }
+    const d = await gql<{ create_item: { id: string } }>('mutation ($b: ID!, $n: String!, $v: JSON!) { create_item(board_id: $b, group_id: "topics", item_name: $n, column_values: $v) { id } }', { b: BOARD, n: n.name, v: JSON.stringify(cv) });
+    await registrar(ROTINA, 'Projeto novo incluído', { id: String(d.create_item.id), nome: n.name }).catch(() => {});
+  }
+  return novos.map((n) => n.name);
+}
+
 export const carregar = createServerFn({ method: 'POST' }).handler(async () => {
   const e = await eu();
+  if (e.coplan) await sincronizarNovos().catch((x) => console.error('[sincronizar]', x));
   const itens = await todos();
   return { eu: e, itens: e.coplan ? itens : itens.filter((i) => ehDoGerente(i, e)) };
 });
@@ -303,6 +342,7 @@ async function lembreteSGI(hoje: string, simular: boolean) {
 export async function rotinaDiaria(arg?: string) {
   const simular = arg === 'simular';
   const hoje = hojeBR();
+  const incluidos = await sincronizarNovos(simular).catch((x) => { console.error('[sincronizar]', x); return [] as string[]; });
   const itens = await todos();
   const col = (await mongo()).collection<{ _id: string; em: string }>('alertas_coplan');
 
@@ -351,7 +391,7 @@ export async function rotinaDiaria(arg?: string) {
   const sgi = await lembreteSGI(hoje, simular);
 
   return {
-    hoje, simular,
+    hoje, simular, incluidos,
     pedidos120: a120.map((i) => i.nome), pedido,
     alerta90: marcos['90'].map((i) => i.nome), alerta60: marcos['60'].map((i) => i.nome),
     lembretes: { gerentes: porGerente.size, projetos: pend.length },
