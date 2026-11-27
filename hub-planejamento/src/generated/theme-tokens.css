@@ -57,3 +57,13 @@
 html { -webkit-font-smoothing: antialiased; }
 body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 14px; }
 textarea, input, select { font: inherit; }
+
+.num { font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.recolhe { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .24s cubic-bezier(.2,.8,.2,1); }
+.recolhe.aberto { grid-template-rows: 1fr; }
+.item-lista { content-visibility: auto; contain-intrinsic-size: auto 48px; }
+@keyframes entra { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.entra { animation: entra .32s cubic-bezier(.2,.8,.2,1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .recolhe, .entra, .item-lista { transition: none !important; animation: none !important; }
+}

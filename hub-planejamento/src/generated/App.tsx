@@ -135,6 +135,12 @@ export default function App() {
     return null;
   };
 
+  const concluidas = run ? ABAS.filter((a) => {
+    if (a.id === 'quadro') return !!run.boardId;
+    if (a.id === 'documentos') return !!run.docs?.length;
+    return a.etapas.length > 0 && a.etapas.every((e) => run.etapas?.[e]?.status === 'gravada');
+  }).length : 0;
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-20 backdrop-blur bg-background/80 border-b border-border/60">
@@ -199,15 +205,16 @@ export default function App() {
             </Cartao>
           )}
           {!projeto && (
-            <Cartao className="p-8 text-center">
-              <div className="text-[17px] font-semibold">Escolha um projeto do 02.01</div>
+            <Cartao className="p-10 text-center entra">
+              <div className="text-[22px] font-semibold tracking-tight">Escolha um projeto do 02.01</div>
               <p className="mt-2 text-[13px] text-muted-foreground max-w-xl mx-auto">O hub cria o quadro [PLAN] pelo botão do 02.01, lê o TR, a proposta, o contrato e os anexos, e prepara TAP, Produtos, EAP e Cronograma, Riscos, Indicadores e Partes Interessadas. Cada etapa mostra uma prévia para revisar antes de gravar.</p>
             </Cartao>
           )}
 
           {projeto && (
-            <Cartao className="p-4">
+            <Cartao className="p-4 entra">
               <div className="flex items-start gap-3">
+                {run && <Anel feito={concluidas} total={ABAS.length} />}
                 <div className="min-w-0 flex-1">
                   <div className="text-[17px] font-semibold leading-snug">{projeto.name}</div>
                   <div className="mt-1.5 flex flex-wrap gap-1.5 text-[12px]">
@@ -242,7 +249,7 @@ export default function App() {
                 <nav className="mt-4 flex flex-wrap gap-1">
                   {ABAS.map((a) => (
                     <button key={a.id} onClick={() => setAba(a.id)}
-                      className={cx('inline-flex items-center gap-1.5 rounded-full px-3 h-8 text-[13px] transition', aba === a.id ? 'bg-foreground text-background font-medium' : 'bg-muted hover:bg-secondary')}>
+                      className={cx('inline-flex items-center gap-1.5 rounded-full px-3 h-8 text-[13px] transition', aba === a.id ? 'bg-foreground text-background font-medium shadow-sm' : 'bg-muted hover:bg-secondary text-foreground/80')}>
                       {a.nome} {iconeAba(a)}
                     </button>
                   ))}
@@ -267,9 +274,24 @@ export default function App() {
               {aba === 'partes' && <EtapaPartes />}
             </HubProvider>
           )}
-          {run && <div className="text-[11.5px] text-muted-foreground text-right">Custos de IA desta execução: {(Object.keys(ROTULO_ETAPA) as Etapa[]).reduce((s, e) => s + (run.etapas?.[e]?.custo ?? 0), 0).toLocaleString('pt-BR', { style: 'currency', currency: 'USD' })} em créditos da monday</div>}
+          {run && <div className="text-[11.5px] text-muted-foreground text-right">Custos de IA desta execução: <span className="num">{(Object.keys(ROTULO_ETAPA) as Etapa[]).reduce((s, e) => s + (run.etapas?.[e]?.custo ?? 0), 0).toLocaleString('pt-BR', { style: 'currency', currency: 'USD' })}</span></div>}
         </main>
       </div>
+    </div>
+  );
+}
+
+/** Anel de progresso das etapas (SVG, sem biblioteca). */
+function Anel({ feito, total }: { feito: number; total: number }) {
+  const r = 17, c = 2 * Math.PI * r, f = total ? feito / total : 0;
+  return (
+    <div className="relative h-11 w-11 shrink-0" title={`${feito} de ${total} etapas concluídas`}>
+      <svg viewBox="0 0 40 40" className="h-11 w-11 -rotate-90">
+        <circle cx="20" cy="20" r={r} fill="none" stroke="hsl(var(--muted))" strokeWidth="4" />
+        <circle cx="20" cy="20" r={r} fill="none" stroke={f >= 1 ? 'hsl(var(--ok))' : 'hsl(var(--foreground))'} strokeWidth="4" strokeLinecap="round"
+          strokeDasharray={c} strokeDashoffset={c * (1 - f)} style={{ transition: 'stroke-dashoffset .5s cubic-bezier(.2,.8,.2,1)' }} />
+      </svg>
+      <div className="absolute inset-0 grid place-items-center text-[11px] font-semibold num">{feito}/{total}</div>
     </div>
   );
 }

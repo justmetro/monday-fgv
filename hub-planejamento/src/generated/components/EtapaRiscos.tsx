@@ -7,7 +7,7 @@ import { ROTULOS } from '@generated/lib/rotulos';
 import { resumoProdutos, type ResultadoProdutos } from '@generated/components/EtapaProdutos';
 import type { Analise } from '@generated/components/EtapaAnalise';
 import { Moldura, BarraGravar } from '@generated/components/Moldura';
-import { Cartao, Campo, Texto, Escolha, Aviso, Botao, Progresso, Selo } from '@generated/components/ui';
+import { Cartao, Campo, Texto, Escolha, Aviso, Botao, Progresso, Selo, Numero, BarraLista, ItemRecolhivel, useRecolher, naoAlterna } from '@generated/components/ui';
 
 export function EtapaRiscos() {
   const { run, etapa, gerar, editar, gravarQuadro } = useHub();
@@ -18,6 +18,8 @@ export function EtapaRiscos() {
   const [lerErro, setLerErro] = useState('');
   const [doQuadro, setDoQuadro] = useState<RiscoNoQuadro[] | null>(null);
   const autoFeito = useRef(false);
+  const rcR = useRecolher();
+  const rcC = useRecolher();
   const produtos = resumoProdutos(run?.etapas.produtos?.resultado as ResultadoProdutos | undefined);
   const analise = run?.etapas.analise?.resultado as Analise | undefined;
   const r = st.resultado as { riscos: Risco[] } | undefined;
@@ -73,13 +75,18 @@ export function EtapaRiscos() {
         descricao='De 10 a 20 riscos que só existem neste projeto, no formato "Se [causa], então [risco], gerando [efeito]", com período, frente e resposta. Os genéricos vêm da Calculadora (abaixo).'>
         {r && (
           <div className="space-y-2">
+            <div className="flex flex-wrap gap-2">
+              <Numero rotulo="Riscos" valor={r.riscos.filter((x) => x.incluir !== false).length} detalhe={`de ${r.riscos.length} propostos`} />
+              <Numero rotulo="Probabilidade alta" valor={r.riscos.filter((x) => x.incluir !== false && /alto/i.test(x.probabilidade ?? '')).length} tom="aviso" />
+              <Numero rotulo="Impacto alto" valor={r.riscos.filter((x) => x.incluir !== false && /alto/i.test(x.impacto ?? '')).length} tom="aviso" />
+            </div>
+            <BarraLista total={r.riscos.length} abertos={rcR.qtd} onAbrir={() => rcR.abrirTodos(r.riscos.map((_, i) => i))} onRecolher={rcR.recolherTodos} />
             {r.riscos.map((x, i) => (
-              <div key={i} className={`rounded-xl border border-border/60 p-3 space-y-2 ${x.incluir === false ? 'opacity-50' : ''}`}>
-                <div className="flex items-center gap-2">
-                  <input type="checkbox" checked={x.incluir !== false} onChange={(e) => mudar(i, 'incluir', e.target.checked)} />
-                  <span className="text-[12px] font-semibold w-16 shrink-0">{x.id}</span>
-                  <Campo value={x.titulo} onChange={(e) => mudar(i, 'titulo', e.target.value)} />
-                </div>
+              <ItemRecolhivel key={i} aberto={rcR.aberto(i)} onAlternar={() => rcR.alternar(i)} inativo={x.incluir === false}
+                cabecalho={<><input type="checkbox" {...naoAlterna} checked={x.incluir !== false} onChange={(e) => mudar(i, 'incluir', e.target.checked)} /><span className="num text-[12px] font-semibold text-muted-foreground w-14 shrink-0">{x.id}</span><span className="text-[13px] font-medium truncate">{x.titulo || 'Sem título'}</span></>}
+                resumo={<><Selo>{x.categoria}</Selo><Selo tom={/alto/i.test(`${x.probabilidade} ${x.impacto}`) ? 'aviso' : 'neutro'}>P {x.probabilidade} · I {x.impacto}</Selo></>}>
+                <div className="space-y-2">
+                <Campo value={x.titulo} onChange={(e) => mudar(i, 'titulo', e.target.value)} />
                 <div className="grid grid-cols-6 gap-2">
                   <Escolha className="col-span-2" opcoes={ROTULOS.categoria} valor={x.categoria} onMudar={(v) => mudar(i, 'categoria', v)} />
                   <Escolha opcoes={ROTULOS.probabilidade} valor={x.probabilidade} onMudar={(v) => mudar(i, 'probabilidade', v)} />
@@ -94,13 +101,14 @@ export function EtapaRiscos() {
                   <span>Tema: {x.tema}</span><span>Impactado: {x.impactado.join(', ')}</span><span>Período: dia {x.dia_inicio} a {x.dia_fim}</span><span>Responsável: {x.cargo_responsavel}</span><span>Produtos: {x.produtos.join(', ')}</span>
                 </div>
               </div>
+              </ItemRecolhivel>
             ))}
             <BarraGravar onGravar={gravar} gravando={!!st.gravando} progresso={st.progressoGravacao ?? ''} erro={st.erroGravacao ?? ''} rotulo="Gravar riscos específicos" desabilitado={!run.boardId} />
           </div>
         )}
       </Moldura>
 
-      <Cartao className="p-4 space-y-3">
+      <Cartao className="p-4 space-y-3 entra">
         <div className="flex items-center gap-2"><h2 className="text-[15px] font-semibold">6b. Calculadora de Riscos (automática)</h2>{stCalc.status === 'gravada' && <Selo tom="ok">Rodada</Selo>}</div>
         <p className="text-[13px] text-muted-foreground">Roda sozinha ao abrir esta aba, depois da análise e dos produtos: cadastra o projeto no 09.1 com as 8 características, roda o motor da metodologia (09.2 Base e 09.3 Metodologia), envia os riscos do 09.4 ao grupo Riscos do [PLAN] e pede à IA o complemento (período, frente, estratégia e resposta).</p>
         {stCalc.status === 'gravada' && stCalc.resumoGravacao && !stCalc.gravando && <Aviso tom="ok">{stCalc.resumoGravacao}</Aviso>}
@@ -126,18 +134,24 @@ export function EtapaRiscos() {
         descricao={`A IA preenche Período do Risco, Frentes, Estratégia e Descrição da Resposta dos riscos que vieram do Cardápio, para este projeto. ${doQuadro ? `${alvos.length} riscos da calculadora no quadro.` : ''}`}>
         {comp && (
           <div className="space-y-2">
-            {comp.riscos.map((x, i) => (
-              <div key={x.id} className={`rounded-xl border border-border/60 p-3 space-y-2 ${x.aplicar === false ? 'opacity-50' : ''}`}>
-                <div className="flex items-center gap-2 text-[13px]">
-                  <input type="checkbox" checked={x.aplicar !== false} onChange={(e) => editar('complemento', { riscos: comp.riscos.map((y, j) => (j === i ? { ...y, aplicar: e.target.checked } : y)) })} />
-                  <span className="font-medium flex-1">{nomeDe(x.id)}</span>
-                  <Escolha opcoes={ROTULOS.estrategia} valor={x.estrategia} onMudar={(v) => editar('complemento', { riscos: comp.riscos.map((y, j) => (j === i ? { ...y, estrategia: v } : y)) })} />
-                  <Escolha opcoes={ROTULOS.frentes} valor={x.frente} onMudar={(v) => editar('complemento', { riscos: comp.riscos.map((y, j) => (j === i ? { ...y, frente: v } : y)) })} />
-                  <span className="text-[12px] text-muted-foreground">dia {x.dia_inicio} a {x.dia_fim}</span>
+            <BarraLista total={comp.riscos.length} abertos={rcC.qtd} onAbrir={() => rcC.abrirTodos(comp.riscos.map((x) => x.id))} onRecolher={rcC.recolherTodos} />
+            {comp.riscos.map((x, i) => {
+              const muda = (k: keyof Complemento, v: unknown) => editar('complemento', { riscos: comp.riscos.map((y, j) => (j === i ? { ...y, [k]: v } : y)) });
+              return (
+              <ItemRecolhivel key={x.id} aberto={rcC.aberto(x.id)} onAlternar={() => rcC.alternar(x.id)} inativo={x.aplicar === false}
+                cabecalho={<><input type="checkbox" {...naoAlterna} checked={x.aplicar !== false} onChange={(e) => muda('aplicar', e.target.checked)} /><span className="text-[13px] font-medium truncate">{nomeDe(x.id)}</span></>}
+                resumo={<><Selo>{x.estrategia}</Selo><Selo>{x.frente}</Selo><span className="num text-[12px] text-muted-foreground">d{x.dia_inicio}–{x.dia_fim}</span></>}>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-[13px]">
+                    <Escolha opcoes={ROTULOS.estrategia} valor={x.estrategia} onMudar={(v) => muda('estrategia', v)} />
+                    <Escolha opcoes={ROTULOS.frentes} valor={x.frente} onMudar={(v) => muda('frente', v)} />
+                    <span className="text-[12px] text-muted-foreground">dia {x.dia_inicio} a {x.dia_fim}</span>
+                  </div>
+                  <Texto rows={2} value={x.resposta} onChange={(e) => muda('resposta', e.target.value)} />
                 </div>
-                <Texto rows={2} value={x.resposta} onChange={(e) => editar('complemento', { riscos: comp.riscos.map((y, j) => (j === i ? { ...y, resposta: e.target.value } : y)) })} />
-              </div>
-            ))}
+              </ItemRecolhivel>
+              );
+            })}
             <BarraGravar onGravar={aplicar} gravando={!!stC.gravando} progresso={stC.progressoGravacao ?? ''} erro={stC.erroGravacao ?? ''} rotulo="Aplicar nos riscos do quadro" desabilitado={!run.boardId} />
           </div>
         )}

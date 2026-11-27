@@ -4,7 +4,7 @@ import { diasDoProduto, type Produto } from '@generated/lib/gravar';
 import { ROTULOS } from '@generated/lib/rotulos';
 import { diaParaData } from '@generated/lib/quadros';
 import { Moldura, BarraGravar } from '@generated/components/Moldura';
-import { Campo, Texto, Escolha, Aviso, Botao, moeda, dataBR } from '@generated/components/ui';
+import { Campo, Texto, Escolha, Aviso, Botao, Selo, Numero, BarraLista, ItemRecolhivel, useRecolher, moeda, dataBR } from '@generated/components/ui';
 
 export interface ResultadoProdutos { produtos: Produto[]; checagem: { soma_valores: number; valor_global: number | null; diferenca: number | null; diferenca_pct: number | null; fora_da_vigencia: string[]; max_produtos_mes: number; media_produtos_mes: number; observacoes: string[] } }
 
@@ -16,13 +16,14 @@ export function resumoProdutos(r: ResultadoProdutos | undefined) {
 export function EtapaProdutos() {
   const { run, etapa, gerar, editar, gravarQuadro } = useHub();
   const st = etapa('produtos');
+  const rc = useRecolher();
   if (!run) return null;
   const r = st.resultado as ResultadoProdutos | undefined;
   const inicio = run.contexto.inicioExecucao ?? null;
 
   const mudar = (i: number, k: keyof Produto, v: unknown) => r && editar('produtos', { ...r, produtos: r.produtos.map((p, j) => (j === i ? { ...p, [k]: v } : p)) });
   const remover = (i: number) => r && editar('produtos', { ...r, produtos: r.produtos.filter((_, j) => j !== i) });
-  const adicionar = () => r && editar('produtos', { ...r, produtos: [...r.produtos, { codigo: `P${String(r.produtos.length + 1).padStart(2, '0')}`, nome: '', descricao: '', objetivo: '', mes_inicio: 1, mes_fim: 1, dia_inicio: null, dia_fim: null, valor: 0, fase: 'Fase 1', tipologia: '', tipo_entrega: '', fonte: 'Incluído manualmente' }] });
+  const adicionar = () => r && (rc.alternar(r.produtos.length), editar('produtos', { ...r, produtos: [...r.produtos, { codigo: `P${String(r.produtos.length + 1).padStart(2, '0')}`, nome: '', descricao: '', objetivo: '', mes_inicio: 1, mes_fim: 1, dia_inicio: null, dia_fim: null, valor: 0, fase: 'Fase 1', tipologia: '', tipo_entrega: '', fonte: 'Incluído manualmente' }] }));
 
   const gravar = () => { if (r && run.boardId) gravarQuadro('produtos'); };
 
@@ -33,11 +34,11 @@ export function EtapaProdutos() {
       descricao="Uma linha por produto ou parcela, com código, descrição verificável, meses contratuais, valor, fase e tipo de entrega. Grava no grupo Produtos; produtos com o mesmo código são atualizados, não duplicados.">
       {r && (
         <div className="space-y-3">
-          <div className="flex flex-wrap gap-2 text-[12.5px]">
-            <span className="rounded-full bg-muted px-2.5 py-1">Soma: {moeda(soma)}</span>
-            <span className="rounded-full bg-muted px-2.5 py-1">Valor global: {moeda(r.checagem?.valor_global)}</span>
-            {r.checagem?.valor_global != null && <span className={`rounded-full px-2.5 py-1 ${Math.abs(soma - r.checagem.valor_global) > 1 ? 'bg-[hsl(var(--warn)/.14)]' : 'bg-[hsl(var(--ok)/.12)]'}`}>Diferença: {moeda(soma - r.checagem.valor_global)}</span>}
-            <span className="rounded-full bg-muted px-2.5 py-1">Pico: {r.checagem?.max_produtos_mes} produtos no mês</span>
+          <div className="flex flex-wrap gap-2">
+            <Numero rotulo="Soma dos produtos" valor={moeda(soma)} />
+            <Numero rotulo="Valor global" valor={moeda(r.checagem?.valor_global)} />
+            {r.checagem?.valor_global != null && <Numero rotulo="Diferença" valor={moeda(soma - r.checagem.valor_global)} tom={Math.abs(soma - r.checagem.valor_global) > 1 ? 'aviso' : 'ok'} />}
+            <Numero rotulo="Pico no mês" valor={r.checagem?.max_produtos_mes ?? '—'} detalhe="produtos" />
           </div>
           {!!r.checagem?.observacoes?.length && (
             <details className="rounded-xl border border-border/60"><summary className="cursor-pointer px-3 py-2 text-[13px] font-medium">Checagem de consistência ({r.checagem.observacoes.length})</summary>
@@ -45,10 +46,14 @@ export function EtapaProdutos() {
             </details>
           )}
           <div className="space-y-2">
+            <BarraLista total={r.produtos.length} abertos={rc.qtd} onAbrir={() => rc.abrirTodos(r.produtos.map((_, i) => i))} onRecolher={rc.recolherTodos} />
             {r.produtos.map((p, i) => {
               const d = diasDoProduto(p);
               return (
-                <div key={i} className="rounded-xl border border-border/60 p-3 grid grid-cols-12 gap-2">
+                <ItemRecolhivel key={i} aberto={rc.aberto(i)} onAlternar={() => rc.alternar(i)}
+                  cabecalho={<><span className="num text-[12px] font-semibold text-muted-foreground w-10 shrink-0">{p.codigo}</span><span className="text-[13px] font-medium truncate">{p.nome || 'Sem nome'}</span></>}
+                  resumo={<><Selo>{p.fase}</Selo><Selo>M{p.mes_inicio}–M{p.mes_fim}</Selo><span className="num text-[12.5px] w-28 text-right">{moeda(Number(p.valor) || 0)}</span></>}>
+                <div className="grid grid-cols-12 gap-2">
                   <Campo className="col-span-1" value={p.codigo} onChange={(e) => mudar(i, 'codigo', e.target.value)} />
                   <Campo className="col-span-7" value={p.nome} onChange={(e) => mudar(i, 'nome', e.target.value)} placeholder="Nome do produto" />
                   <Campo className="col-span-2" type="number" value={p.valor} onChange={(e) => mudar(i, 'valor', Number(e.target.value))} />
@@ -65,6 +70,7 @@ export function EtapaProdutos() {
                     {p.tipologia} · dias {d.ini} a {d.fim}{inicio ? ` (${dataBR(diaParaData(inicio, d.ini))} a ${dataBR(diaParaData(inicio, d.fim))})` : ''} · Fonte: {p.fonte}
                   </div>
                 </div>
+                </ItemRecolhivel>
               );
             })}
             <Botao variante="fantasma" onClick={adicionar}><Plus className="h-4 w-4" /> Adicionar produto</Botao>

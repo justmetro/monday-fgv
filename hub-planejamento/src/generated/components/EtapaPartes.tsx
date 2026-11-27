@@ -2,7 +2,7 @@ import { useHub } from '@generated/lib/estado';
 import type { Parte, Risco } from '@generated/lib/gravar';
 import { ROTULOS } from '@generated/lib/rotulos';
 import { Moldura, BarraGravar } from '@generated/components/Moldura';
-import { Campo, Texto, Escolha, Selo, Aviso } from '@generated/components/ui';
+import { Campo, Texto, Escolha, Selo, Aviso, Numero, BarraLista, ItemRecolhivel, useRecolher, naoAlterna } from '@generated/components/ui';
 
 const CLASSES = ['Contratante e decisão', 'Execução e validação técnica', 'Público beneficiário', 'Controle e conformidade', 'Parceiros e rede', 'Fornecedores críticos', 'FGV DGPE'];
 
@@ -16,6 +16,7 @@ export function estrategia(poder: string, interesse: string) {
 export function EtapaPartes() {
   const { run, etapa, gerar, editar, gravarQuadro } = useHub();
   const st = etapa('partes');
+  const rc = useRecolher();
   if (!run) return null;
   const riscos = ((run.etapas.riscos?.resultado as { riscos: Risco[] } | undefined)?.riscos ?? []).filter((x) => x.incluir !== false).map((x) => ({ id: x.id, titulo: x.titulo }));
   const r = st.resultado as { partes: Parte[] } | undefined;
@@ -29,10 +30,19 @@ export function EtapaPartes() {
       {!riscos.length && st.status === 'nao_iniciada' && <Aviso tom="info">Dica: gere os riscos específicos antes, para a IA ligar cada parte aos riscos.</Aviso>}
       {r && (
         <div className="space-y-2">
+          <div className="flex flex-wrap gap-2">
+            <Numero rotulo="Partes" valor={r.partes.filter((x) => x.incluir !== false).length} detalhe={`de ${r.partes.length} propostas`} />
+            {['Gerenciar de perto', 'Engajar institucionalmente', 'Consultar frequentemente', 'Manter informado'].map((e) => (
+              <Numero key={e} rotulo={e} valor={r.partes.filter((x) => x.incluir !== false && estrategia(x.poder, x.interesse) === e).length} />
+            ))}
+          </div>
+          <BarraLista total={r.partes.length} abertos={rc.qtd} onAbrir={() => rc.abrirTodos(r.partes.map((_, i) => i))} onRecolher={rc.recolherTodos} />
           {r.partes.map((x, i) => (
-            <div key={i} className={`rounded-xl border border-border/60 p-3 space-y-2 ${x.incluir === false ? 'opacity-50' : ''}`}>
+            <ItemRecolhivel key={i} aberto={rc.aberto(i)} onAlternar={() => rc.alternar(i)} inativo={x.incluir === false}
+              cabecalho={<><input type="checkbox" {...naoAlterna} checked={x.incluir !== false} onChange={(e) => mudar(i, 'incluir', e.target.checked)} /><span className="text-[13px] font-medium truncate">{x.nome || 'Sem nome'}</span></>}
+              resumo={<><Selo>{x.classe}</Selo><Selo tom="azul">{estrategia(x.poder, x.interesse)}</Selo></>}>
+              <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <input type="checkbox" checked={x.incluir !== false} onChange={(e) => mudar(i, 'incluir', e.target.checked)} />
                 <Campo value={x.nome} onChange={(e) => mudar(i, 'nome', e.target.value)} />
                 <Selo tom="azul">{estrategia(x.poder, x.interesse)}</Selo>
               </div>
@@ -51,7 +61,8 @@ export function EtapaPartes() {
                 <Texto className="col-span-6" rows={3} value={x.expectativas} onChange={(e) => mudar(i, 'expectativas', e.target.value)} />
                 <Texto className="col-span-6" rows={2} value={x.riscos_associados} onChange={(e) => mudar(i, 'riscos_associados', e.target.value)} />
               </div>
-            </div>
+              </div>
+            </ItemRecolhivel>
           ))}
           <BarraGravar onGravar={gravar} gravando={!!st.gravando} progresso={st.progressoGravacao ?? ''} erro={st.erroGravacao ?? ''} rotulo="Gravar partes interessadas" desabilitado={!run.boardId} />
         </div>
