@@ -16,6 +16,7 @@ import { PeriodInfoLine } from './dashboard/PeriodInfoLine';
 import { PersonProfileDrawer } from './PersonProfileDrawer';
 import { WeeklyTrendChart } from './charts/WeeklyTrendChart';
 import { CollapsibleCard } from './charts/CollapsibleCard';
+import { StatusBarChart, StatusByGroupChart } from './charts/StatusCharts';
 
 interface Props {
   weeks: WeekSummary[];
@@ -71,6 +72,15 @@ export function DepartmentTab({ weeks, activeProjects, loading, granularity, onG
       .sort((a, b) => (b.c.ringValue ?? -1) - (a.c.ringValue ?? -1) || a.name.localeCompare(b.name));
   }, [all, weekly]);
 
+  const deptGroups = useMemo(() => {
+    const map = new Map<string, PersonWeek[]>();
+    (all?.people ?? []).forEach((p) => deptsOf(p).forEach((d) => map.set(d, [...(map.get(d) ?? []), p])));
+    return [...map].map(([name, ppl]) => ({ name, people: ppl }));
+  }, [all]);
+  const statusSubtitle = weekly
+    ? 'Engajado: acesso na semana · Desengajado: mais de 7 dias sem acesso · Inativo: mais de 30 dias'
+    : 'Situação na última semana do período';
+
   const emails = useMemo(() => {
     const set = new Set<string>();
     weeks.forEach((w) => w.people.forEach((p) => { if (p.email && (dept === 'all' || deptsOf(p).includes(dept))) set.add(p.email.toLowerCase().trim()); }));
@@ -100,6 +110,15 @@ export function DepartmentTab({ weeks, activeProjects, loading, granularity, onG
           barName="% engajada na semana" lineName="Média acumulada" percent
         />
       </CollapsibleCard>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <CollapsibleCard title={dept === 'all' ? 'Status dos usuários · DGPE geral' : `Status dos usuários · ${dept}`} subtitle={statusSubtitle}>
+          <StatusBarChart people={people} />
+        </CollapsibleCard>
+        <CollapsibleCard title="Status por departamento" subtitle="Clique num departamento para segmentar">
+          <StatusByGroupChart groups={deptGroups} onSelect={(d) => setDept(dept === d ? 'all' : d)} />
+        </CollapsibleCard>
+      </div>
 
       <HeroScoreCard
         weekly={weekly}

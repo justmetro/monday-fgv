@@ -15,6 +15,7 @@ import { PeriodInfoLine } from './dashboard/PeriodInfoLine';
 import type { PeriodView } from '@generated/hooks/useStoredEngagement';
 import { WeeklyTrendChart } from './charts/WeeklyTrendChart';
 import { CollapsibleCard } from './charts/CollapsibleCard';
+import { StatusBarChart } from './charts/StatusCharts';
 import { engagementSeries } from '@generated/lib/weeklySeries';
 
 interface Props {
@@ -203,6 +204,13 @@ export function EngagementDashboard({
           lineName="Média acumulada"
           percent
         />
+      </CollapsibleCard>
+
+      <CollapsibleCard
+        title={project === 'all' ? 'Status dos usuários · Projetos' : `Status dos usuários · ${readableProjectName(project)}`}
+        subtitle={weekly ? 'Pessoas em equipe de projeto · use o filtro de projeto acima para segmentar' : 'Situação na última semana do período'}
+      >
+        <StatusBarChart people={filteredPeople} />
       </CollapsibleCard>
 
       <HeroScoreCard
