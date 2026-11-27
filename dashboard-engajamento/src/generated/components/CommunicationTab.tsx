@@ -127,7 +127,7 @@ export function CommunicationTab({ session, weeks }: Props) {
       {msg && <p className={`rounded-lg px-3 py-2 text-xs ${msg.kind === 'err' ? 'bg-destructive/10 text-destructive' : 'bg-muted text-foreground'}`}>{msg.text}</p>}
       {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">{error}</p>}
 
-      <ApusSection data={apus.data} loading={apus.loading} error={apus.error} onReload={session.canManage ? () => void apus.reload(true) : undefined} />
+      <ApusSection projectPicker data={apus.data} loading={apus.loading} error={apus.error} onReload={session.canManage ? () => void apus.reload(true) : undefined} />
 
       {!view?.weeks.length ? (
         <p className="rounded-xl border border-border bg-card p-8 text-center text-xs text-muted-foreground">
