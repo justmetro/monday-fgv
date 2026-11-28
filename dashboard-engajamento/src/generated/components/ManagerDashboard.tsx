@@ -160,14 +160,6 @@ export function ManagerDashboard({
     };
   }, [currentWeek, emptyPeriod]);
 
-  if (!currentWeek || !filteredWeek) {
-    return (
-      <div className="p-8 text-center text-xs text-muted-foreground bg-card rounded-xl border border-border">
-        Nenhum dado disponível para o gerente no momento.
-      </div>
-    );
-  }
-
   const effectiveManagerName = viewAsManager || userSession.name;
 
   // Projetos no recorte (todos os do gerente ou o escolhido no filtro)
@@ -197,6 +189,14 @@ export function ManagerDashboard({
     (comm.view?.rows ?? []).filter((r) => r.weekStart === ws).forEach((r) => m.set(r.code, (m.get(r.code) ?? 0) + r.total));
     return m;
   }, [comm.view]);
+
+  if (!currentWeek || !filteredWeek) {
+    return (
+      <div className="p-8 text-center text-xs text-muted-foreground bg-card rounded-xl border border-border">
+        Nenhum dado disponível para o gerente no momento.
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -354,28 +354,13 @@ export function ManagerDashboard({
         </section>
       )}
 
-      <div className="grid gap-5 lg:grid-cols-2">
-        <CollapsibleCard title="Evolução semanal do engajamento" subtitle="% da equipe dos seus projetos engajada por semana">
-          <WeeklyTrendChart data={engagementTrend} barName="% engajada na semana" lineName="Média acumulada" percent height={200} />
-        </CollapsibleCard>
-        <CollapsibleCard title="Evolução semanal das comunicações" subtitle="Updates e respostas nos workspaces dos seus projetos">
-          <WeeklyTrendChart
-            data={commTrend}
-            barName="Mensagens na semana"
-            lineName="Média acumulada"
-            height={200}
-            emptyText={comm.error ?? 'Ainda não há semanas de comunicação calculadas.'}
-          />
-        </CollapsibleCard>
-      </div>
-
       <ApusSection
         data={apus.data}
         loading={apus.loading}
         error={apus.error}
         filter={apusFilter}
         messagesByCode={lastWeekMessages}
-        showTable
+        showGeneral={false}
         scopeText="dos seus projetos"
       />
 

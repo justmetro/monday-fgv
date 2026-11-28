@@ -21,6 +21,7 @@ import { ManagerTab } from './components/ManagerTab';
 import { MyProfileTab } from './components/MyProfileTab';
 import { CommunicationTab } from './components/CommunicationTab';
 import { DepartmentTab } from './components/DepartmentTab';
+import { useApus } from './hooks/useApus';
 import type { TimeGranularity } from './lib/dates';
 
 type Tab = 'dashboard' | 'dgpe' | 'manager' | 'comm' | 'profile' | 'base' | 'update';
@@ -65,6 +66,7 @@ export default function App() {
 
   const loading = loadingSession || loadingData;
   const canManage = Boolean(session?.canManage);
+  const apus = useApus(canManage ? session ?? null : null);
   // Aba Base: só o dono do app e a lista de PMOs (o servidor confere de novo a cada ação)
   const canAccessBase = Boolean(session?.isOwner || session?.isPmo);
 
@@ -189,6 +191,7 @@ export default function App() {
               userName={session?.name}
               canManage={canManage}
               weekGroupNames={weekGroupNames}
+              apusData={apus.data}
             />
           )}
 
@@ -222,7 +225,7 @@ export default function App() {
             />
           )}
 
-          {activeTab === 'comm' && canManage && session && <CommunicationTab session={session} weeks={weeks} />}
+          {activeTab === 'comm' && canManage && session && <CommunicationTab session={session} weeks={weeks} activeProjects={activeProjects} />}
 
           {activeTab === 'profile' && (
             <MyProfileTab

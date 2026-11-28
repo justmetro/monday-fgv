@@ -11,7 +11,7 @@ Abas: Engajamento (só pessoas em equipe de projeto), DGPE (todos, por departame
 
 Nomenclatura semanal: Engajado (acesso na semana), Desengajado (mais de 7 dias sem acesso), Inativo (mais de 30 dias ou nunca acessou), Afastado. Dia padrão da análise: segunda à tarde, sobre a semana anterior (domingo a sábado).
 
-APUS e atualizações por projeto: lidos do quadro Relatórios dos projetos (18420326098), grupo Equipes - Por Semana, com cache de 30 min na coleção apus_cache (server/apus.ts). APUS = fórmula do quadro, (atualizações acumuladas ÷ usuários) ÷ semanas na plataforma; mínimo esperado 1, máximo 2. Aparece na aba Comunicação e, filtrado pelos projetos do gerente, no Painel do Gerente.
+APUS, atualizações e % de usuários engajados por projeto e semana: lidos do quadro Relatórios dos projetos (18420326098), grupo Equipes - Por Semana (histórico completo), só projetos com Status Real Em planejamento, Em execução ou Em encerramento; cache de 30 min na coleção apus_cache, documento v2 (server/apus.ts). O gráfico Engajamento geral por gerente usa esse histórico. APUS = fórmula do quadro, (atualizações acumuladas ÷ usuários) ÷ semanas na plataforma; mínimo esperado 1, máximo 2. Aparece na aba Comunicação e, filtrado pelos projetos do gerente, no Painel do Gerente.
 
 Comunicação: semana de domingo a sábado, com o número "Semana N" dos grupos do quadro Análise de Engajamento (18436474473), lido de base_week_status. Linhas na coleção comm_weeks_v2 e no quadro 18439727709, um grupo por semana. Código em server/communication.ts e src/generated/server/communication.ts.
 

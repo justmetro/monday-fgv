@@ -19,10 +19,11 @@ interface Props {
   showTable?: boolean;
   scopeText?: string; // ex.: "dos seus projetos"
   projectPicker?: boolean; // caixa de seleção de projetos
+  showGeneral?: boolean; // gráfico "Comunicação geral semana a semana"
 }
 
 const num = (v: number, d = 0) => v.toLocaleString('pt-BR', { minimumFractionDigits: d, maximumFractionDigits: d });
-const perUser = (r: ApusRow) => (r.users ? Math.round((r.updates / r.users) * 100) / 100 : 0);
+const brDate = (iso: string | null) => (iso ? iso.split('-').reverse().join('/') : '—');
 
 /** Uma linha por projeto com uma coluna por semana escolhida (w39, w38...), ordenada pela semana mais recente. */
 function weekBars(rows: ApusRow[], weeks: number[], value: (r: ApusRow) => number | null, detail?: (r: ApusRow) => string) {
@@ -60,10 +61,8 @@ function useWeekPick(data: ApusData | null) {
 }
 
 /** Gráficos de atualizações dos projetos, com os mesmos cálculos do quadro Relatórios dos projetos. */
-export function ApusSection({ data, loading, error, onReload, filter, messagesByCode, showTable = false, scopeText = 'dos projetos', projectPicker = false }: Props) {
+export function ApusSection({ data, loading, error, onReload, filter, messagesByCode, showTable = true, scopeText = 'dos projetos', projectPicker = false, showGeneral = true }: Props) {
   const apusPick = useWeekPick(data);
-  const perUserPick = useWeekPick(data);
-  const totalPick = useWeekPick(data);
 
   // Projetos do recorte e, com a caixa de projetos, os marcados nela
   const baseRows = useMemo(() => (data?.rows ?? []).filter((r) => !filter || filter(r)), [data, filter]);
@@ -97,8 +96,17 @@ export function ApusSection({ data, loading, error, onReload, filter, messagesBy
   }, [scoped, data]);
 
   const apusChart = useMemo(() => weekBars(scoped, apusPick.nums, (r) => r.apus, (r) => `${num(r.updates)} atualizações · ${r.users} usuários · ${r.weeksOnPlatform ?? '—'} semanas`), [scoped, apusPick.nums]);
-  const perUserChart = useMemo(() => weekBars(scoped, perUserPick.nums, perUser), [scoped, perUserPick.nums]);
-  const totalChart = useMemo(() => weekBars(scoped, totalPick.nums, (r) => r.updates, (r) => `${r.users} usuários`), [scoped, totalPick.nums]);
+  // APUS semana a semana: média do APUS dos projetos marcados em cada semana
+  const apusWeekly: ProjectBar[] = useMemo(() => {
+    const by = new Map<number, number[]>();
+    scoped.forEach((r) => { if (r.apus !== null) by.set(r.weekNumber, [...(by.get(r.weekNumber) ?? []), r.apus]); });
+    const labels = new Map((data?.weeks ?? []).map((w) => [w.weekNumber, w.weekLabel]));
+    return [...by.entries()].sort((a, b) => a[0] - b[0]).slice(-16).map(([n, v]) => ({
+      label: `Semana ${n}`, full: labels.get(n) ?? `Semana ${n}`,
+      value: Math.round((v.reduce((a, b) => a + b, 0) / v.length) * 100) / 100,
+      detail: `Média de ${v.length} ${v.length === 1 ? 'projeto' : 'projetos'}`,
+    }));
+  }, [scoped, data]);
   const belowMin = weekRows.filter((r) => r.apus !== null && r.apus < APUS_MIN).length;
 
   if (loading && !data) return <div className="h-48 rounded-xl bg-muted animate-pulse" />;
@@ -123,13 +131,18 @@ export function ApusSection({ data, loading, error, onReload, filter, messagesBy
     </div>
   );
 
+  const refLines = [
+    { y: APUS_MAX, label: 'Máximo esperado', color: 'hsl(var(--foreground))' },
+    { y: APUS_MIN, label: 'Mínimo esperado', color: 'hsl(var(--destructive))' },
+  ];
+
   return (
     <div className="space-y-5">
       {toolbar}
 
       {scoped.length > 0 && scoped.every((r) => r.updates === 0) && (
         <p className="rounded-lg border border-border bg-muted/50 px-3 py-2 text-xs text-foreground">
-          {projectOptions.length && projects?.length === 1 ? projects[0] : 'Os projetos marcados'} não {projects?.length === 1 ? 'tem' : 'têm'} nenhuma atualização registrada no quadro Relatórios dos projetos em nenhuma semana{projects?.length === 1 ? ` (${scoped[0].users} usuários)` : ''}. Por isso os gráficos aparecem zerados.
+          {projects?.length === 1 ? projects[0] : 'Os projetos marcados'} não {projects?.length === 1 ? 'tem' : 'têm'} nenhuma atualização registrada no quadro Relatórios dos projetos em nenhuma semana{projects?.length === 1 ? ` (${scoped[0].users} usuários)` : ''}. Por isso os gráficos aparecem zerados.
         </p>
       )}
 
@@ -138,27 +151,11 @@ export function ApusSection({ data, loading, error, onReload, filter, messagesBy
         subtitle={`${apusPick.text} · (atualizações ÷ usuários) ÷ semanas na plataforma · ${belowMin} de ${weekRows.length} projetos abaixo do mínimo em ${tableLabel}`}
         actions={apusPick.picker}
       >
-        <ProjectBarChart
-          data={apusChart.data}
-          series={apusChart.series}
-          decimals={2}
-          refLines={[
-            { y: APUS_MAX, label: 'Máximo esperado', color: 'hsl(var(--foreground))' },
-            { y: APUS_MIN, label: 'Mínimo esperado', color: 'hsl(var(--destructive))' },
-          ]}
-        />
+        <ProjectBarChart data={apusChart.data} series={apusChart.series} decimals={2} refLines={refLines} />
       </CollapsibleCard>
 
-      <CollapsibleCard title="Comunicação geral · semana a semana" subtitle={`Total acumulado de atualizações ${scopeText} em cada semana`}>
-        <WeeklyTrendChart data={general} barName="Atualizações (acumulado)" lineName="" height={260} hideLine />
-      </CollapsibleCard>
-
-      <CollapsibleCard title="Nº de atualizações por usuário" subtitle={`${perUserPick.text} · atualizações ÷ usuários`} actions={perUserPick.picker}>
-        <ProjectBarChart data={perUserChart.data} series={perUserChart.series} decimals={2} />
-      </CollapsibleCard>
-
-      <CollapsibleCard title="Total de atualizações do projeto" subtitle={`${totalPick.text} · acumulado desde a entrada na plataforma`} actions={totalPick.picker}>
-        <ProjectBarChart data={totalChart.data} series={totalChart.series} />
+      <CollapsibleCard title="APUS semana a semana" subtitle={`Média do APUS ${scopeText} em cada semana (últimas 16)`}>
+        <ProjectBarChart data={apusWeekly} decimals={2} refLines={refLines} height={260} emptyText="Sem semanas com APUS." />
       </CollapsibleCard>
 
       {showTable && (
@@ -172,10 +169,11 @@ export function ApusSection({ data, loading, error, onReload, filter, messagesBy
                   <tr className="border-b border-border">
                     <th className="py-2 pr-3 font-medium">Projeto</th>
                     <th className="px-3 py-2 text-right font-medium">APUS</th>
-                    <th className="px-3 py-2 text-right font-medium">Atualizações (acumulado)</th>
-                    <th className="px-3 py-2 text-right font-medium">Por usuário</th>
+                    {messagesByCode && <th className="px-3 py-2 text-right font-medium">Mensagens na semana</th>}
+                    <th className="px-3 py-2 text-right font-medium">Total consolidado</th>
                     <th className="px-3 py-2 text-right font-medium">Usuários</th>
-                    {messagesByCode && <th className="py-2 pl-3 text-right font-medium">Mensagens na semana</th>}
+                    <th className="px-3 py-2 text-right font-medium">Início na plataforma</th>
+                    <th className="py-2 pl-3 text-right font-medium">Semanas</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -185,10 +183,11 @@ export function ApusSection({ data, loading, error, onReload, filter, messagesBy
                       <tr key={`${r.team}|${r.code}`} className="border-b border-border/60 last:border-0">
                         <td className="max-w-[360px] py-2 pr-3"><span className="block truncate text-foreground" title={r.project || r.team}>{r.team}</span></td>
                         <td className={`px-3 py-2 text-right font-medium tabular-nums ${low ? 'text-destructive' : 'text-foreground'}`}>{r.apus === null ? '—' : num(r.apus, 2)}</td>
+                        {messagesByCode && <td className="px-3 py-2 text-right tabular-nums">{messagesByCode.has(r.code) ? num(messagesByCode.get(r.code)!) : '—'}</td>}
                         <td className="px-3 py-2 text-right tabular-nums">{num(r.updates)}</td>
-                        <td className="px-3 py-2 text-right tabular-nums">{num(perUser(r), 2)}</td>
                         <td className="px-3 py-2 text-right tabular-nums">{r.users}</td>
-                        {messagesByCode && <td className="py-2 pl-3 text-right tabular-nums">{messagesByCode.has(r.code) ? num(messagesByCode.get(r.code)!) : '—'}</td>}
+                        <td className="px-3 py-2 text-right tabular-nums">{brDate(r.startDate)}</td>
+                        <td className="py-2 pl-3 text-right tabular-nums">{r.weeksOnPlatform ?? '—'}</td>
                       </tr>
                     );
                   })}
@@ -196,6 +195,12 @@ export function ApusSection({ data, loading, error, onReload, filter, messagesBy
               </table>
             </div>
           )}
+        </CollapsibleCard>
+      )}
+
+      {showGeneral && (
+        <CollapsibleCard title="Comunicação geral · semana a semana" subtitle={`Total acumulado de atualizações ${scopeText} em cada semana`}>
+          <WeeklyTrendChart data={general} barName="Atualizações (acumulado)" lineName="" height={260} hideLine />
         </CollapsibleCard>
       )}
     </div>

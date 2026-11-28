@@ -18,10 +18,10 @@ const fmt = (v: number, d: number) => v.toLocaleString('pt-BR', { minimumFractio
 const short = (v: number, d: number) => fmt(v, d === 0 || v >= 10 ? 0 : v >= 1 ? 1 : d);
 /** Marcas regulares do eixo Y (0; 0,5; 1... ou 0; 50; 100...). */
 function niceTicks(max: number): number[] {
-  const raw = (max || 1) / 4;
+  const raw = (max || 1) / 5;
   const pow = 10 ** Math.floor(Math.log10(raw));
   const step = [1, 2, 2.5, 5, 10].map((m) => m * pow).find((x) => x >= raw) ?? 10 * pow;
-  const top = Math.max(step * 4, Math.ceil((max * 1.05) / step) * step);
+  const top = Math.max(step, Math.ceil((max - 1e-9) / step) * step);
   return Array.from({ length: Math.round(top / step) + 1 }, (_, i) => Math.round(i * step * 1000) / 1000);
 }
 /** Nome curto no eixo; o nome inteiro fica no tooltip. */

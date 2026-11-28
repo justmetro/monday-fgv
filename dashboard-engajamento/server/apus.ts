@@ -20,7 +20,13 @@ export interface ApusRow {
   users: number; // Usuários totais
   weeksOnPlatform: number | null;
   apus: number | null; // (atualizações ÷ usuários) ÷ semanas na plataforma, igual à fórmula do quadro
+  status: string; // Status Real do projeto conectado
+  startDate: string | null; // Início na plataforma (AAAA-MM-DD)
+  pctEngaged: number | null; // % usuários engajados na semana (0 a 100)
 }
+
+/** Só projetos nestes status entram no app. */
+export const ACTIVE_STATUSES = ['Em planejamento', 'Em execução', 'Em encerramento'];
 
 export interface ApusData {
   rows: ApusRow[];
@@ -57,10 +63,16 @@ const n = (v: string | null | undefined) => {
 
 async function readBoard(): Promise<ApusData> {
   const [projects, items] = await Promise.all([
-    readGroup(PROJECTS_GROUP, ['text_mkyg1502']),
-    readGroup(WEEKS_GROUP, ['color_mm4wwfr5', 'numeric_mm4w7f8e', 'numeric_mm4wrmjz', 'lookup_mm4xdrwf', 'formula_mm4xx5rq', 'board_relation_mm4xzvhq', 'dropdown_mm6tr0v2']),
+    readGroup(PROJECTS_GROUP, ['text_mkyg1502', 'color_mm54274v', 'date_mm4xh2h8']),
+    readGroup(WEEKS_GROUP, ['color_mm4wwfr5', 'numeric_mm4w7f8e', 'numeric_mm4wrmjz', 'lookup_mm4xdrwf', 'formula_mm4xx5rq', 'board_relation_mm4xzvhq', 'dropdown_mm6tr0v2', 'numeric_mm4w3a7f']),
   ]);
-  const proj = new Map(projects.map((p) => [String(p.id), { name: p.name, code: (p.column_values[0]?.text ?? '').trim() || (p.name.match(/(\d{4}\/\d{3})/)?.[1] ?? '') }]));
+  const pcv = (p: Item, id: string) => (p.column_values.find((c) => c.id === id)?.text ?? '').trim();
+  const proj = new Map(projects.map((p) => [String(p.id), {
+    name: p.name,
+    code: pcv(p, 'text_mkyg1502') || (p.name.match(/(\d{4}\/\d{3})/)?.[1] ?? ''),
+    status: pcv(p, 'color_mm54274v'),
+    startDate: pcv(p, 'date_mm4xh2h8') || null,
+  }]));
   const all: ApusRow[] = [];
   for (const it of items) {
     const cv = (id: string) => it.column_values.find((c) => c.id === id);
@@ -68,22 +80,23 @@ async function readBoard(): Promise<ApusData> {
     const wn = weekLabel.match(/^(\d+)/);
     if (!wn) continue;
     const linked = proj.get(String(cv('board_relation_mm4xzvhq')?.linked_item_ids?.[0] ?? ''));
+    if (!linked || !ACTIVE_STATUSES.includes(linked.status)) continue; // só projetos ativos
     const updates = n(cv('numeric_mm4w7f8e')?.text) ?? 0;
     const users = n(cv('numeric_mm4wrmjz')?.text) ?? 0;
     const fromBoard = n(cv('formula_mm4xx5rq')?.display_value);
-    // O espelho nem sempre vem pela API: sem ele, deduz as semanas da própria fórmula
-    const weeksOnPlatform = n(cv('lookup_mm4xdrwf')?.display_value) ?? (fromBoard && users ? Math.round(updates / users / fromBoard) : null);
+    // Semanas na plataforma: do início até hoje, como a fórmula do quadro
+    const weeksOnPlatform = linked.startDate ? Math.max(1, Math.round((Date.now() - new Date(`${linked.startDate}T12:00:00Z`).getTime()) / (7 * 86400000))) : n(cv('lookup_mm4xdrwf')?.display_value);
     const apus = fromBoard ?? (users && weeksOnPlatform ? updates / users / weeksOnPlatform : null);
     all.push({
-      team: it.name.trim(), project: linked?.name ?? '', code: linked?.code ?? '',
+      team: it.name.trim(), project: linked.name, code: linked.code, status: linked.status, startDate: linked.startDate,
+      pctEngaged: n(cv('numeric_mm4w3a7f')?.text),
       managers: (cv('dropdown_mm6tr0v2')?.text ?? '').split(',').map((s) => s.trim()).filter(Boolean),
       weekNumber: Number(wn[1]), weekLabel: weekLabel.replace(/\s+/g, ' '), updates, users, weeksOnPlatform,
       apus: apus === null ? null : Math.round(apus * 100) / 100,
     });
   }
-  // Últimas 26 semanas bastam para os gráficos e mantêm o documento pequeno
-  const maxWeek = Math.max(0, ...all.map((r) => r.weekNumber));
-  const rows = all.filter((r) => r.weekNumber > maxWeek - 26);
+  // Todas as semanas (o engajamento por gerente usa o histórico inteiro)
+  const rows = all;
   const weeks = [...new Map(rows.map((r) => [r.weekNumber, r.weekLabel])).entries()]
     .sort((a, b) => b[0] - a[0]).map(([weekNumber, weekLabel]) => ({ weekNumber, weekLabel }));
   return { rows, weeks, boardId: APUS_BOARD_ID, readAt: new Date().toISOString() };
@@ -93,10 +106,10 @@ async function readBoard(): Promise<ApusData> {
 export async function apusData(force = false): Promise<ApusData> {
   const col = (await mongo()).collection<{ _id: string; data: ApusData }>('apus_cache');
   if (!force) {
-    const c = await col.findOne({ _id: 'last' });
+    const c = await col.findOne({ _id: 'v2' });
     if (c && Date.now() - new Date(c.data.readAt).getTime() < CACHE_MIN * 60000) return c.data;
   }
   const data = await readBoard();
-  await col.replaceOne({ _id: 'last' }, { data }, { upsert: true });
+  await col.replaceOne({ _id: 'v2' }, { data }, { upsert: true });
   return data;
 }

@@ -17,6 +17,8 @@ import { WeeklyTrendChart } from './charts/WeeklyTrendChart';
 import { CollapsibleCard } from './charts/CollapsibleCard';
 import { StatusBarChart } from './charts/StatusCharts';
 import { ManagerEngagementChart } from './charts/ManagerEngagementChart';
+import type { ApusData } from '../../../server/apus';
+import { projectCode } from '@generated/lib/weeklySeries';
 import { engagementSeries } from '@generated/lib/weeklySeries';
 
 interface Props {
@@ -34,6 +36,7 @@ interface Props {
   userName?: string;
   weekGroupNames?: Record<string, string>;
   canManage?: boolean; // dono, admin ou PMO: gerencia afastamentos de qualquer pessoa
+  apusData?: ApusData | null; // histórico do quadro Relatórios dos projetos
 }
 
 const DEFAULT_DEPT = 'Projeto';
@@ -74,8 +77,7 @@ export function EngagementDashboard({
   absences,
   onAbsenceChanged,
   weekGroupNames,
-  canManage = false,
-}: Props) {
+  canManage = false, apusData }: Props) {
   const [focusAbsence, setFocusAbsence] = useState(false);
   const [weekKey, setWeekKey] = useState<string>('latest');
   const [project, setProject] = useState('all');
@@ -235,8 +237,8 @@ export function EngagementDashboard({
       </div>
 
       <ManagerEngagementChart
-        weeks={weeks}
-        inScope={managerScope}
+        data={apusData ?? null}
+        scopeCode={project === 'all' ? null : projectCode(project) || null}
         selected={manager}
         onSelect={setManager}
       />

@@ -3,6 +3,7 @@ import { RefreshCw, Search, ExternalLink } from 'lucide-react';
 import { getCommunicationJob, runCommunicationWeek } from '@generated/server/communication';
 import type { UserSessionInfo } from '@generated/server/storage';
 import type { WeekSummary } from '@generated/lib/engagementMetrics';
+import type { StoredProjectItem } from '@generated/models';
 import { errorText } from '@generated/lib/errorText';
 import type { JobState } from '../../../server/jobs';
 import { brFromIso, projectCode } from '@generated/lib/weeklySeries';
@@ -23,9 +24,10 @@ const num = (v: number) => v.toLocaleString('pt-BR');
 interface Props {
   session: UserSessionInfo;
   weeks: WeekSummary[]; // semanas do engajamento, para cruzar equipe e % da mesma semana
+  activeProjects: StoredProjectItem[]; // só projetos Em planejamento, Em execução ou Em encerramento
 }
 
-export function CommunicationTab({ session, weeks }: Props) {
+export function CommunicationTab({ session, weeks, activeProjects }: Props) {
   const { view, error, loading, reload, claim } = useCommunication(session, 12);
   const apus = useApus(session);
   const [weekStart, setWeekStart] = useState<string | null>(null);
@@ -51,24 +53,34 @@ export function CommunicationTab({ session, weeks }: Props) {
     return { found: Boolean(w), map: m };
   }, [weeks, selWeek]);
 
+  // Projetos ativos (pelo código SGI) e dados do quadro Relatórios dos projetos da mesma semana
+  const activeCodes = useMemo(() => new Set(activeProjects.map((p) => projectCode(p.name)).filter(Boolean)), [activeProjects]);
+  const boardByCode = useMemo(() => {
+    const n = Number(selWeek?.week.match(/\d+/)?.[0] ?? -1);
+    const m = new Map<string, { updates: number; startDate: string | null; weeks: number | null }>();
+    (apus.data?.rows ?? []).filter((r) => r.weekNumber === n && r.code)
+      .forEach((r) => m.set(r.code, { updates: (m.get(r.code)?.updates ?? 0) + r.updates, startDate: r.startDate, weeks: r.weeksOnPlatform }));
+    return m;
+  }, [apus.data, selWeek]);
+
   const rows = useMemo(() => {
     const prev = new Map((view?.rows ?? []).filter((r) => r.weekStart === prevWeek?.weekStart).map((r) => [r.workspaceId, r.total]));
     const q = query.trim().toLowerCase();
     return (view?.rows ?? [])
-      .filter((r) => r.weekStart === weekStart && (!q || r.project.toLowerCase().includes(q)))
-      .map((r) => ({ ...r, prev: prev.get(r.workspaceId) ?? null, eng: engByCode.map.get(r.code) ?? null }))
+      .filter((r) => r.weekStart === weekStart && (!activeCodes.size || activeCodes.has(r.code)) && (!q || r.project.toLowerCase().includes(q)))
+      .map((r) => ({ ...r, prev: prev.get(r.workspaceId) ?? null, eng: engByCode.map.get(r.code) ?? null, board: boardByCode.get(r.code) ?? null }))
       .sort((a, b) => b.total - a.total || a.project.localeCompare(b.project));
-  }, [view, weekStart, prevWeek, query, engByCode]);
+  }, [view, weekStart, prevWeek, query, engByCode, activeCodes, boardByCode]);
 
   const totals = useMemo(() => {
-    const all = (view?.rows ?? []).filter((r) => r.weekStart === weekStart);
+    const all = (view?.rows ?? []).filter((r) => r.weekStart === weekStart && (!activeCodes.size || activeCodes.has(r.code)));
     return {
       updates: all.reduce((s, r) => s + r.updates, 0),
       replies: all.reduce((s, r) => s + r.replies, 0),
       silent: all.filter((r) => r.total === 0).length,
       projects: all.length,
     };
-  }, [view, weekStart]);
+  }, [view, weekStart, activeCodes]);
 
   const run = async () => {
     setBusy(true); setMsg(null);
@@ -150,7 +162,7 @@ export function CommunicationTab({ session, weeks }: Props) {
           </div>
 
           <CollapsibleCard title="Evolução semanal das comunicações" subtitle="Updates e respostas somados por semana, com média acumulada">
-            <WeeklyTrendChart data={communicationSeries(view)} barName="Mensagens na semana" lineName="Média acumulada" />
+            <WeeklyTrendChart data={communicationSeries(view, activeCodes.size ? activeCodes : undefined)} barName="Mensagens na semana" lineName="Média acumulada" />
           </CollapsibleCard>
 
           <CollapsibleCard
@@ -171,7 +183,10 @@ export function CommunicationTab({ session, weeks }: Props) {
                     <th className="py-2 pr-3 font-medium">Projeto</th>
                     <th className="px-3 py-2 text-right font-medium">Updates</th>
                     <th className="px-3 py-2 text-right font-medium">Respostas</th>
-                    <th className="px-3 py-2 text-right font-medium">Total</th>
+                    <th className="px-3 py-2 text-right font-medium">Total da semana</th>
+                    <th className="px-3 py-2 text-right font-medium">Total consolidado</th>
+                    <th className="px-3 py-2 text-right font-medium">Início na plataforma</th>
+                    <th className="px-3 py-2 text-right font-medium">Semanas</th>
                     <th className="px-3 py-2 text-right font-medium">Semana anterior</th>
                     <th className="px-3 py-2 text-right font-medium">Quem escreveu</th>
                     <th className="px-3 py-2 text-right font-medium">Equipe</th>
@@ -192,6 +207,9 @@ export function CommunicationTab({ session, weeks }: Props) {
                         <td className="px-3 py-2 text-right tabular-nums">{num(r.updates)}</td>
                         <td className="px-3 py-2 text-right tabular-nums">{num(r.replies)}</td>
                         <td className="px-3 py-2 text-right font-medium tabular-nums">{num(r.total)}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{r.board ? num(r.board.updates) : '—'}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{r.board?.startDate ? r.board.startDate.split('-').reverse().join('/') : '—'}</td>
+                        <td className="px-3 py-2 text-right tabular-nums">{r.board?.weeks ?? '—'}</td>
                         <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
                           {diff === null ? '—' : `${num(r.prev!)} (${diff > 0 ? '+' : ''}${num(diff)})`}
                         </td>
